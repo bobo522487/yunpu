@@ -29,19 +29,6 @@
 5. 验收清单写成 Given/When/Then，可直接落成测试用例。
 6. **编号必须唯一且可追溯**（`DM-GEN-21`）。每个编号在附录 §18 只出现一次；引用编号必须在 §18 索引表中有定义。
 
-### 0.1 v1.2 重构摘要
-
-1.1 版的模型骨架（人物 / 关系 / 节点 / 来源 / 谱文 / 媒体 / 谱书）经审查**成立，保留不动**。本版重构的是三件事：
-
-| 维度           | 动作                                | 结果                |
-| ------------ | --------------------------------- | ----------------- |
-| **规范编号**     | 全量重编 + 补齐悬空编号 + 消除一编号两义           | §18 编号索引表，零悬空、零冲突 |
-| **PG 18 语义** | 逐条比对 PG18 官方文档，修正 8 处依赖旧版本默认行为的写法 | §2.1 PG18 语义差异表   |
-| **约束完整性**    | 补齐缺失的外键、索引、权限、RLS 策略；修正 5 处真实缺陷   | §16 修订记录（26 项）    |
-
-**本版不改变**：实体划分、表数量（22 张）、Project Scope 模型（`(organization_id, project_id)` 复合外键）、派生关系查询时计算的原则、删除语义的整体策略。
-
----
 
 ## 1. 设计原则（规范）
 
@@ -110,16 +97,9 @@
 > - **PG 18 没有 `ALTER CONSTRAINT ... SET NOT VALID` 这个子句**（实测 `syntax error at or near "SET"`）。想撤除一个已 `NOT VALID` 的约束，只能 `DROP CONSTRAINT` 后重建。
 > - **具名 `NOT NULL` 约束无法走 `NOT VALID` 路线**：`VALIDATE CONSTRAINT person_surname_not_null` → `42704 constraint ... does not exist`（`NOT NULL` 走 `contype='n'`，不参与 `VALIDATE` 的候选集）。因此给大表加 `NOT NULL` 的唯一低锁路径是：先加 `CHECK (col IS NOT NULL) NOT VALID` → `VALIDATE` → 再 `ALTER COLUMN ... SET NOT NULL`（后者会短暂持锁）。
 
-### 2.2 PG 18 新能力中「本模型明确不用」的部分
+### 2.2 PG 18 新能力中「本模型明确不做」的部分
 
-| 能力                               | 为何不用                                                                      | 复评时机                  |
-| -------------------------------- | ------------------------------------------------------------------------- | --------------------- |
-| `PERIOD` 时间区间约束（FK 排他）           | `invite` 的「同邮箱单条 pending」用部分唯一索引已足够；`PERIOD` 会让「有效期不重叠」成为强约束，反而限制「提前重发邀请」 | V2 若引入 `invite` 有效期语义 |
-| `WITHOUT OVERLAPS`（PK/UNIQUE 排他） | 同上                                                                        | V2                    |
-| `NOT ENFORCED` 约束                | 会把 DB 级保证降级为「看起来像约束」                                                      | 永不                    |
-| 虚拟生成列                            | `ltree` / `jsonb` 属用户自定义类型，VIRTUAL 不允许；且虚拟列不能作为 FK 引用侧                    | 永不                    |
-
----
+pgEnum、hstore、xml、继承表、规则系统、软删除列、通用 `entity_type/entity_id` 业务外键、虚拟生成列、`NOT ENFORCED` 约束、`PERIOD` / `WITHOUT OVERLAPS` 均不使用；「明确不做」的唯一权威清单见 [../../requirements/out-of-scope.md](../../requirements/out-of-scope.md)，本文不写 V2 复评条件表（宪法 Article VII）。
 
 ## 3. 实体全景
 
@@ -609,7 +589,6 @@ PERFORM pg_advisory_xact_lock(hashtextextended('yunpu:relation:' || NEW.project_
 三个超时是**会话级 GUC**，**必须由连接串下发，不能靠应用每次 `SET`**：
 
 ```
-PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'
 ```
 
 > **v1.2 修复（`DM-POOL-01`）**：1.1 版写「三个超时在连接池的连接初始化时统一 `SET`」。会话级 `SET` 与 **PgBouncer 事务池化**不兼容——事务池化会把同一个后端连接交给不同会话，会话级设置会串味；而如果不用池化直接用应用侧池（如 `pg` 的 `max` 池），`SET` 只在池化连接上生效一次，之后新建的连接就没有设置。这条必须落到连接串 `PGOPTIONS`，由服务端在每次连接建立时施加，与池化模式无关。
@@ -1513,46 +1492,4 @@ $$;
 
 ## 14. 明确不做（数据层视角）
 
-> **「明确不做」清单的唯一权威副本在 [`functional.md`](../../requirements/functional.md) §8，编号 `OOS-01`..`OOS-19`。** 本文**不复制**该表——同一主题只在一个文档里定义（宪法 Article VI）。
->
-> 本节只列**数据模型特有的**「不做」项（表、列、约束、PG 特性层面），以及本层特有的复评触发条件。产品与架构层面的「不做」见 `spec.md` §8。
-
-### 14.1 数据层特有的「不做」
-
-| 项 | 理由 | 关联 |
-|---|---|---|
-| `Family`、`FamilyPartner`、`FamilyChild`、`FamilyChildParent` 表 | 家庭是 Relation 的组合视图，不另建表 | `OOS-01` |
-| 任意关系类型、JSONB 关系属性包 | 关系类型是封闭集合，属性包会绕过 CHECK | `OOS-03` |
-| 通用关系引擎 / 规则引擎表 | 关系规则已有执行者（CHECK + 触发器） | `OOS-04` |
-| 兄弟姐妹、祖孙、叔伯、堂表亲等派生关系表 | 可从 Relation 推导，存两份必有一致性问题 | `OOS-02` |
-| 跨 Project 的全局 Person 主数据表 | 默认谱之间人物独立，合并需人工裁决 | `OOS-05` |
-| 通用 `entity_type/entity_id` 多态业务外键 | `audit_log` 是日志，不是业务引用；多态外键无法建复合 FK | — |
-| `event.scope` 列 | 可由「主体二选一」推导（`DM-EVT-02`） | — |
-| `person.surname` 与 `person_name` 的自动同步 / 自动截取 | 规范化值不得覆盖原文（`DM-GEN-09`） | — |
-| `lineage_root` 表 | 根是结构事实，由 `parent_path IS NULL` 表达 | — |
-| `guardian` 关系类型 | 监护不参与祖先环检测，语义与承嗣不同，混用会让环检查失真 | — |
-| 全量 GEDCOM 标签镜像表 | 无导入需求；镜像表是第二真相源 | — |
-| 自动根据 Relation 生成或重排 Node | 关系是事实，位置是安排，两边互不改写 | — |
-| 软删除列（`deleted_at` / `is_deleted`） | 删除就是删除；归档与完成是业务状态列 | `OOS-06` |
-| 完整 Subscription / Billing 模型 | 当前产品不做计费 | `OOS-07` |
-| 20 位随机公开 ID（slug / ref） | 公开 ID 会成为新的身份来源与越权面 | — |
-| 多人 owner 与「邀请授予 owner」 | 所有权转移用 CAS 条件更新（`DM-ADR-13`），只有一条转移路径 | — |
-| Person 物理清除（GDPR）的自动化通道 | 物理清除会破坏谱系结构；须人工裁决 | — |
-| **全量审计的数据库触发器** | V1 只做「强审计路径」的 DB 级留痕；其余明确声明为尽力而为（`DM-AUD-01`） | — |
-| **PG 18 的 `PERIOD` / `WITHOUT OVERLAPS` 排他约束** | 「同邮箱单条 pending」用部分唯一索引即可表达；排他约束会限制「提前重发邀请」这一合法业务动作 | — |
-| **PG 18 的 `NOT ENFORCED` 约束** | 会把 DB 级保证降级为「看起来像约束」，永不采用 | — |
-| **虚拟生成列** | `ltree` / `jsonb` 属用户定义类型，PG 18 不允许虚拟生成列；且虚拟列不能作为外键引用侧 | — |
-| **`SKIP LOCKED` 队列表 / 事件溯源 / outbox 表** | V1 无异步任务需求 | `OOS-09` |
-
-### 14.2 数据层特有的复评条件
-
-| 项 | 复评触发条件 |
-|---|---|
-| 补建 17 个 `fk_*_project` 索引 | 支持「一键删除整个 Project」且内容表单表行数 > 10 万 |
-| 引入 `PERIOD` 排他约束 | `invite` 引入「有效期不重叠」的业务语义 |
-| 引入虚拟生成列 | PG 支持用户自定义类型的虚拟生成列 |
-| 全量审计触发器 | 出现合规场景，要求审计完整无缺 |
-| 引入 `pgPolicy()` 作为 RLS 唯一来源 | Drizzle 支持生成 `FORCE ROW LEVEL SECURITY` |
-| 引入事件溯源 / outbox 表 | 出现第二个消费方 |
-
----
+「明确不做」的唯一权威副本见 [../../requirements/out-of-scope.md](../../requirements/out-of-scope.md)（`OOS-01`..`OOS-19`）；数据层只引用编号，不复制表格。

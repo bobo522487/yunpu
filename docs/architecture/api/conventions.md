@@ -39,21 +39,7 @@
 
 ### 1.3 中间件链（固定顺序）
 
-```
-app.use(requestId());        // ① 必须最先：后续所有日志都要 requestId
-app.use(secureHeaders());    // ② 安全响应头
-app.use(compress());         // ③ 响应压缩
-app.use(requestContext());   // ④ 结构化日志字段
-app.use(authMiddleware());   // ⑤ 会话解析
-app.use(rateLimit());        // ⑥ 限流
-```
-
-- 中间件按注册顺序进入、按**逆序**返回（§2.1 `ARCH-HONO-02`）。
-- `rateLimit` 置于认证之后：**按用户限流比按 IP 限流更准**，且避免未认证流量打满共享配额（§8.2）。
-- 全局错误兜底是 `app.onError(...)`，**不是中间件**（§2.1 纪律 2、§8.2）。
-- 选用的内置中间件清单见 §3.1；`bodyLimit` / `timeout` 的按端点挂载见 §15.1.2（本文 §1.9）。
-
-> 来源：plan.md §8.2、§2.1、§3.1
+中间件注册顺序的唯一权威见 [../runtime.md](../runtime.md) §8.2；本文不复制 `app.use(...)` 清单。
 
 ### 1.4 分页参数（keyset，不用 offset）
 
@@ -115,74 +101,7 @@ export type ErrorCode =
 
 ### 1.7 错误码到 HTTP 状态的映射
 
-> **唯一权威**：应用错误码的取值、HTTP 状态与用户可见文案以 **data-model §9.4** 为准。本节只做端点侧的**速查**，不构成第二份定义（宪法 Article VI）。改动错误码时改 data-model，本文同步。
-
-**应用错误码 → HTTP**
-
-| 类别                                                         | HTTP | 触发来源                                                     |
-| ------------------------------------------------------------ | ---- | ------------------------------------------------------------ |
-| `VALIDATION` / `SELF_RELATION` / `SYMMETRIC_ORDER` / `EVENT_SUBJECT_INVALID` / `BLANK_TEXT` / `INVALID_INPUT` | 400  | `zValidator` / `HTTPException`；SQLSTATE `23514`、`22P02`    |
-| `NO_AUTH_CONTEXT`                                            | 401  | `GX008`（缺少登录上下文）                                    |
-| `FORBIDDEN` / `INVITE_EMAIL_MISMATCH`                        | 403  | `42501`；`GX006`、`GX009`                                    |
-| `TARGET_INVALID`                                             | 404  | `GX005`（目标不存在或已失效）                                |
-| `DUPLICATE_PRIMARY_NAME` / `INVITE_ALREADY_PENDING` / `RELATION_DUPLICATE` / `NODE_PARENT_MISSING` / `PROJECT_SCOPE_VIOLATION` / `BOOK_HAS_RELEASE` / `OWNER_MEMBER_REQUIRED` / `LINEAGE_CYCLE` / `SCOPE_IMMUTABLE` / `SNAPSHOT_IMMUTABLE` / `APPEND_ONLY` / `INVALID_STATE` / `CONCURRENT_MODIFICATION` | 409  | `23505`、`23503`、`23001`；`GX001`–`GX004`、`GX007`、`GX010` |
-| `RATE_LIMITED`                                               | 429  | 限流（具体状态码映射在原文中**未定义**）                     |
-| `ARTIFACT_MISSING`                                           | 500  | `GX011`（产物字节缺失，服务端状态不一致）                    |
-| `LOCK_TIMEOUT` / `STATEMENT_TIMEOUT`                         | 503  | `55P03`、`57014`                                             |
-| `INTERNAL`                                                   | 500  | 未识别异常                                                   |
-
-> 注 1：原 plan.md §8.3 只给出粗粒度 `ErrorCode` 枚举（7 个）与 `AppError(status)` 构造，与数据模型 §9.4 的细粒度码（24 个）粒度不同。**细粒度码是权威**——它才能把「主姓名重复」与「邀请重复」区分开，给出不同的用户文案。上表按 data-model §9.4 重排。
->
-> 注 2：`RATE_LIMITED` 的具体 HTTP 状态码在原文中**未定义**。
-
-**PG SQLSTATE → 应用错误码（`ARCH-ERR-01`，§8.3，两级：先看 SQLSTATE，再看约束名）**
-
-| SQLSTATE | ErrorCode                 | 文案                                                         |
-| -------- | ------------------------- | ------------------------------------------------------------ |
-| `23505`  | `CONFLICT`                | 已存在重复记录                                               |
-| `23503`  | `CONFLICT`                | 该记录已被引用，无法删除                                     |
-| `23001`  | `CONFLICT`                | 该记录已被引用，无法删除                                     |
-| `23514`  | `VALIDATION`              | 数据不满足约束                                               |
-| `42501`  | `FORBIDDEN`               | 没有执行该操作的权限                                         |
-| `GX001`  | `CONFLICT`                | 该关系会形成祖先环路                                         |
-| `GX002`  | `CONFLICT`                | 组织或项目归属不可修改                                       |
-| `GX003`  | `CONFLICT`                | 出版快照不可修改                                             |
-| `22P02`  | `INVALID_INPUT`           | 参数格式错误（400）                                          |
-| `55P03`  | `LOCK_TIMEOUT`            | 系统繁忙，请重试（503，advisory lock 超时）                  |
-| `57014`  | `STATEMENT_TIMEOUT`       | 查询超时，请缩小范围（503）                                  |
-| `GX004`  | `APPEND_ONLY`             | 审计日志只可追加（**409**，非 403——这是状态冲突不是权限问题） |
-| `GX005`  | `NOT_FOUND`               | 邀请无效或已过期（404）                                      |
-| `GX006`  | `FORBIDDEN`               | 只有组织所有者可以清除出版版本（403）                        |
-| `GX007`  | `INVALID_STATE`           | 出版版本尚未作废（409）                                      |
-| `GX008`  | `NO_AUTH_CONTEXT`         | 缺少登录上下文（401）                                        |
-| `GX009`  | `INVITE_EMAIL_MISMATCH`   | 邀请邮箱与当前登录用户邮箱不一致（403）                      |
-| `GX010`  | `CONCURRENT_MODIFICATION` | 操作已被并发请求抢先（**409**；同时覆盖邀请兑换与所有权转移两条路径） |
-| `GX011`  | `ARTIFACT_MISSING`        | 出版产物缺失，状态不一致（**500**，服务端状态不一致，非客户端可重试） |
-
-**约束名 → 具体文案（第二级匹配，约束一律具名）**
-
-| 约束名                               | 文案                            |
-| ------------------------------------ | ------------------------------- |
-| `uq_invite_pending_email`            | 该邮箱已有待处理邀请            |
-| `uq_person_name_primary`             | 该人物已有主显示名              |
-| `uq_node_one_primary`                | 该人物在本谱系已有 primary 节点 |
-| `uk_node_path`                       | 该谱系下已存在相同路径的节点    |
-| `uk_person_name_value`               | 该人物已有完全相同的姓名        |
-| `uk_person_relation_kind`            | 这两位人物之间已存在同类关系    |
-| `uk_book_release_version`            | 该谱书已存在相同版本号          |
-| `uk_media_asset_object_key`          | 该对象 key 已被占用             |
-| `ck_person_relation_symmetric_order` | 对称关系只能存一种方向          |
-| `ck_event_subject_xor`               | 事件必须且只能关联一个主体      |
-| `ck_source_citation_target_xor`      | 一条引用只能指向一个事实        |
-| `ck_book_catalog_content_match`      | 目录项类型与内容引用不匹配      |
-| `fk_organization_owner`              | 新 owner 必须是组织成员         |
-| `fk_organization_owner`              | 新 owner 必须是组织成员         |
-
-- 匹配顺序：先查 `PG_CONSTRAINT_MESSAGES[constraint_name]`，命中用具体文案；否则退回 `PG_ERROR_MAP[sqlstate]`。
-- PostgreSQL `driverError` 带 `constraint` 与 `code`，取 `constraint` 做第二级匹配。
-- `ON DELETE RESTRICT` 在 PostgreSQL 18 报 `23001` 而非 `23503`，两者都映射以免遗漏。
-
-> 来源：plan.md §8.3（`ARCH-ERR-01`）；补充参照数据模型 §9.4
+错误码、SQLSTATE、约束名、HTTP 状态与用户文案的唯一权威见 [../data/errors.md](../data/errors.md)；本文只引用 `GX*` 编号，不复制映射表，不引用仓库中未定义的映射常量。
 
 ### 1.8 幂等性
 
@@ -236,18 +155,7 @@ export type ErrorCode =
 
 ### 1.12 依赖注入与契约生成
 
-| 纪律                      | 说明                                                         | 出处                  |
-| ------------------------- | ------------------------------------------------------------ | --------------------- |
-| 运行时依赖                | `db` / `services` / `logger` / `storage` 通过 `AppEnv['Variables']` + `c.get()` 获取 | §8.1.1、§8.4          |
-| 不用 `createFactory` 注入 | `Factory` 只有 `createApp` / `createMiddleware` / `createHandlers`，**无** `.use()` / `.get()` / `.post()` | §8.1.1 `ARCH-HONO-01` |
-| 不做全局增强              | 不用 `declare module 'hono'` 扩展 `ContextVariableMap`（会掩盖运行时的 `undefined`） | §8.1.1 `ARCH-HONO-05` |
-| Schema 单一真相源         | 请求 schema 与 `zValidator` 用**同一个 Zod 对象**；前端 `safeParse` 与后端 `zValidator` 共用一份 | §8.5、§8.8            |
-| OpenAPI                   | 官方 `@hono/zod-openapi`（`createRoute` + `OpenAPIHono` + `app.doc()`），Scalar 渲染在 `/api/docs`；契约从代码生成，不手写 YAML | §8.8、`ARCH-HONO-06`  |
-| 路由清单快照              | `hono routes` 导出 JSON 纳入 CI，防路由漂移                  | §13                   |
-
-> 来源：plan.md §8.1.1、§8.4、§8.5、§8.8、§13
-
----
+依赖注入约定的唯一权威见 [../runtime.md](../runtime.md) §8.1.1；本文不复制纪律表。
 
 ## 3. 全局约束小结
 

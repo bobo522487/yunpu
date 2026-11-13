@@ -154,31 +154,9 @@
 
 ---
 
-## 7. 工具链版本总表（plan.md §3）
+## 7. 工具链版本（唯一副本）
 
-| 层         | 选型                         | 版本                                                        | 官方依据链接                                                 |
-| ---------- | ---------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
-| 运行时     | Bun                          | ≥ 1.4.4                                                     | 未定义                                                       |
-| Web 框架   | Hono                         | v4（≥ 4.11.2）                                              | 见 §1                                                        |
-| 前端构建   | Vite                         | 7.x                                                         | 未定义                                                       |
-| UI         | React                        | 19.x                                                        | 未定义                                                       |
-| 语言       | TypeScript                   | 5.x（`strict` + `noUncheckedIndexedAccess`）                | 未定义                                                       |
-| 校验       | Zod                          | v4（`^3.25 \|\| ^4`）                                       | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator)、[drizzle-zod](https://orm.drizzle.team/docs/zod) |
-| ORM        | Drizzle                      | 0.45.x                                                      | 见 §5                                                        |
-| 数据库     | PostgreSQL                   | 18                                                          | 见 §6                                                        |
-| 服务端状态 | TanStack Query               | v5                                                          | 未定义                                                       |
-| 视图状态   | Zustand                      | v5                                                          | 未定义                                                       |
-| 路由       | TanStack Router              | v1                                                          | 未定义                                                       |
-| 组件       | Radix UI + Tailwind CSS      | v4                                                          | 未定义                                                       |
-| 画布       | `@xyflow/react`              | v12                                                         | 未定义                                                       |
-| 富文本     | TipTap                       | v3（正文存 JSON）                                           | 未定义                                                       |
-| 认证       | Better Auth                  | 1.7.x（Drizzle adapter、数据库会话、自定义 access control） | 未定义                                                       |
-| API 文档   | `@hono/zod-openapi` + Scalar | —                                                           | [zod-openapi 示例](https://github.com/honojs/website/blob/main/examples/zod-openapi.md) |
-| 测试       | `bun test` + Playwright      | 单元/路由/集成用 Bun；E2E 用 Node                           | [Hono API](https://hono.dev/docs/api/hono)（`app.request` 约定） |
-| 质量       | Biome                        | 2.x（lint + format + 依赖方向规则）                         | 未定义                                                       |
-| 包管理     | pnpm                         | 12.x（**全仓库唯一**）                                      | 未定义                                                       |
-
----
+锁定版本的唯一总表见本文「3. Technical Context（运行时与工具链）」一节；本节不复制第二份表。
 
 ## 8. 升级与复核纪律
 
@@ -187,135 +165,17 @@
 | `ARCH-HONO-11` | 升级 Hono 大版本前，先用 Context7 重新拉一遍 §18 官方实践表对应条目，逐条核对本文表述是否仍成立 |
 | `ARCH-HONO-03` | 新增中间件前先查内置中间件选用表；内置件不采用时必须写明理由 |
 | `ARCH-BLD-01`  | 包管理纪律与 Dockerfile 必须一致：一律 pnpm，禁止 `bun install` / `bun add` / `bun.lock` |
-| `DM-GEN-06`    | 约束必须能在真实 PG 18 上稳定执行（见 `pg18-verification-log.md`） |
+| `DM-GEN-06`    | 约束必须能在真实 PG 18 上稳定执行（复现登记见 docs/verification/README.md） |
 
 ---
 
-> 本文的官方链接均来自 plan.md §18 与 data-model.md §19 原文；原文未给出链接的条目标注「未定义」，不做补链。
 
 ---
 
-## 9. 实测环境
+## 9. 实测与缺陷记录（已迁出）
 
-| 项         | 值                        |
-| ---------- | ------------------------- |
-| 数据库版本 | PostgreSQL 18.6           |
-| 发行版     | Ubuntu 18.6-1.pgdg24.04+2 |
-| 架构       | `x86_64-pc-linux-gnu`     |
-| 编译器     | GCC 13.3.0                |
+21 组 PG 18 实测与 D1–D12 缺陷清单的唯一副本见 [../decisions/0001-pg18-defects.md](../decisions/0001-pg18-defects.md)；复现方式与「待验证」登记见 [../verification/README.md](../verification/README.md)。本文不复制实测表。
 
-## 10. 验证对象统计
-
-| 对象类别   | 数量 |
-| ---------- | ---- |
-| 表         | 22   |
-| 外键       | 55   |
-| 触发器     | 42   |
-| `app` 函数 | 16   |
-| 视图       | 2    |
-| RLS 策略   | 21   |
-
-全部在**真实实例**上应用成功。
-
----
-
-## 11. 实测记录（21 组）
-
-| #    | 实测项                                  | 方法                                                         | 结果                                                         |
-| ---- | --------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| #01  | `uuidv7()` 可用；生成列必须 `STORED`    | `SELECT uuidv7() IS NOT NULL`；建含 `ltree` 的临时表用默认生成列 | `uuidv7()` 返回非空；**默认（VIRTUAL）生成列被拒：`SQLSTATE 0A000 virtual generated column "parent_path" cannot have a user-defined type`** → 必须显式 `STORED` |
-| #02  | `ON DELETE RESTRICT` 的 SQLSTATE        | 删除 owner 的 `organization_member` 行                       | **`SQLSTATE 23001`**，消息 `violates RESTRICT setting of foreign key constraint "fk_organization_owner"`（**不是 `23503`**） |
-| #03  | `updated_at` 严格递增                   | 同一事务内连续两次 UPDATE，比对 `updated_at`                 | `now()` 版两次相同；**`clock_timestamp()` 版严格递增**（t1 `…41.006905` → t2 `…41.048754` → t3 `…41.048862`） |
-| #04  | `NOT NULL` 具名约束进入 `pg_constraint` | 查 `pg_constraint`                                           | 存在 `contype='n'` 的具名约束：`person_id_not_null`、`person_organization_id_not_null`、`person_project_id_not_null`、`person_sex_not_null`、`person_created_at_not_null`、`person_updated_at_not_null` |
-| #05  | RLS 谓词写法对比                        | 分别执行两种写法                                             | **`= ANY ((SELECT f()))` 被拒：`SQLSTATE 42883 operator does not exist: uuid = uuid[]`**；**`= ANY (f())` ACCEPTED** |
-| #06  | RLS 谓词的执行计划                      | `EXPLAIN`                                                    | `Filter: (organization_id = ANY (app.visible_org_array()))`——常量折叠为 InitPlan，非逐行求值 |
-| #07  | RLS fail-closed 三路径                  | 无 GUC / 非法 GUC / 合法成员 GUC                             | 无上下文 → **0 行**；`app.user_id='not-a-uuid'` → **0 行**且 `current_user_id() IS NULL` 为 `true`；成员上下文 → **1 行** |
-| #08  | 邀请邮箱比较                            | `NULL <> 'x'` vs `NULL IS DISTINCT FROM 'x'`                 | `<>` → **不抛错（校验被跳过，漏洞成立）**；`IS DISTINCT FROM` → 判定为不一致（正确） |
-| #09  | 对称关系规范序                          | 插入 `spouse` B→A（而 A→B 已存在）                           | **`23514 ck_person_relation_symmetric_order`**               |
-| #09b | 关系自环                                | `from_person_id = to_person_id`                              | **`23514 ck_person_relation_not_self`**                      |
-| #10  | 世系二元反向环                          | 事务内插入 `biological_parent` A→B 与 B→A，提交              | **提交时 `GX001`**：`世系关系会形成祖先环路`（DETAIL 含 project/from/to/kind） |
-| #10b | 非世系反向边允许                        | `step_parent` 双向各插一条                                   | **两次都成功**（表中 2 行）                                  |
-| #11  | `ADD CONSTRAINT ... NOT VALID`（FK）    | 对 `person` 加一条重复的复合 FK                              | **ACCEPTED**                                                 |
-| #11b | `VALIDATE CONSTRAINT`                   | 验证上一条                                                   | **ACCEPTED**                                                 |
-| #11c | `ADD CONSTRAINT ... NOT VALID`（CHECK） | 加 `CHECK (surname <> 'x') NOT VALID`                        | **ACCEPTED**                                                 |
-| #12  | 复合 GiST 被真正用于子树查询            | `EXPLAIN` 子树查询                                           | `Index Scan using node_path_gist on node`，`Index Cond: ((project_id = …) AND (lineage_id = …) AND (path <@ '0020'))`——**三列全部下推，无额外 Filter** |
-| #13  | `EXPLAIN ANALYZE` 自动含 `BUFFERS`      | `EXPLAIN (ANALYZE, TIMING off, COSTS off)`                   | `Aggregate`、`Seq Scan on person`、`Planning` **三者都输出 `Buffers: shared hit=1`** |
-| #14  | FK → 索引覆盖                           | 逐条比对 `pg_constraint.conkey` 与 `pg_index.indkey` 前缀    | **55 条外键：37 条 YES，18 条 `** MISSING **`**（全部为 17 条 `fk_*_project` 与 `fk_organization_owner`，处置见 §11.2） |
-| #15  | 表清单与 RLS 覆盖                       | 查 `pg_tables` / `pg_policies`                               | `tables = 22`，`rls_on = 21`（`organization_member` 未计入 DO 循环但已单独 `ENABLE`+`FORCE`），`policies = 21` |
-| #16  | 触发器总数                              | 查 `pg_trigger`（`tgisinternal = false`，`public` schema）   | **42 个**，与 §9.2 逐条一致                                  |
-| #17  | `ALTER CONSTRAINT ... SET NOT VALID`    | 直接执行                                                     | **`syntax error at or near "SET"`——PG 18 没有这个子句**      |
-| #17b | `VALIDATE CONSTRAINT` 对具名 `NOT NULL` | `VALIDATE CONSTRAINT person_surname_not_null`                | **`42704 constraint "person_surname_not_null" of relation "person" does not exist`**（`NOT NULL` 不参与 `VALIDATE` 候选集） |
-| #18  | `ON DELETE SET NULL (column_list)`      | 建带列清单的外键                                             | **ACCEPTED**                                                 |
-| #19  | 生成列 VIRTUAL vs STORED                | 见 #01                                                       | 虚拟 + `ltree` → `0A000`；`STORED` → 全部 22 表应用成功      |
-| #20  | Drizzle 生成列默认模式                  | 检查 `drizzle-orm@0.45.4` 的 `pg-core/columns/common.js`     | 第 28 行**硬编码 `mode: "stored"`**——PG 方言默认已是 STORED，但本文仍要求显式书写 |
-| #21  | `DROP NOT NULL`                         | `ALTER TABLE … ALTER COLUMN surname DROP NOT NULL`           | ACCEPTED                                                     |
-
----
-
-## 12. §17.1 实测暴露的 1.1 版真实缺陷汇总（D1–D12）
-
-| 编号 | 缺陷                                                      | 复现条件                     | 影响                                                         |
-| ---- | --------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------ |
-| D1   | RLS 核心谓词无法执行（`42883`）                           | 直接执行 1.1 版谓词          | **全部 RLS 隔离失效**（策略创建即报错，或退化为无策略）      |
-| D2   | `ALTER TABLE … ADD CONSTRAINT` 子句顺序错误               | 执行 1.1 版 §5.1 DDL         | **DDL 无法应用**                                             |
-| D3   | 生成列未指定 `STORED`                                     | 在 PG 18 建 `ltree` 生成列   | **`0A000`，表无法创建**                                      |
-| D4   | `RESTRICT` 错误码误判                                     | 删除 owner 成员行            | 应用层把保护机制报错当成数据错误                             |
-| D5   | `updated_at` 不递增                                       | 同事务两次 UPDATE            | 违反验收 #31；乐观锁失效                                     |
-| D6   | 邀请邮箱 NULL 绕过                                        | 用户邮箱为 NULL 时兑换       | **可兑换他人邀请**                                           |
-| D7   | `invite` 列级 UPDATE 旁路                                 | 业务角色直接 UPDATE          | **绕过邮箱校验与并发抢占**                                   |
-| D8   | `FOR NO KEY UPDATE` 权限不匹配                            | 以 `rls_definer` 调用        | **所有权转移不可用**                                         |
-| D9   | `person_media` / `article_page_media` 缺 Project 复合外键 | 插入脱离 Project 的关联行    | **跨 Project 数据污染**                                      |
-| D10  | `book_release` 主键形态不一致                             | 跨 Project 引用 book_release | **Project Scope 约束被绕过**                                 |
-| D11  | 4 个外键缺引用侧索引                                      | 删除被引用行                 | 删除操作全表扫描，锁持有期放大阻塞                           |
-| D12  | `ALTER CONSTRAINT … SET NOT VALID` 语法不存在             | 执行该语句                   | **迁移脚本无法应用**（此条是 1.2 初稿自身引入，已在 §16 #26 修正） |
-
----
-
-> 本文中所有条目均出自 [`schema.md`](data/schema.md) §17 / §17.1 原文；测试项编号、方法与结果未作改写。
-
----
-
-## 13. v1.1 → v1.2 缺陷清单与实测验证摘要
-
-本节汇总 v1.1 → v1.2 期间在真实 PostgreSQL 18.6 实例上发现的 **12 项可复现缺陷**。
-其中 4 项属致命或安全级——**RLS 核心谓词 SQL 报错**意味着整套多租户隔离失效。
-
-> 修复记录见 [`schema.md`](data/schema.md) §16 修订记录（26 项）与 §17 实测记录（21 组）。
-
-| #    | 位置  | 缺陷                                                         | 复现                                                    | 影响                                         | v1.2 修复                                                    |
-| ---- | ----- | ------------------------------------------------------------ | ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------ |
-| D1   | §8.2  | RLS 谓词无法执行                                             | 执行 `= ANY ((SELECT f()))`                             | **多租户隔离整体失效**                       | 改 `= ANY (f())`；EXPLAIN 显示常量折叠为 InitPlan            |
-| D2   | §5.1  | `ADD CONSTRAINT` 子句顺序非法                                | `... DEFERRABLE INITIALLY IMMEDIATE ON DELETE RESTRICT` | **DDL 语法错误，无法建表**                   | 改 `ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE`       |
-| D3   | §5.11 | 生成列未指定 `STORED`                                        | PG 18 建 `ltree` 生成列                                 | **`0A000`，表无法创建**                      | 全部显式 `STORED`；Drizzle 侧显式 `{ mode: 'stored' }`       |
-| D4   | §4.6  | `23001` 与 `23503` 并列                                      | 删除 owner 成员行                                       | 应用层无法区分「保护机制触发」与「数据错误」 | 两码分离，映射表按「SQLSTATE + 约束名」两级匹配              |
-| D5   | §4.4  | `updated_at` / `audit_log.created_at` 用 `now()`             | 同事务两次 UPDATE                                       | 时间戳不变；违反验收 #31；乐观锁失效         | 改 `clock_timestamp()`，实测严格递增                         |
-| D6   | §5.3  | 邮箱校验用 `<>`                                              | 用户邮箱为 NULL 时兑换                                  | **可兑换他人邀请**                           | 改 `IS DISTINCT FROM`；新增验收 #28a                         |
-| D7   | §8.4  | `genealogy_app` 可 UPDATE `invite`                           | 直接改 `status='accepted'`                              | **绕过邮箱校验与并发抢占**                   | 收回权限 + `app.revoke_invite()`；新增验收 #28b              |
-| D8   | §8.5  | `FOR NO KEY UPDATE` 与列级授权不匹配                         | 以 `rls_definer` 调用                                   | **所有权转移不可用**                         | 改 CAS 条件更新；新增验收 #50                                |
-| D9   | §4.3  | 两张关联表缺 Project 复合外键                                | 插入脱离 Project 的关联行                               | **跨 Project 数据污染**                      | 补齐两条外键                                                 |
-| D10  | §3.1  | `book_release` 主键形态不一致                                | 跨 Project 引用 book_release                            | **Project Scope 约束被绕过**                 | 主键改 `(project_id, id)` + 补外键                           |
-| D11  | §11   | 4 条外键缺引用侧索引                                         | 删除被引用行                                            | 全表扫描，锁持有期放大阻塞                   | 补建 4 个索引                                                |
-| D12  | §2.1  | （v1.2 初稿自身引入）误写 `ALTER CONSTRAINT ... SET NOT VALID` | 执行该语句                                              | 迁移脚本无法应用                             | 修正为 `ADD ... NOT VALID` → `VALIDATE`；并明确 `NOT NULL` 不能走此路线 |
-
----
-
-**环境**：PostgreSQL 18.6 (Ubuntu 18.6-1.pgdg24.04+2)，真实实例。
-
-**应用成功**：22 张表 + 55 条外键 + 42 个触发器 + 16 个 `app` 函数 + 2 个视图 + 21 条 RLS 策略。
-
-| 验证类别     | 代表性结论                                                   |
-| ------------ | ------------------------------------------------------------ |
-| PG 18 新语义 | VIRTUAL 生成列 + `ltree` → `0A000`；`RESTRICT` → `23001`；`EXPLAIN ANALYZE` 自动出 `Buffers`；`ADD ... NOT VALID` + `VALIDATE` 可用；`ALTER CONSTRAINT ... SET NOT VALID` **语法错误** |
-| 约束正确性   | 世系二元反向环 → 提交时 `GX001`；非世系反向边 → 两次均成功；自环 → `23514 ck_person_relation_not_self`；对称反向 → `23514 ck_person_relation_symmetric_order`；父路径不存在 → `23503 fk_node_parent` |
-| 结构可行性   | STORED 生成列 + `ltree` + **延迟自引用外键**完全可行；单条 `UPDATE ... SET path = CASE id ... END` 重排 3 行成功，`parent_path` 自动重算 |
-| 索引效果     | 复合 GiST `(project_id, lineage_id, path)` 的三列条件**全部下推为 Index Cond**，无额外 Filter |
-| RLS          | 无上下文 → 0 行；非法 GUC → 0 行且 `current_user_id() IS NULL`；成员上下文 → 1 行（三条路径均 fail-closed） |
-| 并发安全     | CAS 所有权转移：并发时一个成功、一个 `GX010`                 |
-| 元数据       | 22 表 / 21 RLS 表 / 21 策略 / 42 触发器 / 55 外键（37 有索引 / 18 例外）/ 83 索引 / 70 CHECK / 16 函数 |
-
-> 完整 21 组实测记录见 `data-model.md` §17。
-
----
 ## 3. Technical Context（运行时与工具链）
 
 | 层         | 选型                         | 版本                  | 为什么是它                                                   |

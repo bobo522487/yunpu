@@ -137,8 +137,8 @@
 ## 10. 文档边界
 
 - **本文定义**：做什么、验收标准、明确不做、成功标准。
-- **本文不定义**：表结构（[`schema.md`](../architecture/data/schema.md)）、分层与依赖方向（[`overview.md`](../architecture/overview.md)）、端点形状（`contracts/api.md`）、技术选型依据（`research.md`）。
-- **与 `plan.md` 的分工**：`plan.md` §1.1 的「明确不做」表**已删除**，改为引用本文 `OOS-01`..`OOS-19`；`plan.md` 只保留架构特有的理由与复评条件。
+- **本文不定义**：表结构（[`schema.md`](../architecture/data/schema.md)）、分层与依赖方向（[`overview.md`](../architecture/overview.md)）、端点形状（[`endpoints.md`](../architecture/api/endpoints.md)）、技术选型依据（[`stack.md`](../architecture/stack.md)）。
+- **与架构文档的分工**：「明确不做」的唯一权威副本见 [out-of-scope.md](out-of-scope.md)（`OOS-01`..`OOS-19`）；架构文档只引用编号，不复制表格。
 ## 4. plan.md 未定义项汇总
 
 以下内容 plan.md §8 未给出，需在后续 spec 中补齐，不得在实现阶段自行编造：
@@ -157,4 +157,4 @@
 
 ---
 
-> 本文所有内容均出自 plan.md；未在原文出现的信息一律标注「未定义」。
+> 本文的需求条目以原始规格为准；待补齐的契约项见本文 §4，Phase 0 结论见 [../architecture/stack.md](../architecture/stack.md)。

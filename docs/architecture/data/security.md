@@ -77,7 +77,6 @@ BEGIN
   END IF;
   RETURN v_raw::uuid;
 EXCEPTION WHEN invalid_text_representation THEN
-  RETURN NULL;                 -- 非法上下文 → 视为无上下文 → 策略 fail-closed
 END;
 $$;
 

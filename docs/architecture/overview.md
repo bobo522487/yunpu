@@ -21,17 +21,7 @@
 
 ### 1.1 明确不做
 
-**「明确不做」清单的唯一权威副本在 [`functional.md`](../requirements/functional.md) §8，编号 `OOS-01`..`OOS-19`。** 本文不复制该表——同一主题只在**一个**文档里定义（宪法 Article VI）。
-
-架构视角补充的复评条件（spec.md 未覆盖的部分）：
-
-| 编号     | 不做                        | 架构侧理由                                     | 复评触发条件                         |
-| -------- | --------------------------- | ---------------------------------------------- | ------------------------------------ |
-| `OOS-08` | 微服务                      | 单容器单进程，一个镜像一个端口一个健康检查     | 出现需要独立扩缩容的热点             |
-| `OOS-09` | 消息队列 / Redis / 任务框架 | 没有第二个消费方；确有异步需求时先用 PG 表队列 | 出现第二个消费方                     |
-| `OOS-16` | 多数据库 / 分库分表         | 一个 PostgreSQL 能装下十年数据                 | 连接数或单表规模逼近实测上限         |
-| `OOS-17` | 第二套测试运行器            | `bun test` 能连真 PG 跑集成                    | 出现 `bun test` 无法覆盖的测试类型   |
-| `OOS-18` | 多套画布渲染路径            | 三条路径要三个人养；只做一条，等信号出现再换   | 实测性能或交互需求确实需要第二条路径 |
+「明确不做」唯一权威副本见 [out-of-scope.md](../requirements/out-of-scope.md)（`OOS-01`..`OOS-19`），本文仅引用编号，不复制表格。
 
 ### 1.2 五条硬约束
 
@@ -136,167 +126,11 @@ PostgreSQL 18
 
 ## 6. 数据层边界
 
-### 6.1 权威与形态
-
-数据层的确切表结构、字段、约束、索引、视图、RLS 策略和数据库函数，以《云谱数据模型》为准。本节只定义：
-
-- 22 张表分别属于哪个模块；
-- 哪些不变量必须在数据库里执行；
-- 哪些删除是允许的、哪些必须被拒绝；
-- 查询与索引的使用边界。
-
-**不在这里重复字段清单。** 架构文档与数据模型出现冲突时，以数据模型为准。
-
-### 6.2 表归属
-
-见数据模型 §3.1 的「归属模块」列（由 `MODULES` 生成）。此处不重复手抄。
-
-### 6.3 模型的关键形状
-
-| 决策            | 形状                                                         | 规格             |
-| --------------- | ------------------------------------------------------------ | ---------------- |
-| 主键            | 实体用 `id uuid default uuidv7()`；项目内容表用 `(project_id, id)`；纯关联表用业务键复合主键 | `DM-SCP-*`       |
-| 租户/项目 scope | 内容表同时带 `organization_id` 与 `project_id`，由复合外键锁定一致；scope 不可迁移 | `DM-SCP-01`      |
-| 跨项目引用      | 所有实体外键带 `project_id`；跨 Project 引用由数据库拒绝     | `DM-SCP-03`      |
-| 关系            | 一张 `person_relation`；7 种 kind；对称类强制规范顺序；兄弟姐妹是派生查询，不落库 | `DM-REL-*`       |
-| 位置            | `node.path ltree` 是投影；关系边是事实；根 = `parent_path IS NULL` | `DM-NOD-*`       |
-| 世次            | 由 `nlevel(path)` 与 `lineage.base_generation` 读时派生，不落人物列 | `DM-NOD-06`      |
-| 姓名            | `person_name.kind` 为 formal/courtesy/art/milk/genealogy/posthumous/other | `DM-NAM-01`      |
-| 事件            | 主体是 `person_id` 或 `relation_id`，二选一                  | `DM-EVT-02`      |
-| 引用            | `source_citation` 的四个目标（人物、姓名、关系、事件）恰好一个；媒体扫描件是附加定位 | `DM-EVT-02`      |
-| 媒体            | `media_asset` + 人物/页面关联表；对象 key 全局唯一           | `DM-MED-03`      |
-| 出版            | `book_release` 快照不可变；作废与清除走受控函数              | `DM-BOK-01`/`02` |
-| 审计            | `audit_log` 只追加；分强审计与尽力而为两级                   | `DM-AUD-01`/`02` |
-| 删除            | 无软删除；依赖关系用 RESTRICT / CASCADE / SET NULL 明确表达  | `DM-GEN-08`      |
-| 排序            | 展示顺序**不唯一**，按 `(sort_order, id)` 排序               | `DM-REL-04`      |
-
-**不建 Family 表。** 家庭是 `person_relation` 的组合视图；兄弟姐妹、祖孙、堂表亲都是派生查询，不落库。
-
-### 6.4 关键不变量与执行者
-
-完整清单见数据模型 §7（43 条，逐条带编号与执行者）。架构侧只列「架构负责执行」的部分：
-
-| 不变量                             | 执行者                                | 规格             |
-| ---------------------------------- | ------------------------------------- | ---------------- |
-| 跨 Organization 不可见             | RLS + `app.visible_org_array()`       | `DM-TEN-01`      |
-| scope 不可迁移                     | 触发器 `app.guard_scope_immutable()`  | `DM-SCP-01`      |
-| 关系排序不唯一                     | 无唯一索引；查询按 `(sort_order, id)` | `DM-REL-04`      |
-| 世系父边不能形成环（含反向二元环） | advisory lock + 延迟递归 CTE 触发器   | `DM-REL-01`/`05` |
-| 出版快照不可修改                   | 权限回收 + 快照守卫触发器             | `DM-BOK-01`      |
-| 出版记录不可直接删除               | `REVOKE UPDATE, DELETE` + 受控函数    | `DM-BOK-02`      |
-| 审计只追加                         | 权限回收 + 追加守卫触发器             | `DM-AUD-02`      |
-| 媒体被引用时不可删除               | 复合外键 `ON DELETE RESTRICT`         | `DM-MED-04`      |
-
-### 6.5 删除语义
-
-见数据模型 §10。架构侧补充纪律：
-
-- 删除组织、谱系、谱书、人物**不级联删业务事实**；谱系只级联 `node`（位置不是事实）。
-- 对象存储字节在**数据库提交后**清理；先删字节再提交会产生悬空引用。
-- 物理删除 Project 前必须显式预览和确认。
-
-### 6.6 索引策略
-
-> `ARCH-IDX-01`（1.1 修正，统一口径）：索引按**查询模式**建。旧版本文写「RLS 谓词列必须是索引首列：内容表 `organization_id`」，而数据模型写「不设机械规则，按查询模式建」，且实际索引全部以 `project_id` 开头——**两份文档互相否定**。事实上 `organization_id` 由 `project_id` 经复合外键强制推出，查询永远先按 project 收敛，RLS 的 org 谓词是安全网而非访问路径。**现以数据模型 §11 为唯一说法，机械规则删除。** 规则冲突比没有规则更糟，因为执行者不知道听谁的。
-
-- 谱系/编目路径用 GiST；按父路径查子节点用 B-tree `(project_id, lineage_id, parent_path)`。
-- 关系边双向查询：`(project_id, from_person_id, kind)` 与 `(project_id, to_person_id, kind)`。
-- 主姓名、每人每 Lineage 的 primary Node、邀请邮箱等用部分唯一索引。
-- **不建** `uq_person_relation_sort_order`：展示顺序不是事实，唯一约束会制造 O(n) 重排工作，且在对称关系上语义不成立（`DM-REL-04`）。
-- 不为「以后可能搜」预置冗余搜索列。人名搜索基于 `person_name.value`；是否加 `pg_trgm` 索引由数据模型的索引清单决定。
-- 索引按查询模式建，用 `EXPLAIN (ANALYZE, BUFFERS)` 验证；不为了用新特性调整索引顺序。
-
-### 6.7 PostgreSQL 18 的能力与运维约束
-
-| 能力          | 用法                                                         |
-| ------------- | ------------------------------------------------------------ |
-| `uuidv7()`    | 所有主键默认值；时间有序，可直接当 keyset 游标               |
-| `ltree`       | `node.path` / `book_catalog.path`；`nlevel`、`subpath`、GiST |
-| RLS           | 租户隔离；`FORCE ROW LEVEL SECURITY`；策略谓词走索引         |
-| 生成列        | `parent_path` 必须是 **STORED**，因为它参与唯一约束与外键；虚拟列不能建索引 |
-| 延迟约束      | 自引用父外键、owner 外键；只在需要的事务内 `SET CONSTRAINTS ... DEFERRED` |
-| 递归 CTE      | 祖先/后代查询与环检查                                        |
-| advisory lock | 事务级 `pg_advisory_xact_lock`，串行化同 Project 的世系写入（`DM-REL-05`） |
-| 锁超时        | `lock_timeout` / `statement_timeout` / `idle_in_transaction_session_timeout` 连接级统一设置（`DM-REL-06`） |
-| AIO           | 顺序扫描、位图堆扫描、vacuum 的吞吐优化；按实际负载开启      |
-
-**运维注意**：`initdb` 默认启用数据校验和；MD5 密码认证已弃用；`VACUUM/ANALYZE` 会处理继承子表，需要只处理当前表时用 `ONLY`；`COPY FROM` 不再把单独的 `.` 当 EOF。把这些写进运维手册，不靠记忆。
-
----
+**单一真相源**：确切表结构、字段、约束与视图见 [data/schema.md](data/schema.md)；不变量与删除语义见 [data/invariants.md](data/invariants.md)；索引见 [data/indexes.md](data/indexes.md)；错误码见 [data/errors.md](data/errors.md)；迁移边界见 [data/migrations.md](data/migrations.md)。架构文档与数据模型冲突时以数据模型为准；本文不复制字段清单、不变量表、索引策略、删除语义或 PG 18 能力表（宪法 Article VI）。
 
 ## 7. 多租户与 RLS
 
-### 7.1 角色
-
-| 角色                            | 职责                                                         |
-| ------------------------------- | ------------------------------------------------------------ |
-| 迁移角色                        | 创建/修改 schema、表、索引、策略、函数、触发器；只用于迁移   |
-| `genealogy_app`                 | 业务 API 数据库角色；非表 owner，无 `BYPASSRLS`              |
-| `genealogy_api`                 | 登录角色；只被授予 `genealogy_app`，无直接表权限；连接后 `SET LOCAL ROLE genealogy_app` |
-| `rls_definer`                   | `NOLOGIN BYPASSRLS`；`SECURITY DEFINER` 函数的属主。权限清单见数据模型 §8.5 |
-| `auth_service` / `auth_runtime` | Better Auth 专用连接；不与业务连接共用                       |
-
-### 7.2 统一谓词
-
-```sql
-ALTER TABLE person ENABLE ROW LEVEL SECURITY;
-ALTER TABLE person FORCE ROW LEVEL SECURITY;   -- 表 owner 也受管
-
-CREATE POLICY tenant_isolation ON person
-  AS PERMISSIVE FOR ALL TO genealogy_app
-  USING      (organization_id = ANY (app.visible_org_array()))
-  WITH CHECK (organization_id = ANY (app.visible_org_array()));
-```
-
-要点：
-
-1. **谓词必须写 `= ANY (app.visible_org_array())`，不能写 `= ANY ((SELECT app.visible_org_array()))`**。后者被 PostgreSQL 解析为表子查询而非标量数组表达式，实测报 `42883 operator does not exist: uuid = uuid[]`——核心租户谓词无法执行。正确写法被常量折叠为 InitPlan 求值一次。详见数据模型 §2.1 #1、§17 #05。
-2. `FORCE ROW LEVEL SECURITY`：否则表 owner 绕过 RLS。业务连接必须用非 owner 角色。
-3. 上下文缺失时返回 `'{}'::uuid[]`，默认拒绝，不报错、不返回全表。
-4. `organization` 表自身用 `id = ANY (...)`；其余业务表用 `organization_id`。
-5. 所有业务表都启用 `ENABLE` + `FORCE ROW LEVEL SECURITY`。
-
-### 7.3 `app.visible_org_array()`
-
-```sql
-CREATE FUNCTION app.visible_org_array()
-RETURNS uuid[]
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = pg_catalog
-AS $$
-  SELECT COALESCE(array_agg(om.organization_id), '{}'::uuid[])
-  FROM public.organization_member om
-  WHERE om.user_id = app.current_user_id()
-$$;
-```
-
-`app.current_user_id()` 单独解析 GUC：为空 → NULL；不是合法 UUID → 捕获 `22P02` 返回 NULL。**不能让非法 GUC 直接抛错**——那会变成 500 而不是「拒绝访问」。两种情况的结果一致：无可见组织（fail-closed）。完整定义见数据模型 §8.3。
-
-- 属主 `rls_definer`，`BYPASSRLS`，`NOLOGIN`。
-- 显式 `public.organization_member`，不依赖 `search_path`。
-- `REVOKE ALL ... FROM PUBLIC`；只 `GRANT EXECUTE ... TO genealogy_app`。
-- `rls_definer` 需要 `public` schema 的 `USAGE` 与 `organization_member` 的 `SELECT`。
-
-### 7.4 请求事务
-
-```ts
-export async function withUser<T>(
-  userId: string,
-  fn: (tx: Tx) => Promise<T>,
-): Promise<T> {
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
-    await tx.execute(sql`set local role genealogy_app`);
-    return fn(tx);
-  });
-}
-```
-
-- `set_config(..., true)` 的 `is_local` 必须是 `true`。
-- 所有租户查询必须在同一事务内完成。
-- 不接受客户端传入的 `organization_id` 作为隔离依据；组织可见性只由成员关系推导。
+**唯一权威**：RLS 策略、角色、租户谓词与请求事务见 [data/security.md](data/security.md)；本文只保留 7.5 / 7.6 两节的 RBAC 边界，不复制策略表。
 
 ### 7.5 RLS 与 RBAC 的边界
 
@@ -316,7 +150,6 @@ export async function withUser<T>(
 
 ### 7.6 安全边界
 
-- 自定义 GUC 是应用连接可设置的上下文，不是数据库认证身份。持有业务凭据且能执行任意 SQL 的攻击者可以伪造 `app.user_id`；RLS 降低遗漏租户条件的风险，但不能单独抵御凭据失陷。
 - 超级用户和 `BYPASSRLS` 角色始终绕过 RLS；它们只用于迁移、备份和函数属主，不作为业务连接。
 - 业务视图必须 `security_invoker = true`；否则视图属主权限会绕过 RLS。
 - `SECURITY DEFINER` 函数：属主 `rls_definer`，`SET search_path = pg_catalog`，对象全部 schema-qualified，撤销 `PUBLIC` 执行权限。`rls_definer` 的完整权限清单见数据模型 §8.5，并由 `db/verify/permissions.sql` 断言。
@@ -434,7 +267,6 @@ Node 的 `path` 是固定四位数字段，兄弟步长 10。新增或移动节�
 
 **为什么用 advisory lock 而不是锁 project 行**（`ARCH-CC-01`）：
 
-PostgreSQL 的外键检查机制会对被引用的 `project` 行加 `FOR KEY SHARE` 锁（官方锁冲突矩阵 Table 13.3 中 `FOR UPDATE` 与 `FOR KEY SHARE` 冲突）。因此 `SELECT ... FROM project WHERE id = ... FOR UPDATE` 的实际影响远大于预期：**该 Project 下所有表的所有 INSERT（人物、节点、谱文、媒体……）都会在外键检查上排队**。你以为锁的是「世系变更」，实际锁住的是整个项目的写入。
 
 改法：
 
@@ -613,17 +445,4 @@ expect(res.status).toBe(201);
 
 ## 22. 与上游规格的对应
 
-| `spec.md` 需求     | 本文对应章节                                                 | 状态                  |
-| ------------------ | ------------------------------------------------------------ | --------------------- |
-| `FR-PER-*`         | §5（`genealogy` 模块）、§6.3                                 | 数据模型 §5.6、§5.7   |
-| `FR-REL-*`         | §5（`genealogy`）、§11.3                                     | 数据模型 §5.8、§9.2   |
-| `FR-LIN-*`         | §6.3、§9.2                                                   | 数据模型 §5.10、§5.11 |
-| `FR-SRC-*`         | §5（`source` 模块）                                          | 数据模型 §5.12、§5.13 |
-| `FR-ART-*`         | §5（`article`）、§11.1                                       | 数据模型 §5.14、§5.15 |
-| `FR-BOK-*`         | §5（`book`）、§11.6                                          | 数据模型 §5.19–§5.21  |
-| `FR-MED-*`         | §5（`media`）、§12.1、§15.1.1                                | 数据模型 §5.16        |
-| `FR-ORG-*`         | §5（`organization`）、§10、§11.4                             | 数据模型 §5.1–§5.4    |
-| `FR-TEN-*`         | §7 全部                                                      | 数据模型 §8           |
-| `FR-AUD-01`        | §12.2                                                        | 数据模型 §5.22        |
-| `NFR-*`            | §3（技术栈）、§8.3（错误）、§8.7（分页）、§15（部署）、§14（测试） | —                     |
-| `OOS-01`..`OOS-19` | §1.1（架构侧理由补充）                                       | spec.md §8 为主       |
+需求 ↔ 验收 ↔ 实现的追溯矩阵唯一权威见 [../requirements/acceptance.md](../requirements/acceptance.md)；本文不复制第二份映射表。

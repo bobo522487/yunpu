@@ -129,7 +129,6 @@ const app = new Hono<AppEnv>()
 const res = await app.request(
   '/api/v1/lineages/l1/nodes',
   { headers: { Authorization: 'Bearer test-token' } },
-  { db: fakeDb, services: fakeServices, logger: fakeLogger, storage: fakeStorage },
 );
 ```
 
@@ -198,81 +197,11 @@ app.onError((err, c) => {
 
 **`HTTPException.getResponse()` 的坑**（官方文档明确标注）：它**不感知 `Context`**，因此在 `Context` 上已设置的响应头不会出现在它生成的 `Response` 里。本项目**不使用** `getResponse()`，统一用 `c.json()` 自行构造响应——这样安全响应头（`secureHeaders`）与 `X-Request-Id` 才不会丢。
 
-数据库错误集中映射——**两级：先看 SQLSTATE，再看约束名**（`ARCH-ERR-01`）：
-
-**错误码的唯一权威在数据模型 §9.4**，本文不维护第二份映射表（`ARCH-AR-06` 单一真相源）。下表只说明**落地方式**：SQLSTATE 层如何归类、约束名如何做第二级细化。
-
-```ts
-// 第一级：SQLSTATE → 应用错误码。
-// 应用错误码的**取值集合**来自 data-model §9.4，由 scripts/gen-sql.ts 生成，
-// 不在本文件手写第二份（ARCH-AR-06）。
-// 本表只做「SQLSTATE 归类」，不重新定义错误码语义与 HTTP 状态——那两件事在 data-model §9.4。
-const PG_SQLSTATE_BUCKET: Record<string, ErrorCode[]> = {
-  '23505': ['DUPLICATE_PRIMARY_NAME', 'INVITE_ALREADY_PENDING', 'RELATION_DUPLICATE'],
-  '23503': ['NODE_PARENT_MISSING', 'PROJECT_SCOPE_VIOLATION', 'BOOK_HAS_RELEASE'],
-  '23001': ['OWNER_MEMBER_REQUIRED'],
-  '23514': ['SELF_RELATION', 'SYMMETRIC_ORDER', 'EVENT_SUBJECT_INVALID', 'BLANK_TEXT'],
-  '42501': ['FORBIDDEN'],
-  '22P02': ['INVALID_INPUT'],
-  '55P03': ['LOCK_TIMEOUT'],
-  '57014': ['STATEMENT_TIMEOUT'],
-  'GX001': ['LINEAGE_CYCLE'],
-  'GX002': ['SCOPE_IMMUTABLE'],
-  'GX003': ['SNAPSHOT_IMMUTABLE'],
-  'GX004': ['APPEND_ONLY'],
-  'GX005': ['TARGET_INVALID'],
-  'GX006': ['FORBIDDEN'],
-  'GX007': ['INVALID_STATE'],
-  'GX008': ['NO_AUTH_CONTEXT'],
-  'GX009': ['INVITE_EMAIL_MISMATCH'],
-  'GX010': ['CONCURRENT_MODIFICATION'],
-  'GX011': ['ARTIFACT_MISSING'],
-};
-```
-
-> **`23001` 与 `23503` 必须分开**（data-model §9.4 v1.2 修正）。合并处理会让「引用了被保护的对象」和「级联动作被拒」返回同一个错误，用户看到「无法删除」却不知道是保护机制在起作用还是数据有问题。
->
-> **`GX010` 同时覆盖邀请兑换与所有权转移**两条并发抢占失败路径——两者的共同语义是「操作已被并发请求抢先」，不是「邀请已被兑换」。文案若只写邀请，会让所有权转移的 409 变成误导。
->
-> **`GX011` 是 500 而非 409**：产物字节缺失是**服务端状态不一致**，不是客户端可以重试解决的问题。归到 409 会诱导客户端无限重试。
-
-**第二级：约束名 → 具体文案。** 约束一律具名（`DM-GEN-13`），所以这条映射能落到具体原因。约束名以数据模型 §5 与实际 DDL 为准：
-
-| 约束名                               | 文案                            | DDL 中的类型 |
-| ------------------------------------ | ------------------------------- | ------------ |
-| `uq_invite_pending_email`            | 该邮箱已有待处理邀请            | 唯一索引     |
-| `uq_person_name_primary`             | 该人物已有主显示名              | 唯一索引     |
-| `uq_node_one_primary`                | 该人物在本谱系已有 primary 节点 | 唯一索引     |
-| `uk_node_path`                       | 该谱系下已存在相同路径的节点    | 唯一索引     |
-| `uk_person_name_value`               | 该人物已有完全相同的姓名        | 唯一索引     |
-| `uk_person_relation_kind`            | 这两位人物之间已存在同类关系    | 唯一索引     |
-| `uk_book_release_version`            | 该谱书已存在相同版本号          | 唯一索引     |
-| `uk_media_asset_object_key`          | 该对象 key 已被占用             | 唯一索引     |
-| `ck_person_relation_symmetric_order` | 对称关系只能存一种方向          | CHECK        |
-| `ck_event_subject_xor`               | 事件必须且只能关联一个主体      | CHECK        |
-| `ck_source_citation_target_xor`      | 一条引用只能指向一个事实        | CHECK        |
-| `ck_book_catalog_content_match`      | 目录项类型与内容引用不匹配      | CHECK        |
-| `fk_organization_owner`              | 新 owner 必须是组织成员         | 外键         |
-
-> **唯一索引也会上报 `constraint` 名**：PostgreSQL 对唯一索引冲突报的 `driverError.constraint` 是**索引名**，不是表约束名。因此 `uq_*` / `uk_*` 同样进入第二级匹配表。
->
-> **`uq_person_relation_sort_order` 不存在**——展示顺序不是事实，唯一约束会制造 O(n) 重排工作（`DM-REL-04`）。若这张表里出现了它，说明有人把已删除的约束加回来了。
-
-- 匹配顺序：先查 `PG_CONSTRAINT_MESSAGES[constraint_name]`，命中则用具体文案；否则退回 `PG_ERROR_MAP[sqlstate]`。
-- PostgreSQL 的 `driverError` 里带 `constraint` 与 `code` 字段，取 `constraint` 做第二级匹配。
-- `ON DELETE RESTRICT` 在 PostgreSQL 18 报 `23001`，不是 `23503`；两个都映射，避免遗漏。
+数据库错误集中映射的唯一权威见 [data/errors.md](data/errors.md)（SQLSTATE → 应用错误码 → HTTP 状态 → 用户文案）。本文只保留上文 `AppError` 与 `onError` 的落地骨架，不复制第二份映射表，也不引用仓库中未定义的映射常量。
 
 ### 8.4 依赖注入
 
-依赖注入的完整约定见 §8.1.1（为什么不用 `createFactory`）与 §8.1.2（组装）。这里只列纪律：
-
-| 纪律                                                         | 理由                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 运行时依赖（`db` / `services` / `logger` / `storage`）通过 `AppEnv['Variables']` + `c.get()` 获取 | 作用域限定在真正使用它的 app 实例；`ContextVariableMap` 全局增强会掩盖 `undefined`（§8.1.1） |
-| 依赖在**组装时**注入，不在模块顶层 new                       | 模块级单例让测试无法替换数据库，也让依赖关系隐形             |
-| service 层通过参数接收依赖，不从 `c` 里取                    | service 不感知 HTTP（§5.2）；路由负责把 `c.get('services')` 转成参数 |
-| 测试用 `app.request(path, init, env)` 注入 mock              | 官方调用约定，无额外 DI 框架（§14.1）                        |
-| 共享中间件用 `factory.createMiddleware` 拿类型               | 自动带上 `AppEnv` 类型，不必每个文件重复标注泛型             |
+依赖注入的完整约定见 [runtime.md](runtime.md) §8.1.1 与 §8.1.2；本文不复制纪律表。
 
 ### 8.5 Schema 单一真相源
 
@@ -365,42 +294,4 @@ export const getNodeRoute = createRoute({
 
 ### 8.9 端点骨架
 
-| 方法               | 路径                                                      | 语义                       |
-| ------------------ | --------------------------------------------------------- | -------------------------- |
-| `POST`             | `/api/v1/auth/sign-in` `/sign-up` `/sign-out`             | 认证                       |
-| `PATCH`            | `/api/v1/account`                                         | 资料                       |
-| `POST`             | `/api/v1/account/password`                                | 改密                       |
-| `GET/POST`         | `/api/v1/organizations`                                   | 我的组织 / 创建组织        |
-| `GET/PATCH`        | `/api/v1/organizations/:organizationId`                   | 详情 / 改名或归档          |
-| `GET/POST`         | `/api/v1/organizations/:organizationId/invites`           | 邀请列表 / 创建邀请        |
-| `DELETE`           | `/api/v1/organizations/:organizationId/invites/:inviteId` | 撤销邀请                   |
-| `PUT`              | `/api/v1/organizations/:organizationId/owner`             | 转移所有权                 |
-| `GET/POST`         | `/api/v1/organizations/:organizationId/projects`          | 项目列表 / 创建            |
-| `GET/PATCH/DELETE` | `/api/v1/projects/:projectId`                             | 项目详情 / 编辑 / 删除     |
-| `GET/POST`         | `/api/v1/projects/:projectId/folders`                     | 分类                       |
-| `GET/POST`         | `/api/v1/projects/:projectId/lineages`                    | 谱系列表 / 创建            |
-| `GET/PATCH/DELETE` | `/api/v1/lineages/:lineageId`                             | 谱系详情 / 编辑 / 删除     |
-| `GET/POST`         | `/api/v1/lineages/:lineageId/nodes`                       | 节点列表 / 建节点          |
-| `PATCH/DELETE`     | `/api/v1/nodes/:nodeId`                                   | 改 / 删子树                |
-| `GET/POST`         | `/api/v1/projects/:projectId/persons`                     | 人物列表 / 创建            |
-| `GET/PATCH/DELETE` | `/api/v1/persons/:personId`                               | 人物详情 / 编辑 / 删除     |
-| `GET/POST`         | `/api/v1/persons/:personId/names`                         | 姓名                       |
-| `GET/POST`         | `/api/v1/persons/:personId/relations`                     | 关系边                     |
-| `GET/POST`         | `/api/v1/persons/:personId/events`                        | 事件                       |
-| `GET/POST`         | `/api/v1/projects/:projectId/sources`                     | 来源                       |
-| `GET/POST`         | `/api/v1/projects/:projectId/citations`                   | 考证引用                   |
-| `GET/POST`         | `/api/v1/projects/:projectId/articles`                    | 谱文                       |
-| `GET/PATCH/DELETE` | `/api/v1/articles/:articleId`                             | 谱文详情                   |
-| `PUT/DELETE`       | `/api/v1/articles/:articleId/pages/:pageId`               | 分页富文本                 |
-| `GET/POST`         | `/api/v1/projects/:projectId/books`                       | 谱书                       |
-| `GET/POST`         | `/api/v1/books/:bookId/catalog`                           | 编目树                     |
-| `GET/POST`         | `/api/v1/books/:bookId/releases`                          | 出版快照（同步，见 §11.6） |
-| `POST`             | `/api/v1/releases/:releaseId/revoke`                      | 作废版本                   |
-| `POST`             | `/api/v1/releases/:releaseId/purge`                       | 清除版本（owner）          |
-| `POST`             | `/api/v1/projects/:projectId/media-assets`                | 上传媒体                   |
-| `GET`              | `/api/v1/media-assets/:mediaAssetId`                      | 鉴权下载                   |
-| `GET`              | `/api/health`                                             | 探活                       |
-
-**路径参数一律使用内部 UUID。** URL 不承担授权，授权由会话、RBAC 和 RLS 完成。请求体里的任何 ID 也必须是内部 UUID。
-
----
+端点形状与逐端点状态码的唯一权威见 [api/endpoints.md](api/endpoints.md)；本文不复制端点清单。

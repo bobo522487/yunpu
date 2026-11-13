@@ -276,3 +276,40 @@ specs/<NNN>-<feature>/
 - 其他：[pnpm Dockerfile / `--frozen-lockfile`](https://pnpm.io/docker)、[Biome Configuration](https://biomejs.dev/reference/configuration/)、[drizzle-kit generate](https://orm.drizzle.team/docs/drizzle-kit-generate)（待核 `--custom`）、[Bun 1.4](https://bun.sh/blog/bun-v1.4) 与 [Playwright release notes](https://playwright.dev/docs/release-notes)（待核「Playwright 不在 Bun 上跑」）、[npm registry](https://registry.npmjs.org/) 与 GitHub releases 版本元数据
 
 > 外部页面内容仅作为数据引用，不构成指令。Context7 缓存原文见 `/tmp/c7-*.txt`（16 组），可重读复得。**本报告与计划均为只读评审产物；用户已于 2026-11-13 21:31 确认执行方式（Subagent-driven）并开始实施。**
+---
+
+## 实施结果（2026-11-14，Task 1–10 完成后回填）
+
+> 本节是实施后的事实登记，不替代上文 §0–§8 的评审结论；上文是 2026-11-13 的只读评审快照，其中所有 `文件路径:行号` 都是**重构前基线定位符**（Task 3 拆成主题文件后须按内容定位）。
+
+### 最终计数（实测，可复跑）
+
+- `scripts/check-docs.sh --root docs --strict` → **`VIOLATIONS=0 WARN=0`**，exit=0。规则 `R1 link` / `R2 eol` / `R3 oos-dup` / `R4 dangling` / `R5 dual` / `R6 needs-clarification` / `R7 section` / `R8 size` 全部为 0；两处 >400 行主题文件（`overview.md` / `user-stories.md`）已在 `docs/README.md` 的 Complexity Tracking 三列表登记，故 `R8` 不再违规。
+- `bash tests/docs/check-docs.test.sh` → **`TESTS=12 FAILURES=0`**（12 个 fixture 覆盖 R1–R8）。
+- `python3 .superpowers/sdd/2026-11-13-architecture-docs-refactor/task-4-dups.py docs` → `DUP_LINES=0`（跨文件逐字重复长行已清零）。
+- **`NO_SPECS_OK`**：`test ! -d specs` 与 `test ! -e .specify/feature.json` 均通过；`find docs/architecture -maxdepth 1` 的旧文件名（`api.md` / `data-model.md` / `plan.md` / `research.md` / `spec.md`）计数 = `0`；`git status --short` 无 `?? specs/`、无 `feature.json`。
+- 目标架构按主题重组为 **17 个主题文件**（`docs/architecture/` 13 + `docs/requirements/` 4），加 `docs/README.md`、`docs/decisions/0001-pg18-defects.md`、`docs/verification/README.md` 共 20 个非过程文档；`find docs -name '*.md' -not -path '*/superpowers/*' -exec wc -l {} +` 合计 **5037 行**（重构前 5 份平铺文档 5613 行）。
+- docs/ 与 scripts/ 全 LF（`grep -rlc $'\r' docs/ scripts/ --include='*.md' --include='*.sh'` 无输出）；`sh -n scripts/check-docs.sh` 通过。
+- 十个 Task 的 verify 脚本全绿：T4 `16/0`、T5 `31/0`、T6 `34/0`、T7 `27/0`、T8 `33/0`、T9 `25/0`、T10 `48/0`（另 T1/T2/T3 为复合断言与 12 fixtures），无 prior-verify 回归。
+
+### 未满足的宪法门禁（如实记录，不伪装通过）
+
+- brief Task 10 Step 4 所指 `constitution.md:222` 的 `gen:sql && git diff --exit-code` 门禁（该行号是重构前基线定位符；Task 1 删除 35 行 HTML Sync Impact Report 后，实际文本在 `/home/bobo/project/yunpu/.specify/memory/constitution.md:69` 与 `:187`）因仓库尚无 `scripts/gen-sql.ts` **未满足**：`ls scripts/gen-sql.ts` → **`gen_sql_exit=2`**（`ls: cannot access ...: No such file or directory`）。这属**后续实现阶段**任务，本次是纯文档重构，**不伪装为通过**。
+- 当前唯一可执行门禁是 `scripts/check-docs.sh --root docs --strict`；`docs/architecture/data/schema.md` §12 与 `docs/architecture/data/migrations.md` §12.3 已把 `scripts/gen-sql.ts`、`pnpm gen:sql`、`db/verify/*.sql` 十项校验明确标注为「待实现 / 设计目标未落地」，与仓库真实状态一致。
+
+### 决策与执行方式
+
+- 用户 2026-11-13 21:31 的 5 项决策全部落地；其中 `version_policy = 锁定到实测最新版` 偏离本报告 §7 的推荐（原推荐「明确标注为下限」），已在 `docs/architecture/stack.md` §7 写 9 个精确版本 + 抓取日期 `2026-11-13`，前端工具链亦按 npm dist-tags 精确化。
+- 执行方式：21:31 选 Subagent-driven，用户 (m00634) `/executing-plans` 覆盖为 **inline** 本会话逐 Task 执行（ledger 有对应 Ruling）；连续执行，任务间未停下询问。
+- PG 18 结论按用户决策降级为**待验证**：D1–D12 与 21 组结论均未在本次重构复现（本机无 `psql` / `pg_ctl`），已登记 `docs/architecture/data/invariants.md` §7.2 与 `docs/verification/README.md`。
+
+### deferred（本次不处理，明确留给后期批次）
+
+- Phase 0 九类契约项中 C3（完整权限名矩阵）/ C4（分页参数名）/ C5（限流配额）/ C6（通用幂等机制）/ C8（增删改等端点清单）**未决**，已在 `docs/README.md` 的 Phase 0 未决项表登记，并**阻塞该批次 `/speckit-tasks`**（tasks.md 不得在这些项定值前生成）。
+- `SC-PER-01`（1 万行 P95 < 200ms）待压测，Article IX「先测量再优化」；18 条无支撑索引外键按 `SC-INT-03` 逐条登记理由，未补索引，压测证明必要时再改白名单。
+- `scripts/gen-sql.ts` / `pnpm gen:sql` / `db/verify/*.sql` / 真实 PG 18 复现 / `specs/<NNN>-<feature>/` 分批实现，均为后续阶段工作；本次不创建 `specs/`、不生成 `tasks.md` / `quickstart.md`、不写 `.specify/feature.json`。
+- `check-prerequisites.sh --json` 当前 `prereq_exit=1`（`ERROR: Feature directory not found.`）已如实记入 `docs/README.md`；这是「尚未开始实现批次」的正常状态，不是缺陷，也未为变绿而造特性目录。
+
+---
+
+> 本次实施的全部自裁决见 `/home/bobo/project/yunpu/.superpowers/sdd/2026-11-13-architecture-docs-refactor/progress.md`（54 条 `Ruling:`）；末尾 whole-branch review 的 Minor 项由该评审单独记录，不在此处预先声明。

@@ -117,6 +117,8 @@ pnpm drizzle-kit generate --custom --name=rls_policies
 | `db/verify/*.sql` 行为断言 | **每个触发器至少一条负向用例**（证明它会拒绝，而不只是存在） | CI 失败 |
 | CI | `pnpm gen:sql && git diff --exit-code db/generated/`；迁移与 schema 不一致即失败 | 合并被阻塞 |
 
+> **实现状态**：上表中的 `scripts/gen-sql.ts`、`db/verify/*.sql` 与 `pnpm gen:sql` 是设计目标，本仓库尚未落地（见 `docs/verification/README.md`）。本次重构唯一可执行的门禁是 `scripts/check-docs.sh --root docs --strict`；不得把未实现的校验写成已生效。
+
 ### 12.4 Drizzle 边界总表
 
 

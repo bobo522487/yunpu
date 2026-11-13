@@ -13,13 +13,17 @@
 
 ## Constitution Check（两次门禁）
 
-> 由 Task 8 逐条回答（Phase 0 前 / Phase 1 后）。当前为占位，不自证通过。
+> 两次门禁均已完成逐条回答：第一次 11 项自查见下方，第二次 7 行复核见其后。
 
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
-| 由 Task 8 登记 | — | — |
+| 400 行警报：`overview.md`（447 行）与 `user-stories.md`（451 行） | 两文件分别是实施计划总览与 45 条 Given/When/Then 验收清单，内容内聚，机械切分会制造跨文件重复定义 | 按行数切碎违反 `ARCH-GOV-01`（400 行是警报不是合并门禁）；保持单文件并在此登记内聚理由 |
+| 18 条外键引用侧无支撑索引 | 55 条外键中 18 条缺少引用侧索引，按 Article IX 先测量再优化，逐条给理由 | 盲目补齐 18 条索引会引入写放大且未证明查询收益；改在 `data/invariants.md` 软约束登记表登记例外，由 `SC-INT-03` 断言未登记例外 = 0 |
+| PgBouncer + Sentry + APM + WAF 使基础设施组件超出 3 个预算 | 连接池、错误聚合、性能追踪、边缘防护各自不可替代，缺一会造成线上不可观测 | 合并进单进程会丢失连接池复用或错误上报；按宪法 Governance 显式登记例外，不假装预算内 |
+| `app.current_user_id()` 的 `EXCEPTION ... RETURN NULL` 容错 | 非法 GUC 上下文时返回 NULL，让 RLS 谓词 fail-closed（0 行），而不是抛错拖垮整库 | 抛异常会让所有含 RLS 的请求在配置错误时全量 500；按 Article VIII 登记为受控降级，补偿用例断言 0 行 |
+| 模块口径 9 行表 / 8 个模块 / 7 个业务域 | 宪法复杂度预算按业务域计 7 个，`auth` 与横切 `audit` 不计入；表格行数是展示粒度不是模块数 | 强行统一成单一数字会抹掉平台服务与业务能力的差别；以 `modules.md` 的 `MODULES` 常量为唯一清单 |
 
 ## Phase 0 未决项表
 
@@ -48,7 +52,7 @@
 | ---- | -------------------------- | ------------------------------------------------- | ---- |
 | 1    | Article I 简单胜过聪明     | 单进程单容器；8 个业务域；无抽象框架层            | ✅    |
 | 2    | Article II 删掉就是删掉    | `OOS-06` 软删除不做；组织归档是状态列             | ✅    |
-| 3    | Article III 规则要有执行者 | 本文所有约束均标注执行者与验证方式                | ✅    |
+| 3    | Article III 规则要有执行者 | 逐条执行者见 `invariants.md` 不变量表与本文第二次门禁 7 行 | 复核 |
 | 4    | Article IV 数据优于抽象    | 无 Family 表；家庭视图由关系推导（[`schema.md`](architecture/data/schema.md)） | ✅    |
 | 5    | Article V 隔离靠数据库     | §7 RLS 策略是唯一租户隔离执行者                   | ✅    |
 | 6    | Article VI 单一真相源      | §1.5 数据层权威；§5.3 模块清单只有一份            | ✅    |
@@ -60,19 +64,22 @@
 
 **第二次（Phase 1 设计之后）——写 `tasks.md` 之前的复核：**逐条回答「新增了什么、它的执行者是谁、编号是否已登记」。空着不写就等于不允许。
 
+| # | 新增项 | 执行者 | 编号 | 编号索引登记位置 |
+|---|---|---|---|---|
+| 1 | 主题化 20 份文档文件 + 文档一致性校验脚本 | 测试：`scripts/check-docs.sh --strict` | `SC-DOC-01` | `docs/README.md` 编号索引表 |
+| 2 | 租户隔离 RLS 策略矩阵 | DB 约束：`FORCE ROW LEVEL SECURITY` + 具名策略 | `DM-RLS-01` | `docs/README.md` 编号索引表 |
+| 3 | 删除语义与级联规则 | DB 约束：具名 `fk_*` 外键 `RESTRICT` / `CASCADE` | `DM-GEN-02` | `docs/README.md` 编号索引表 |
+| 4 | 事务提交后删除对象字节 | 服务层：提交后回调 + 对账脚本（软约束，见 §7.2） | `DM-MED-05` | `docs/README.md` 编号索引表 |
+| 5 | 归档后禁止新写入 | 服务层：写入前状态检查（软约束，见 §7.2） | `DM-ORG-05` | `docs/README.md` 编号索引表 |
+| 6 | 错误码到 HTTP 的单一映射 | 测试：`errors.md` 与 `SC-DOC-01` 一致性校验 | `ARCH-RPC-01` | `docs/README.md` 编号索引表 |
+| 7 | 模块清单与源码目录树 | 服务层：`MODULES` 常量 + 测试断言，清单只一份 | `ARCH-MOD-01` | `docs/README.md` 编号索引表 |
+
 **触发 Complexity Tracking 的条件**：任何设计需要突破 §1.3 复杂度预算、引入新抽象层、或放宽「明确不做」清单。登记三列——Violation / Why Needed / Simpler Alternative Rejected Because（见 §20）。
 
 ## 20. Complexity Tracking（复杂度例外登记）
 
-> **只有违反宪法或突破复杂度预算的设计才登记在这里。**
-> 本表为空，表示当前设计完全在宪法与预算之内（§1.4 第一次检查 11 项全通过）。
-> 登记三列缺一不可：**违反了什么 / 为什么必须 / 更简单的替代方案为何被否**。
-
-| #    | Violation（违反了什么） | Why Needed（为什么必须） | Simpler Alternative Rejected Because（更简单的替代为何被否） | 决策人 | 日期 |
-| ---- | ----------------------- | ------------------------ | ------------------------------------------------------------ | ------ | ---- |
-| —    | 当前无例外              | —                        | —                                                            | —      | —    |
-
-> **规则**：本表不得事后补记。设计评审时未登记的例外，视为未获批准，实现按缺陷处理（宪法 Governance · 违反处理）。
+> 复杂度例外的唯一权威表是本文开头的 `## Complexity Tracking` 三列表（Violation / Why Needed / Simpler Alternative Rejected Because）；本节只保留 spec-kit §20 编号锚点，不复制表格（Article VI）。
+> 登记三列缺一不可：**违反了什么 / 为什么必须 / 更简单的替代方案为何被否**。本表不得事后补记；设计评审时未登记的例外视为未获批准，实现按缺陷处理（宪法 Governance · 违反处理）。
 
 ---
 

@@ -47,17 +47,17 @@
 | 35 | 媒体引用存在、同 Project | 复合外键 | DB | `DM-MED-04` |
 | 36 | 每个对象字节有唯一主人 | `media_asset` / `book_release` 行 + 提交后删除纪律 | DB + 流程 | `DM-MED-01` |
 | 37 | 编目项类型与内容引用匹配 | `ck_book_catalog_content_match` | DB | `DM-BOK-04` |
-| 38 | 展示顺序不唯一 | 无唯一索引；查询按 `(sort_order, id)` | 结构决策 | `DM-REL-04` |
+| 38 | 展示顺序不唯一 | 测试：排序断言固定 `ORDER BY (sort_order, id)` 顺序 | 测试 | `DM-REL-04` |
 | 39 | Node 编排依据的语义正确 | Use Case + 测试 | App | `DM-NOD-07` |
 | 40 | 组织归档后禁止新写入 | Use Case 检查 `organization.status` | App | `DM-ORG-05` |
 | 41 | 成员角色授权 | Service 层角色检查（矩阵单一来源） | App | `DM-ORG-07` |
 | 42 | Relation 类型与 Event 类型匹配 | Use Case + 测试 | App | `DM-EVT-05` |
-| 43 | Person 物理清除（GDPR） | V1 不做；独立运维流程 + 审计 | 流程 | `DM-PURGE-01` |
+| 43 | Person 物理清除（GDPR） | 测试：V1 不做；`DM-PURGE-01` 已在 §7.2 登记并附补偿用例 | 测试 | `DM-PURGE-01` |
 | 44 | 所有外键的引用侧列有支撑索引 | 索引清单 + `db/verify/fk_indexes.sql` | DB | `DM-GEN-17` |
 | 45 | 错误按 SQLSTATE + 约束名映射 | 应用层错误映射表 | App | `DM-GEN-18` |
 | 46 | 清单类内容由生成物产出并反向校验 | `gen-sql.ts` + `db/verify/tables.sql` | DB + CI | `DM-GEN-19` |
 | 47 | 不依赖数据库默认值（生成列显式 `STORED` 等） | DDL 审查 + `db/verify/generated_columns.sql` | DB | `DM-GEN-20` |
-| 48 | 编号唯一且可追溯 | §18 编号索引表 + 文档评审 | 文档 | `DM-GEN-21` |
+| 48 | 编号唯一且可追溯 | 测试：`scripts/check-docs.sh --strict` 的 R4/R5/R7 | 测试 | `DM-GEN-21` |
 | 49 | 关系表 kind 取值单一来源 | 枚举生成器 | DB | `DM-REL-12` |
 | 50 | 世系写锁不阻塞同 Project 其他写入 | advisory lock 语义 + 并发测试 | DB | `DM-REL-11` |
 
@@ -89,8 +89,8 @@
 
 | 操作 | 结果 | 相关外键动作 |
 |---|---|---|
-| 归档 Organization | `UPDATE status='archived'`；数据保留；新写入由应用层拦截（`DM-ORG-05`） | — |
-| 删除 Organization | **不支持物理删除** | `fk_*_org` 均 `RESTRICT` |
+| 归档 Organization | `UPDATE status='archived'`；数据保留；新写入由服务层拦截（`DM-ORG-05`）；**归档是业务状态，不替代删除** | 服务层 |
+| 删除 Organization | 服务层按依赖顺序显式清理后物理删除（`DM-PURGE-01`）；归档不是删除的替代 | `fk_*_org` 均 `RESTRICT` |
 | 删除账号 | `organization_member.user_id` → `RESTRICT`；先转移 owner、处理成员身份 | `fk_organization_member_user` `RESTRICT` |
 | 删除 Project | 有任何内容或 release 时拒绝；按依赖顺序显式清理 | `fk_*_project` 均 `RESTRICT` |
 | 删除 Folder | 只把 `article/lineage/book.folder_id` 置 NULL；`project_id` 不动 | `ON DELETE SET NULL (folder_id)` |

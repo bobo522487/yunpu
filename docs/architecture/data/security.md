@@ -42,6 +42,8 @@ CREATE POLICY tenant_isolation ON person
 | `folder` / `person` / `person_name` / `person_relation` / `event` / `lineage` / `node` / `source` / `source_citation` / `article` / `article_page` / `media_asset` / `person_media` / `article_page_media` / `book` / `book_catalog` / `book_release` | `organization_id = ANY (...)` | 全部 18 张内容表同策略 |
 | `audit_log` | `organization_id = ANY (...)` | 组织级审计 `project_id IS NULL` 仍受 `organization_id` 约束 |
 
+> **表数与策略数的唯一口径**：`pg_tables` 共 22 张表 = 18 张内容表（上表合并行 17 张 + `project`） + 4 张平台/租户表（`organization` / `organization_member` / `invite` / `audit_log`），逐表清单见 [`schema.md`](./schema.md) §3.1。`db/verify/rls.sql` 断言 22 张表全部 `rowsecurity = true` 且 `forcerowsecurity = true`，并断言策略数 = 21（`organization_member` 采用独立策略形式，见 [`migrations.md`](./migrations.md) §12.3）。18 与 21 不是同一个计数维度，不构成矛盾。
+
 > **索引策略的唯一说法**（`DM-IDX-01`）：索引按**查询模式**建，不设「RLS 谓词列必须是索引首列」这类机械规则。理由：`organization_id` 由 `project_id` 经复合外键强制推出，查询永远先按 project 收敛；RLS 的 org 谓词是安全网，不是访问路径。**本规则取代旧版「谓词列必须是首列」的表述，全文以本条为准。**
 >
 > **PG 18 补充**：多列 B-tree 现在支持 skip scan（§2.1 #7），因此 `(project_id, X)` 这类索引在 `project_id` 未被约束时也可能被用于 `X` 的查找。索引清单无需因此改动，但**测量方法**要变（§11.4）。

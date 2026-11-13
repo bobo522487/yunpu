@@ -176,7 +176,7 @@ erDiagram
 
 > **v1.2 变更**：`book_release` 的主键由 1.1 版的 `id` 改为 `(project_id, id)`，与「所有 Project 内容表用复合主键」的通则（§4.3）一致。1.1 版只有它和 `audit_log` 两张表例外，而 `audit_log` 的例外有明确理由（无外键、日志留存），`book_release` 没有。
 >
-> 表清单、模块归属、枚举、**RLS 策略矩阵**四处清单均由 `src/domain/enums.ts` 生成，本文与 [`overview.md`](../overview.md) §5 的清单都从它派生，不再手抄（`DM-GEN-02` / `DM-GEN-19`）。生成物：`db/generated/enums.sql`、`db/generated/tables.sql`、`db/generated/rls_policies.sql`。
+> 表清单、模块归属、枚举、RLS 策略矩阵四处清单**当前是唯一权威手写清单**（本文件 §3.1、[`security.md`](./security.md)、[`modules.md`](../modules.md)）；`scripts/gen-sql.ts` 与 `pnpm gen:sql` **待实现**（见 [`migrations.md`](./migrations.md) §12.3），因此不得声称清单已由代码生成（`DM-GEN-02` / `DM-GEN-19`）。
 
 ---
 
@@ -279,9 +279,9 @@ export const AUDIT_ENTITY_TYPES = [/* 由 TABLE_NAMES 派生 */] as const;
 - 对称类的 kind 清单；
 - `ck_audit_log_entity_type` 的取值清单（由 `TABLE_NAMES` 派生，不再手抄第二份）。
 
-**v1.2 追加**：同一生成器同时产出 `db/generated/tables.sql`（表清单 + 主键形态）与 `db/generated/rls_policies.sql`（逐表策略表达式），使 §3.1 与 §8.2 的矩阵也变成生成物（`DM-GEN-19`）。
+**v1.2 追加（待实现）**：`scripts/gen-sql.ts` 计划同时产出 `db/generated/tables.sql` 与 `db/generated/rls_policies.sql`，使本文件表清单与 `security.md` 的策略矩阵可由生成物反向校验（`DM-GEN-19`）；该脚本尚未落地，当前以上述手写清单为唯一权威。
 
-CI 只做一件事：`pnpm gen:sql && git diff --exit-code db/generated/`。不再解析 `pg_indexes` / `pg_proc` 文本。
+CI 的文档一致性门禁是 `scripts/check-docs.sh --root docs --strict`；`pnpm gen:sql && git diff --exit-code db/generated/` 与 [`migrations.md`](./migrations.md) §12.3 的十项校验**待实现**，本次重构不声称已生效。不再解析 `pg_indexes` / `pg_proc` 文本。
 
 ## 5. 实体定义
 
@@ -305,8 +305,8 @@ ALTER TABLE organization
   ADD CONSTRAINT fk_organization_owner
   FOREIGN KEY (id, owner_user_id)
   REFERENCES organization_member (organization_id, user_id)
-  DEFERRABLE INITIALLY IMMEDIATE
-  ON DELETE RESTRICT;
+  ON DELETE RESTRICT
+  DEFERRABLE INITIALLY IMMEDIATE;
 ```
 
 - 「恰好一个 owner」= `owner_user_id NOT NULL`（`DM-ORG-01`）。
@@ -315,7 +315,7 @@ ALTER TABLE organization
 - 创建组织必须在同一事务内先插 `organization`、再插 owner 的 `organization_member`，并执行 `SET CONSTRAINTS public.fk_organization_owner DEFERRED;`。此流程只允许通过 `app.create_organization()` 调用（`DM-ORG-04`）。
 - 迁移顺序：先建 `organization`（不带 owner 外键）→ 建 `organization_member`（含指向 `organization` 的外键）→ 再 `ALTER TABLE organization ADD CONSTRAINT fk_organization_owner`。循环外键必须分两步建立。
 - owner 的成员角色固定写 `admin`；owner 的权限由 `owner_user_id` 派生，不由 `role` 派生。
-- 物理删除组织不支持；使用 `status='archived'`。归档后禁止新写入是**应用层软约束**，数据库不拦截（`DM-ORG-05`，见 [`invariants.md`](./invariants.md) §7.2 软约束登记表）。
+- **归档是业务状态，不替代删除**：`UPDATE status='archived'` 只改状态列；物理删除按依赖顺序显式清理（见 [`invariants.md`](./invariants.md) §10 删除语义表）。归档后禁止新写入是**应用层软约束**，数据库不拦截（`DM-ORG-05`，见 [`invariants.md`](./invariants.md) §7.2 软约束登记表）。
 - **v1.2**：`NOT NULL` 一律具名（`organization_name_not_null` 等），PG 18 起 NOT NULL 可进 `pg_constraint`，错误映射可以精确到列（`DM-GEN-13`）。
 
 索引：主键；`idx_organization_owner (owner_user_id)`。
@@ -1211,7 +1211,7 @@ WHERE c.event_id IS NOT NULL AND e.relation_id IS NOT NULL;
 
 ### 9.1 函数清单
 
-`app` schema 下 16 个函数。所有 `SECURITY DEFINER` 函数属主为 `rls_definer`（`NOLOGIN BYPASSRLS`），一律 `SET search_path = pg_catalog`，一律 `REVOKE ALL ON FUNCTION ... FROM PUBLIC`。
+`app` schema 下 17 个函数。所有 `SECURITY DEFINER` 函数属主为 `rls_definer`（`NOLOGIN BYPASSRLS`），一律 `SET search_path = pg_catalog`，一律 `REVOKE ALL ON FUNCTION ... FROM PUBLIC`。
 
 | 函数 | 种类 | 权限 | 用途 | 错误码 |
 |---|---|---|---|---|
@@ -1231,6 +1231,7 @@ WHERE c.event_id IS NOT NULL AND e.relation_id IS NOT NULL;
 | `app.revoke_invite(uuid, text)` | `SECURITY DEFINER` | `genealogy_api` | 撤销待处理邀请 + 强审计 | `GX005`/`GX006`/`GX008` |
 | `app.revoke_book_release(uuid, text)` | `SECURITY DEFINER` | `genealogy_api` | 作废出版版本 + 强审计 | `GX005`/`GX006`/`GX007` |
 | `app.purge_book_release(uuid)` | `SECURITY DEFINER` | `genealogy_api` | 清除已作废出版版本 + 强审计 | `GX005`/`GX006`/`GX007`/`GX011` |
+| `app.artifact_exists(text)` | `STABLE SECURITY DEFINER` | `genealogy_api` | 校验出版产物对象字节是否存在（`GX011`） | `GX011` |
 
 **`app.current_user_id()`**（v1.2 新增，RLS 容错的关键）：
 
@@ -1431,9 +1432,9 @@ $$;
 
 ```sql
   SELECT owner_user_id INTO v_prev
-    FROM public.organization WHERE id = p_org FOR SHARE;
+    FROM public.organization WHERE id = p_org;
 
-  IF v_prev <> app.current_user_id() THEN
+  IF v_prev IS DISTINCT FROM app.current_user_id() THEN
     RAISE EXCEPTION '只有组织 owner 可以转移所有权' USING ERRCODE = 'GX006';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.organization_member
@@ -1451,7 +1452,7 @@ $$;
   END IF;
 ```
 
-> 用 `FOR SHARE`（而非 `FOR NO KEY UPDATE`）读旧值，是因为 `rls_definer` 只有列级 `UPDATE` 权限，没有表级 `UPDATE` 权限，而 `FOR NO KEY UPDATE` 需要后者。真正的正确性由 CAS 条件保证：`WHERE owner_user_id = v_prev` 让并发事务中只有一个能命中（先提交者改掉了旧值，后者 `NOT FOUND` → `GX010`）。
+> 读旧值用**普通 `SELECT`**，不加 `FOR SHARE` / `FOR NO KEY UPDATE` 行锁：`rls_definer` 只有列级 `UPDATE` 权限，没有表级 `UPDATE` 权限，任何行锁语法都不可用；而 CAS 条件更新把「读旧值 → 校验 → 写新值」合并成一条原子语句，**不需要行锁**。正确性由 `WHERE owner_user_id = v_prev` 保证：并发事务中只有一个能命中（先提交者改掉了旧值，后者 `NOT FOUND` → `GX010`）。与 [`security.md`](./security.md) 及 [`overview.md`](../overview.md) 的「CAS 条件更新」一致。
 
 **`app.purge_book_release(uuid)`** —— 状态机 + 产物字节纪律：
 
@@ -1462,7 +1463,7 @@ $$;
   IF v_revoked_at IS NULL THEN
     RAISE EXCEPTION '出版版本尚未作废，不能清除' USING ERRCODE = 'GX007';
   END IF;
-  IF v_actor <> owner THEN
+  IF v_actor IS DISTINCT FROM owner THEN
     RAISE EXCEPTION '只有组织 owner 可以清除出版版本' USING ERRCODE = 'GX006';
   END IF;
 

@@ -23,9 +23,9 @@
 | 认证中间件    | `authMiddleware()`；成功后 `c.set('user', user)`             | §8.2       |
 | 未认证行为    | **不立即返回 401**，把 `user` 留空，由各路由按需判定「公开端点」还是「需要登录」 | §8.2       |
 | 公开端点      | health、登录、兑换邀请（与受保护端点共用一条链，不靠路径匹配做权限判断） | §8.2       |
-| 租户上下文    | 由当前登录用户推导，**不接受**客户端传入的 `organization_id` 作为隔离依据 | §7.4、§2.1 |
+| 租户上下文    | 由当前登录用户推导，**不接受**客户端传入的 `organization_id` 作为隔离依据 | [`security.md`](../data/security.md)、[`overview.md`](../overview.md) |
 
-> 来源：plan.md §8.2、§10、§7.4
+> 来源：[`runtime.md`](../runtime.md)、[`overview.md`](../overview.md)、[`security.md`](../data/security.md)
 
 ### 1.2 请求头
 
@@ -162,8 +162,8 @@ export type ErrorCode =
 | 约束                           | 说明                                                         | 出处                     |
 | ------------------------------ | ------------------------------------------------------------ | ------------------------ |
 | 路径参数校验                   | 路径参数、查询参数**必须**经 `zValidator` 校验后才使用；`c.req.param()` 返回 `string`，直接当 UUID 用等于不校验 | §8.1 `ARCH-HONO-04`      |
-| 全链式调用                     | 所有路由方法必须链式调用，否则 `hc()` 类型推导静默失效       | §8.1 `ARCH-HONO-01`      |
-| 具名变量推断类型               | 必须 `export const routes = app.get(...)`，类型从已声明变量推断 | §8.1 `ARCH-HONO-01`      |
+| 全链式调用                     | 所有路由方法必须链式调用，否则 `hc()` 类型推导静默失效       | [`runtime.md`](../runtime.md) `ARCH-RPC-01` |
+| 具名变量推断类型               | 必须 `export const routes = app.get(...)`，类型从已声明变量推断 | [`runtime.md`](../runtime.md) `ARCH-RPC-01` |
 | `hc` 类型预编译                | 用 `ReturnType` 固定，避免类型图过大                         | §8.1                     |
 | `valid()` 必须有对应 validator | `c.req.valid('param')` 无对应注册时返回 `undefined` 且**不报错** | §8.1                     |
 | 校验目标语义                   | `json` 受 `Content-Type` 门控；`query` 值一律字符串（数字/布尔须 `z.coerce`）；`GET`/`HEAD` 不可用 `json`/`form` target | §8.6 `ARCH-HONO-08`      |

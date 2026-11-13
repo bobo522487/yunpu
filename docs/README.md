@@ -37,12 +37,12 @@
 | 1    | Article I 简单胜过聪明     | 单进程单容器；8 个业务域；无抽象框架层            | ✅    |
 | 2    | Article II 删掉就是删掉    | `OOS-06` 软删除不做；组织归档是状态列             | ✅    |
 | 3    | Article III 规则要有执行者 | 本文所有约束均标注执行者与验证方式                | ✅    |
-| 4    | Article IV 数据优于抽象    | 无 Family 表；家庭视图由关系推导（§6.3）          | ✅    |
+| 4    | Article IV 数据优于抽象    | 无 Family 表；家庭视图由关系推导（[`schema.md`](architecture/data/schema.md)） | ✅    |
 | 5    | Article V 隔离靠数据库     | §7 RLS 策略是唯一租户隔离执行者                   | ✅    |
 | 6    | Article VI 单一真相源      | §1.5 数据层权威；§5.3 模块清单只有一份            | ✅    |
 | 7    | Article VII 不猜未来       | §16 演进触发条件；无预埋接口                      | ✅    |
 | 8    | Article VIII 失败要响亮    | §8.3 错误模型；`AppError` + 全局 `onError`        | ✅    |
-| 9    | Article IX 先测量再优化    | §6.6 索引策略按查询模式建                         | ✅    |
+| 9    | Article IX 先测量再优化    | 索引策略按查询模式建，见 [`indexes.md`](architecture/data/indexes.md) | ✅    |
 | 10   | 复杂度预算                 | 8 域 / 22 表 / 3 基础设施组件，均在预算内（§1.3） | ✅    |
 | 11   | `OOS-01`..`OOS-19`         | 本计划未引入任何「不做」清单里的东西              | ✅    |
 
@@ -67,13 +67,13 @@
 ## 21. 编号索引表（`ARCH-*`）
 
 > 与数据模型 §18 的 `DM-*` 索引表同构：**引用编号必须能在本表找到定义**。
-> 校验目标：悬空引用 0、一号两义 0、未引用 0（宪法 Development Process · 阻塞级门禁）。
+> 校验目标（由 `scripts/check-docs.sh --root docs --strict` 执行）：悬空引用 0、一号两义 0、断链 0、无 CRLF、无未决澄清标记。「未引用 0」无执行者，不作为门禁（见任务 ledger Ruling）。
 
 | 编号           | 一句话定义                                           | 本文位置         |
 | -------------- | ---------------------------------------------------- | ---------------- |
 | `ARCH-AR-01`   | 领域逻辑只有一份：规则只存在于该域的 service         | §0, §5.2         |
 | `ARCH-AR-02`   | 隔离靠数据库：租户边界写在 RLS 策略里                | §0, §7           |
-| `ARCH-AR-03`   | 谱系是图不是树：关系边是事实，`ltree` 路径是位置投影 | §0, §6.3         |
+| `ARCH-AR-03`   | 谱系是图不是树：关系边是事实，`ltree` 路径是位置投影 | [`schema.md`](architecture/data/schema.md) |
 | `ARCH-AR-04`   | 规则要有执行者：没有执行者的条目不写进文档           | §0, §1.2         |
 | `ARCH-AR-05`   | 依赖单向：前端 → API → service → 数据层              | §1.2, §5.2, §5.3 |
 | `ARCH-AR-06`   | 单一真相源：一份 Zod schema、一份数据模型            | §1.2, §5.3, §8.5 |
@@ -86,20 +86,21 @@
 | `ARCH-CC-01`   | 并发控制用事务级 advisory lock，不锁 project 行      | §11.2            |
 | `ARCH-ERR-01`  | 错误两级映射：先看 SQLSTATE，再看约束名              | §8.3             |
 | `ARCH-FE-05`   | 只做一条画布渲染路径                                 | §9.2             |
-| `ARCH-GOV-01`  | 400 行红线是警报，不是合并门禁                       | §1.3             |
-| `ARCH-HONO-01` | 不用 `createFactory` 注入运行时对象                  | §8.1.1           |
-| `ARCH-HONO-02` | 中间件洋葱模型：进入正序、返回逆序                   | §3.1, §8.2       |
+| `ARCH-GOV-01`  | 400 行红线是警报，不是合并门禁（定义见 `.specify/memory/constitution.md`） | [`constitution.md`](../.specify/memory/constitution.md) |
+| `ARCH-HONO-01` | 不用 `createFactory` 注入运行时对象                  | [`runtime.md`](architecture/runtime.md) |
+| `ARCH-RPC-01`  | RPC 类型推断：全链式调用 + 具名变量推断               | [`stack.md`](architecture/stack.md) |
+| `ARCH-HONO-02` | 中间件洋葱模型：进入正序、返回逆序                   | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-03` | 优先用 Hono 内置中间件，不采用须写明理由             | §3.1             |
-| `ARCH-HONO-04` | 路径参数与查询参数必须经 `zValidator` 校验           | §8.2             |
-| `ARCH-HONO-05` | 不用全局 `declare module 'hono'` 扩展变量            | §8.2             |
+| `ARCH-HONO-04` | 路径参数与查询参数必须经 `zValidator` 校验           | [`runtime.md`](architecture/runtime.md) |
+| `ARCH-HONO-05` | 不用全局 `declare module 'hono'` 扩展变量            | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-06` | OpenAPI 用官方 `@hono/zod-openapi`                   | §3, §8.8         |
 | `ARCH-HONO-07` | `onError` 必须同时处理 `HTTPException`               | §8.3             |
 | `ARCH-HONO-08` | 校验的官方语义（各 target 取值来源）                 | §8.6             |
-| `ARCH-HONO-09` | 校验失败响应体由 hook 统一                           | §8.3, §8.6       |
+| `ARCH-HONO-09` | 校验失败响应体由 hook 统一                           | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-10` | Bun 入口与静态资源：媒体走 API 鉴权代理              | §15.1.1          |
 | `ARCH-HONO-11` | Hono 升级大版本前重核官方实践表                      | §18              |
-| `ARCH-HONO-12` | RPC 客户端用官方 `hc<AppType>`，不手写路径           | §8.1, §9.1       |
-| `ARCH-IDX-01`  | 索引按查询模式建，不设机械的「RLS 谓词列首列」规则   | §6.6             |
+| `ARCH-HONO-12` | RPC 客户端用官方 `hc<AppType>`，不手写路径           | [`stack.md`](architecture/stack.md) |
+| `ARCH-IDX-01`  | 索引按查询模式建，不设机械的「RLS 谓词列首列」规则   | [`indexes.md`](architecture/data/indexes.md) |
 | `ARCH-MOD-01`  | 模块清单只有一份：`MODULES` 常量                     | §5, §9.3         |
 | `ARCH-OPS-01`  | 回滚 = 恢复备份，不是 down migration                 | §15.3, §15.5     |
 | `ARCH-PERM-01` | 同一授权规则不允许写两遍                             | §7.5, §10        |
@@ -117,27 +118,11 @@
 
 **规则（`DM-GEN-21`）**：每个编号在全文档中只承载一条规则；引用编号必须在下表中有定义；下表中的编号全部有正文定义。
 
-### 18.1 与 `ARCH-*` 的双向映射
+### 18.1 编号交叉引用
 
-本文是**数据层权威**，架构文档 [`overview.md`](architecture/overview.md) 是**架构层权威**。两边的编号在语义上对应处互相引用——**这不是重复定义，而是两个视角的交叉索引**。
+`ARCH-*` 与 `DM-*` 的定义分别见本文 §21 与 §18；两侧主题文件用编号互相引用，不复制规则正文（宪法 Article VI）。
 
-| 本文章节 | 架构侧章节 | 架构编号 | 主题 |
-|---|---|---|---|
-| §5.1–§5.4 组织与项目 | plan.md §5 `organization` / `project` 模块 | `ARCH-AR-05` | 依赖单向：一个表只能被一个模块写 |
-| §5.6–§5.7 人物与姓名 | plan.md §5 `genealogy` 模块 | `ARCH-MOD-01` | 域清单只有一份 |
-| §5.8 关系事实 | plan.md §11.3 关系环数据库兜底 | `ARCH-CC-01` | 并发控制：advisory lock 而非锁行 |
-| §5.11 节点与路径 | plan.md §9.2 谱系画布 | `ARCH-FE-05` | 只做一条渲染路径 |
-| §5.14–§5.15 谱文与分页 | plan.md §11.1 谱文乐观锁 | `ARCH-AR-08` | 失败要响亮：冲突必须抛错不静默覆盖 |
-| §5.21 出版快照 | plan.md §11.6 出版同步起步 | `ARCH-PUB-01` | 出版有明确上限，不留白 |
-| §5.22 审计日志 | plan.md §12.2 审计 | `ARCH-AUD-01` | 审计完整性降级为软约束并登记 |
-| §8 RLS 与角色 | plan.md §7 多租户与 RLS | `ARCH-AR-02` / `ARCH-PERM-01` | 隔离靠数据库；授权规则不写两遍 |
-| §8.3 `visible_org_array()` | plan.md §7.3 | `ARCH-HONO-04` | 上下文参数必须经校验 |
-| §9.4 错误码映射 | plan.md §8.3 错误模型 | `ARCH-ERR-01` | 两级映射：SQLSTATE + 约束名 |
-| §11 索引清单 | plan.md §6.6 索引策略 | `ARCH-IDX-01` | 按查询模式建，不设机械规则 |
-| §12 Drizzle 落地边界 | plan.md §15 构建与部署 | `ARCH-BLD-01` | pnpm 是唯一包管理器 |
-| §13 验收清单 | plan.md §14 测试策略 | `ARCH-TST-03` | `bun test` 连真 PG 跑集成 |
-
-> **反向引用规则**：架构侧引用本文用 `DM-*`，本文引用架构侧用 `ARCH-*`。**任何一个 `ARCH-*` 出现在本文，都必须在 plan.md §21 的索引表中有定义**——校验脚本保证这一点（`SC-DOC-01`）。
+> **反向引用规则**：架构侧引用本文用 `DM-*`，本文引用架构侧用 `ARCH-*`。任何一个编号必须能在本文 §21 / §18 找到定义——由 [`check-docs.sh`](../scripts/check-docs.sh)（`SC-DOC-01`）保证。
 
 
 | 编号 | 规则摘要 | 定义位置 |
@@ -157,7 +142,8 @@
 | `DM-GEN-13` | 约束必须具名 | §1, §4.1 |
 | `DM-GEN-14` | 非空文本字段必须带 `btrim(x) <> ''` | §1, §4.2 |
 | `DM-GEN-15` | `updated_at` 由 DB 推进且严格单调递增 | §1, §4.4 |
-| `DM-GEN-16` | 软约束必须登记并有补偿测试 | §1, §7.2 |
+| `DM-GEN-16` | 软约束必须登记并有补偿测试 | [`schema.md`](architecture/data/schema.md) |
+| `DM-PURGE-01` | Person 物理清除（GDPR）V1 不做，走独立运维流程 + 审计 | [`invariants.md`](architecture/data/invariants.md) |
 | `DM-GEN-17` | 每条外键的引用侧列必须有支撑索引 | §1, §11.2 |
 | `DM-GEN-18` | 应用错误按「SQLSTATE + 约束名」映射，不解析文本 | §1, §4.6, §9.4 |
 | `DM-GEN-19` | 清单类内容由生成物产出并被反向校验 | §1, §4.5, §12.3 |
@@ -203,8 +189,9 @@
 | `DM-NOD-07` | Node 编排依据的语义正确（软约束） | §7.2 |
 | `DM-SRC-01` | Citation 目标同 Project | §5.13 |
 | `DM-ART-01` | `article_page.content` 至少含 `type` | §5.15, §7.1 #33 |
-| `DM-MED-01` | 对象字节在事务提交后删除 | §5.16, §7.2 |
-| `DM-MED-02` | 孤儿字节回收靠桶级对账 | §5.21 |
+| `DM-MED-01` | 每个对象字节有唯一主人 | [`schema.md`](architecture/data/schema.md) |
+| `DM-MED-02` | 孤儿字节回收靠桶级对账 | [`schema.md`](architecture/data/schema.md) |
+| `DM-MED-05` | 对象字节在事务提交后删除（软约束，有补偿测试） | [`invariants.md`](architecture/data/invariants.md) |
 | `DM-MED-03` | `object_key` 物理唯一 | §5.16, §7.1 #23 |
 | `DM-MED-04` | 媒体引用存在、同 Project | §7.1 #35 |
 | `DM-INV-01` | token 唯一、只存哈希、熵 ≥ 256 bit | §5.3, §7.1 #24 |
@@ -240,6 +227,6 @@
 | `DM-ADR-13` | 所有权并发控制用 CAS | §15 |
 | `DM-ADR-14` | 会话超时由 `PGOPTIONS` 下发 | §15 |
 
-**统计**：共 97 个编号，**零悬空、零冲突、零一号两义**。
+**统计**：编号清单与一致性由 [`check-docs.sh`](../scripts/check-docs.sh) 的 `--strict` 输出（R4/R5/R7）与 CI 生成；人工不维护手写计数。
 
 ---

@@ -31,7 +31,7 @@
 | `c.error` 在 `await next()` **之后**可读                     | [Context API](https://hono.dev/docs/api/context)             | 日志中间件在 `await next()` 后读 `c.error` 补记路由与用户维度，**不需要在每个 handler 里写 try/catch**（§13） |
 | `Factory` 的真实 API 只有 `createApp` / `createMiddleware` / `createHandlers` | [hono/factory 源码](https://github.com/honojs/hono/blob/main/src/factory.ts) | **不用 `createFactory` 注入运行时依赖**：本项目要注入 `db` / `services` / `logger` / `storage`，改走 `Hono<AppEnv>` + `c.get()`；但 `createMiddleware` 仍用于共享中间件以自动带上 `AppEnv` 类型（`ARCH-HONO-01`、`ARCH-HONO-05`） |
 | `ContextVariableMap` 是**全局**增强，会掩盖运行时的 `undefined` | [Context API — ContextVariableMap](https://hono.dev/docs/api/context) | **不做** `declare module 'hono'` 全局增强；业务变量全部声明在 `AppEnv` 的 `Variables` 上，作用域限定在真正使用它的 app 实例（`ARCH-HONO-05`） |
-| RPC 类型推断要求：**全链式调用** + **从已声明的具名变量推断** | [RPC Guide](https://hono.dev/docs/guides/rpc) · [Best Practices](https://hono.dev/docs/guides/best-practices) | 每个模块的 `router.ts` 导出 `export const routes = app.get(...).post(...)`；顶层 `export const routes = app.route(...)`；拆成多条语句会让 `hc()` 类型推导**静默失效**（`ARCH-HONO-01`） |
+| RPC 类型推断要求：**全链式调用** + **从已声明的具名变量推断** | [RPC Guide](https://hono.dev/docs/guides/rpc) · [Best Practices](https://hono.dev/docs/guides/best-practices) | 每个模块的 `router.ts` 导出 `export const routes = app.get(...).post(...)`；顶层 `export const routes = app.route(...)`；拆成多条语句会让 `hc()` 类型推导**静默失效**（`ARCH-RPC-01`） |
 | `validator` 各 target 的取值来源是确定的；`json` target **仅当** `Content-Type` 匹配 `application/json` 或 `*+json` 时才解析，否则取到空对象 `{}` | [hono/validator 源码](https://github.com/honojs/hono/blob/main/src/validator/validator.ts) | 写接口统一校验 `Content-Type`；`json` target 必须配 hook 统一错误体形状（`ARCH-HONO-08`、`ARCH-HONO-09`） |
 | `zValidator` 的 hook 可短路请求；peer dependency 同时支持 Zod 3.25 与 4 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator) | 选 Zod v4 不与 `@hono/zod-validator` 冲突（§3 表格「校验」行）；校验失败由 hook 返回 `{ ok: false, code, message, details }`，前端只需处理一种形状（`ARCH-HONO-09`） |
 | `HTTPException.getResponse()` **不感知 `Context`**，已设在 Context 上的响应头不会出现在它生成的 `Response` 里 | [Exception API](https://hono.dev/docs/api/exception)         | **不使用** `getResponse()`，统一用 `c.json()` 自行构造响应，保证 `secureHeaders` 与 `X-Request-Id` 不丢（§8.3） |
@@ -137,7 +137,7 @@
 
 | 官方结论                                             | 本项目的具体用法                                             |
 | ---------------------------------------------------- | ------------------------------------------------------------ |
-| `uuidv7()`                                           | 所有主键默认值；时间有序，**可直接当 keyset 游标**（§6.7、§8.7 `ARCH-API-01`） |
+| `uuidv7()`                                           | 所有主键默认值；时间有序，**可直接当 keyset 游标**（见 [`schema.md`](data/schema.md)、[`runtime.md`](runtime.md) §8.7 `ARCH-API-01`） |
 | 生成列 `STORED` / `VIRTUAL`                          | `node.parent_path` 必须 `STORED`（参与唯一约束与外键）；**PG 18 拒绝用户定义类型的虚拟生成列**（实测 #01：`SQLSTATE 0A000`） |
 | 复合外键 / 延迟约束                                  | 自引用父外键、owner 外键用 `DEFERRABLE INITIALLY DEFERRED`，允许父子同事务内任意顺序写入（§11.2） |
 | `FORCE ROW LEVEL SECURITY`                           | 所有业务表启用 `ENABLE` + `FORCE`；否则表 owner 绕过 RLS（§7.2） |
@@ -163,9 +163,10 @@
 | 编号           | 纪律                                                         |
 | -------------- | ------------------------------------------------------------ |
 | `ARCH-HONO-11` | 升级 Hono 大版本前，先用 Context7 重新拉一遍 §18 官方实践表对应条目，逐条核对本文表述是否仍成立 |
+| `ARCH-RPC-01` | RPC 类型推断要求全链式调用与具名变量推断（见 [`conventions.md`](api/conventions.md)） |
 | `ARCH-HONO-03` | 新增中间件前先查内置中间件选用表；内置件不采用时必须写明理由 |
 | `ARCH-BLD-01`  | 包管理纪律与 Dockerfile 必须一致：一律 pnpm，禁止 `bun install` / `bun add` / `bun.lock` |
-| `DM-GEN-06`    | 约束必须能在真实 PG 18 上稳定执行（复现登记见 docs/verification/README.md） |
+| [`DM-GEN-06`](data/schema.md) | 约束必须能在真实 PG 18 上稳定执行（复现登记见 [`verification/README.md`](../verification/README.md)） |
 
 ---
 

@@ -46,14 +46,14 @@
 | `DM-GEN-10` | 先测量再优化：索引按查询模式建，用 `EXPLAIN (ANALYZE)` 验证                          | 索引清单                                          | §11                                  |
 | `DM-GEN-11` | 约束保护事实，不保护排版。展示顺序类字段不做唯一约束                                        | 索引清单                                          | `DM-REL-04`                          |
 | `DM-GEN-12` | 锁只加在真正需要串行化的写者上，不与外键检查隐含的锁冲突                                      | 触发器 + 事务                                      | `DM-REL-05`                          |
-| `DM-GEN-13` | 约束必须具名                                                            | 外键/检查/唯一/外键定义                                 | §13.4 实测 #12                         |
+| `DM-GEN-13` | 约束必须具名                                                            | 外键/检查/唯一/外键定义                                 | [`verification/README.md`](../../verification/README.md) 实测 #12                         |
 | `DM-GEN-14` | 任何「非空文本」字段必须带 `btrim(x) <> ''`，纯空白不是内容                            | CHECK 约束                                      | §8 不变量 #17                           |
-| `DM-GEN-15` | `updated_at` 由 DB 推进且**严格单调递增**（用 `clock_timestamp()`，不用 `now()`） | `app.touch_updated_at()`                      | §13.4 实测 #03                         |
-| `DM-GEN-16` | 软约束必须登记在 §8.2「软约束登记表」并有补偿测试；软约束不是垃圾桶                              | 文档评审 + 用例                                     | 验收清单 #38                             |
+| `DM-GEN-15` | `updated_at` 由 DB 推进且**严格单调递增**（用 `clock_timestamp()`，不用 `now()`） | `app.touch_updated_at()`                      | [`verification/README.md`](../../verification/README.md) 实测 #03                         |
+| `DM-GEN-16` | 软约束必须登记在 [`invariants.md`](./invariants.md) §7.2「软约束登记表」并有补偿测试；软约束不是垃圾桶                              | 文档评审 + 用例                                     | 验收清单 #38                             |
 | `DM-GEN-17` | 每条外键的引用侧列必须有支撑索引（PostgreSQL 不会自动建）                                | 索引清单                                          | §11 FK→索引覆盖表                         |
 | `DM-GEN-18` | 应用错误按「SQLSTATE + 约束名」两级映射，**不解析消息文本**                             | 应用层                                           | §4.6 错误码表                            |
 | `DM-GEN-19` | 清单类内容（表清单、枚举、RLS 策略矩阵、权限矩阵）必须由生成物产出并被反向校验                         | `scripts/gen-sql.ts` + `db/verify/tables.sql` | CI `gen:sql && git diff --exit-code` |
-| `DM-GEN-20` | **不依赖数据库默认值**：凡默认值会随版本变化的语法，必须显式写出关键字                             | DDL 审查                                        | §13.4 实测 #01                         |
+| `DM-GEN-20` | **不依赖数据库默认值**：凡默认值会随版本变化的语法，必须显式写出关键字                             | DDL 审查                                        | [`verification/README.md`](../../verification/README.md) 实测 #01                         |
 | `DM-GEN-21` | 编号唯一且可追溯：同一编号不得承载两条规则，引用编号必须有定义                                   | 文档评审                                          | §18 编号索引表                            |
 
 ---
@@ -315,7 +315,7 @@ ALTER TABLE organization
 - 创建组织必须在同一事务内先插 `organization`、再插 owner 的 `organization_member`，并执行 `SET CONSTRAINTS public.fk_organization_owner DEFERRED;`。此流程只允许通过 `app.create_organization()` 调用（`DM-ORG-04`）。
 - 迁移顺序：先建 `organization`（不带 owner 外键）→ 建 `organization_member`（含指向 `organization` 的外键）→ 再 `ALTER TABLE organization ADD CONSTRAINT fk_organization_owner`。循环外键必须分两步建立。
 - owner 的成员角色固定写 `admin`；owner 的权限由 `owner_user_id` 派生，不由 `role` 派生。
-- 物理删除组织不支持；使用 `status='archived'`。归档后禁止新写入是**应用层软约束**，数据库不拦截（`DM-ORG-05`，见 §8.2 软约束登记表）。
+- 物理删除组织不支持；使用 `status='archived'`。归档后禁止新写入是**应用层软约束**，数据库不拦截（`DM-ORG-05`，见 [`invariants.md`](./invariants.md) §7.2 软约束登记表）。
 - **v1.2**：`NOT NULL` 一律具名（`organization_name_not_null` 等），PG 18 起 NOT NULL 可进 `pg_constraint`，错误映射可以精确到列（`DM-GEN-13`）。
 
 索引：主键；`idx_organization_owner (owner_user_id)`。
@@ -1060,7 +1060,7 @@ CHECK (revoked_reason IS NULL OR btrim(revoked_reason) <> '')
 - 快照字段永不更新；触发器 `app.guard_book_release_snapshot()` 兜底。
 - 业务角色只有 `SELECT` / `INSERT`；没有 `UPDATE` / `DELETE`。作废与清除只能走 `app.revoke_book_release()` / `app.purge_book_release()`。
 - `revoke`：标记 `revoked_at` / `revoked_reason`，写审计；可逆性留痕。
-- `purge`：要求已作废且调用者是组织 owner；物理删除行、写审计，并在**事务提交后**删除产物字节（`DM-MED-01`）。
+- `purge`：要求已作废且调用者是组织 owner；物理删除行、写审计，并在**事务提交后**删除产物字节（`DM-MED-05`）。
 
 **`DM-BOK-05` 产物字节纪律**：`artifact_uri` 指向的字节归 `book_release` 行所有。
 
@@ -1472,7 +1472,7 @@ $$;
 
   DELETE FROM public.book_release WHERE id = p_release_id;
   INSERT INTO public.audit_log (...) VALUES (...);
-  -- 字节删除在事务提交后由应用回调执行（DM-MED-01 / DM-BOK-05）
+  -- 字节删除在事务提交后由应用回调执行（DM-MED-05 / DM-BOK-05）
 ```
 
 **`app.revoke_invite(uuid, text)`**（v1.2 新增）：

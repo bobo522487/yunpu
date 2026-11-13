@@ -11,9 +11,9 @@
 #   R2 eol             .md 不含 CR 字节
 #   R3 oos-dup         `OOS-\d+` 定义行只在 requirements/out-of-scope.md
 #   R4 dangling        反引号内的 ID token 被引用但全文档集无定义
-#   R5 dual            同一 ID 有 >=2 条定义行且归一文本不同（一号两义）
+#   R5 dual            同一 ID 有 >=2 条**正文**定义行且归一文本不同；README 编号索引表是登记/指针，不参与比较
 #   R6 needs-clarification  [NEEDS CLARIFICATION] 出现次数为 0
-#   R7 section         文件内裸 §x.y 必须能在本文件找到 ^#{1,6} x.y 标题
+#   R7 section         裸 §x.y 须在**文档集任一文件**找到 ^#{1,6} x.y 标题（拆分后章节号全文档集共享）；显式 .md 前缀豁免
 #   R8 size            >400 行的 .md 须在 <root>/README.md 的 Complexity Tracking 三列登记
 #
 # stdout（文本模式）: 每行 "<RULE> <file>:<line> <detail>"，末行 "VIOLATIONS=<n> WARN=<n>"
@@ -88,6 +88,19 @@ BEGIN {
   close(SCANLIST)
   while ((getline f < EXTRALIST) > 0) { if (f != "" && !(f in scan)) { order[++n] = f } }
   close(EXTRALIST)
+  for (k = 1; k <= n; k++) collect_heads(order[k])
+}
+
+# Task 3 按主题拆分后，章节号在文档集范围内共享：先做一遍全局标题预扫描，
+# 再逐文件检查 § 引用。否则「先处理的文件引用后处理的文件的章节」会误报。
+function collect_heads(f,   hl, hs) {
+  while ((getline hl < f) > 0) {
+    if (hl ~ /^#{1,6}[[:space:]]+[0-9]+([.][0-9]+)+/) {
+      hs = hl; sub(/^#{1,6}[[:space:]]+/, "", hs)
+      if (match(hs, /^[0-9]+([.][0-9]+)+/)) gheads[substr(hs, RSTART, RLENGTH)] = 1
+    }
+  }
+  close(f)
 }
 
 function basename(p,   b) { b = p; sub(/^.*\//, "", b); return b }
@@ -140,21 +153,15 @@ function process(f, iss,   line, ln, loc, fence, eol_reported, dolink, clean,
     if (iss && index(line, NEED) > 0)
       emit("R6 needs-clarification", loc, "unresolved Phase 0 marker")
 
-    # ---- R7 标题编号收集（按文件加键，无需清空数组）----
-    if (line ~ /^#{1,6}[[:space:]]+[0-9]+([.][0-9]+)+/) {
-      s = line; sub(/^#{1,6}[[:space:]]+/, "", s)
-      if (match(s, /^[0-9]+([.][0-9]+)+/)) heads[f SUBSEP substr(s, RSTART, RLENGTH)] = 1
-    }
-
-    # ---- R7 section：裸 §x.y 在本文件找不到标题即违规；带 .md 前缀视为显式跨文档 ----
+    # ---- R7 section：裸 §x.y 在文档集内找不到标题即违规；带 .md 前缀视为显式跨文档 ----
     if (iss) {
       tmp = line
       while (match(tmp, SEC)) {
         sec = substr(tmp, RSTART, RLENGTH); sub(/^§/, "", sec)
         recent = substr(tmp, 1, RSTART - 1)
         if (length(recent) > 60) recent = substr(recent, length(recent) - 59)
-        if (!((f SUBSEP sec) in heads) && recent !~ /\.md/)
-          emit("R7 section", loc, "§" sec " has no local heading")
+        if (!(sec in gheads) && recent !~ /\.md/)
+          emit("R7 section", loc, "§" sec " has no heading anywhere in the doc set")
         tmp = substr(tmp, RSTART + RLENGTH)
       }
     }
@@ -184,11 +191,14 @@ function process(f, iss,   line, ln, loc, fence, eol_reported, dolink, clean,
     if (line ~ D1 || line ~ D2 || line ~ D3) {
       id = first_id(line)
       if (id != "") {
-        def[id]++
-        dl = id SUBSEP def[id]
-        defloc[dl] = loc
-        deftext[dl] = defdesc(line)
-        defmax[id] = def[id]
+        def[id]++                       # R4：所有定义行都算，含 README 编号索引
+        if (f != READ) {                # R5：索引表是登记/指针，不参与「一号两义」比较
+          dc[id]++
+          dl = id SUBSEP dc[id]
+          defloc[dl] = loc
+          deftext[dl] = defdesc(line)
+          defmax[id] = dc[id]
+        }
       }
     }
 

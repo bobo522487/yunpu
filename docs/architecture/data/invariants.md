@@ -52,7 +52,7 @@
 | 40 | 组织归档后禁止新写入 | Use Case 检查 `organization.status` | App | `DM-ORG-05` |
 | 41 | 成员角色授权 | Service 层角色检查（矩阵单一来源） | App | `DM-ORG-07` |
 | 42 | Relation 类型与 Event 类型匹配 | Use Case + 测试 | App | `DM-EVT-05` |
-| 43 | Person 物理清除（GDPR） | V1 不做；独立运维流程 + 审计 | 流程 | `DM-GEN-16` |
+| 43 | Person 物理清除（GDPR） | V1 不做；独立运维流程 + 审计 | 流程 | `DM-PURGE-01` |
 | 44 | 所有外键的引用侧列有支撑索引 | 索引清单 + `db/verify/fk_indexes.sql` | DB | `DM-GEN-17` |
 | 45 | 错误按 SQLSTATE + 约束名映射 | 应用层错误映射表 | App | `DM-GEN-18` |
 | 46 | 清单类内容由生成物产出并反向校验 | `gen-sql.ts` + `db/verify/tables.sql` | DB + CI | `DM-GEN-19` |
@@ -73,9 +73,9 @@
 | `DM-ORG-07` | 成员增删改的角色授权 | 「谁能改成员」是业务规则，不是结构规则 | Service 层角色矩阵（单一来源） | #41 |
 | `DM-EVT-05` | Relation 类型与 Event 类型匹配（`marriage` 只挂 `spouse`/`partner`） | 跨表语义推断 | Use Case + 测试 | #42 |
 | `DM-NOD-07` | `placement_relation_id` 的语义正确性 | 跨表语义推断 | Use Case + 测试 | #39 |
-| `DM-GEN-16` | Person 物理清除（GDPR） | V1 不做 | 独立运维流程 + 审计 | — |
-| `DM-MED-01` | 对象字节在事务提交后删除 | 跨系统事务，无两阶段提交 | 应用层提交后回调 + 对账脚本 | #34 / #26 |
-| `DM-AUD-01` | 尽力而为审计路径 | 「大家记得调」不是约束 | 指标 `audit_write_failures_total` + 告警 | #32 |
+| `DM-PURGE-01` | Person 物理清除（GDPR） | V1 不做 | 独立运维流程 + 审计 | — |
+| `DM-MED-05` | 对象字节在事务提交后删除 | 跨系统事务，无两阶段提交 | 应用层提交后回调 + 对账脚本 | #34 / #26 |
+| [`DM-AUD-01`](./schema.md) | 尽力而为审计路径 | 「大家记得调」不是约束 | 指标 `audit_write_failures_total` + 告警 | #32 |
 
 ---
 
@@ -112,9 +112,9 @@
 
 - **Node 是编纂位置，不拥有 Person**；删除谱系或节点不得自动清理「当前没有 Node 引用」的人物。
 - **Relation 是人物关系事实，不拥有 Person**；删除关系不删除人物。
-- **对象存储字节在数据库提交后清理**；先删对象再提交会产生悬空引用（`DM-MED-01`）。
+- **对象存储字节在数据库提交后清理**；先删对象再提交会产生悬空引用（`DM-MED-05`）。
 - **物理删除 Project 前必须显式预览和确认**；不以大范围 `CASCADE` 代替业务删除流程。
-- V1 不提供 Person 物理清除（GDPR）；需要时走独立运维流程，逐表清理并写审计（`DM-GEN-16`）。
+- V1 不提供 Person 物理清除（GDPR）；需要时走独立运维流程，逐表清理并写审计（`DM-PURGE-01`）。
 - **`RESTRICT` 的报错是 `23001`**（PG 18），不是 `23503`。应用层按 §9.4 映射（`DM-GEN-18`）。
 
 ---

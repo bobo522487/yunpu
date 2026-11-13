@@ -40,6 +40,8 @@ run needs-clarification  1 'R6 needs-clarification'
 run section              1 'R7 section'
 run us-heading           0 ''
 run p-marker             0 ''
+run cross-file-section  0 ''
+run index-vs-definition 0 ''
 
 echo "TESTS=$n FAILURES=$fail"
 [ "$fail" -eq 0 ]

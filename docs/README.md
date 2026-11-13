@@ -11,6 +11,59 @@
 - `docs/superpowers/`：本次评审报告与实施计划（历史快照，不参与规格校验）
 - 本仓库的完整目标架构文档位于 `docs/`；`specs/<NNN>-<feature>/` 只在后期分批实现时由 spec-kit 生成，当前不存在。批次工件引用 `docs/` 编号，不复制表格。
 
+## 谁定义什么（导航表）
+
+> 同一主题只在一个文件定义。下表列出每个主题文件负责的主题、它作为唯一权威的编号族，以及统一的校验命令；其它文件引用编号，不复制表格（宪法 Article VI）。
+
+| 主题文件 | 负责的主题 | 唯一权威的编号族 | 校验命令 |
+| --- | --- | --- | --- |
+| `architecture/overview.md` | 目标、范围、分层与复杂度预算总览 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/stack.md` | 技术选型、锁定版本、官方依据与 Phase 0 结论 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/runtime.md` | 请求生命周期、中间件链、依赖注入与错误映射落地 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/modules.md` | 模块划分、源码目录树与依赖方向 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/operations.md` | 构建、部署、观测与运维纪律 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/schema.md` | 表结构、字段、约束、函数与视图 | 唯一权威：`DM-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/security.md` | RLS 策略、租户谓词与权限矩阵 | 唯一权威：`DM-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/invariants.md` | 不变量、软约束登记表与删除语义 | 唯一权威：`DM-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/indexes.md` | 索引策略与外键引用侧覆盖白名单 | 唯一权威：`DM-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/errors.md` | 错误码到 HTTP 的单一映射 | 唯一权威：`EC-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/data/migrations.md` | 迁移、生成物与一致性校验 | 唯一权威：`DM-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/api/conventions.md` | 通用 API 约定与 Phase 0 处置指针 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `architecture/api/endpoints.md` | 端点形状、请求响应与逐端点约束 | 唯一权威：`ARCH-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `requirements/user-stories.md` | 用户场景与 Given/When/Then 验收 | 唯一权威：`SC-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `requirements/functional.md` | 功能与非功能需求、Phase 0 契约项 | 唯一权威：`SC-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `requirements/acceptance.md` | 成功标准与全量追溯矩阵 | 唯一权威：`SC-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+| `requirements/out-of-scope.md` | 明确不做清单（唯一副本） | 唯一权威：`OOS-*` 编号族 | `scripts/check-docs.sh --root docs --strict` |
+
+
+## 阅读顺序
+
+> 1. 先读 `docs/README.md`（本文件）：导航、两次门禁、复杂度例外与编号索引。
+> 2. 再读 `docs/requirements/`：做什么、验收标准与明确不做。
+> 3. 然后读 `docs/architecture/overview.md`：目标、范围与分层总览。
+> 4. 接着读 `docs/architecture/data/`：表结构、RLS、不变量、索引、错误码与迁移。
+> 5. 最后读 `docs/architecture/api/`：端点与通用约定；技术栈、运行时、模块与运维按需查该目录其余文件。
+
+## docs/ 与 `specs/` 的分工
+
+> 用户决策（m00401，逐字）：我希望还是保持在 docs 目录下放完整的目标架构文档。specs/ 目录下后期再分批一步一步的实现。架构文档的目录肯定不是这几个文件名；
+
+> `docs/` 是完整目标架构基线：按主题稳定组织，与实现批次无关；编号族只定义一次，批次工件只引用不复制。
+
+> `specs/<NNN>-<feature>/` 只在后期分批实现时由 `/speckit-specify` 生成，按 spec-kit 官方 Project Structure 放置 `spec.md` / `plan.md` / `research.md` / `data-model.md` / `quickstart.md` / `contracts/` / `tasks.md`；其中 `tasks.md` 是 Phase 2 `/speckit-tasks` 的产物，不由 `/speckit-plan` 创建。每批次引用 `docs/` 编号，不复制表格。
+
+> `.specify/feature.json` 是 gitignored 的本地状态；CI 用 `SPECIFY_FEATURE_DIRECTORY` 指定批次目录。二者都属于工具状态，不属于文档树。**本次重构不创建 `specs/`，不生成 `tasks.md`/`quickstart.md`**，也不写 `.specify/feature.json`。
+
+## spec-kit 运行时状态（如实记录）
+
+> 运行 `.specify/scripts/bash/check-prerequisites.sh --json` 的当前结果（2026-11-14 复核）：
+
+> `ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or run the specify command to create .specify/feature.json.`
+> `ERROR: Failed to resolve feature paths`
+> `prereq_exit=1`
+
+> 当前未开始任何实现批次，故无特性目录；这不是缺陷，也不需要为了变绿而造一个 `specs/` 或伪造 `.specify/feature.json`。该事实只作记录，不改变 `docs/` 的完整性；等第一批 `/speckit-specify` 生成特性目录后再复测。
+
 ## Constitution Check（两次门禁）
 
 > 两次门禁均已完成逐条回答：第一次 11 项自查见下方，第二次 7 行复核见其后。

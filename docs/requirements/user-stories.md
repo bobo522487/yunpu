@@ -16,8 +16,8 @@
 
 1. **Given** 一个已创建的项目，**When** 录入一个带姓氏和名字的人物，**Then** 人物创建成功并显示主显示名
 2. **Given** 一个已有主显示名的人物，**When** 再录入一个同类型姓名，**Then** 系统接受（多姓名合法），主显示名保持不变
-3. **Given** 一个姓名类型为「谱名」的人物，**When** 录入，**Then** 该姓名字段在界面上有独立的展示位置
-4. **Given** 一个姓名类型为「乳名」的人物，**When** 录入，**Then** 该姓名不参与正式称谓排序
+3. **Given** 一个姓名类型为「谱名」的人物，**When** 录入，**Then** `person_name` 中 `kind='genealogy'` 的行数由 `SELECT count(*) FROM person_name WHERE person_id = :id AND kind='genealogy'` 读出且 ≥ 1，UI 展示分组键即 `kind`（`FR-PER-01`）。
+4. **Given** 一个姓名类型为「乳名」的人物，**When** 录入，**Then** 正式称谓排序查询 `SELECT count(*) FROM person_name WHERE person_id = :id AND kind <> 'milk'` 不含该行，即 `kind <> 'milk'` 的结果集与 `is_primary` 展示集一致（`FR-PER-01`）。
 5. **Given** 人物已存在，**When** 把主显示名切换到另一个已录姓名，**Then** 切换成功且原主显示名降为普通姓名
 
 ---
@@ -87,9 +87,9 @@
 **验收场景**：
 
 1. **Given** 一个事件，**When** 挂一条引用，**Then** 引用被接受并与该事件关联
-2. **Given** 一个来源，**When** 查询引用它的事件，**Then** 反向引用列表完整
+2. **Given** 一个来源，**When** 查询引用它的事件，**Then** `SELECT count(*) FROM source_citation WHERE source_id = :id` 与反向引用视图行数相等，且 `fk_source_citation_source` 保证无悬空 `source_id`（`FR-SRC-01`）。
 3. **Given** 一条引用，**When** 引用定位指向一个不存在的人物，**Then** 写入被拒绝
-4. **Given** 一个来源，**When** 删除该来源，**Then** 其引用按声明的删除语义处理（不留下悬空引用）
+4. **Given** 一个来源，**When** 删除该来源，**Then** 有引用时 `SELECT count(*) FROM source_citation WHERE source_id = :id` > 0 触发 `23001` 拒绝（`RESTRICT`）；无引用时删除成功且引用表行数不变；规则见 `invariants.md` §10 删除语义表。
 
 ---
 
@@ -105,8 +105,8 @@
 
 1. **Given** 一个项目，**When** 创建一篇谱文，**Then** 谱文创建成功且有标题与正文
 2. **Given** 一篇谱文，**When** 两个会话同时编辑，**Then** 后提交的冲突方收到明确的冲突错误，不静默覆盖
-3. **Given** 一篇谱文，**When** 保存并刷新，**Then** 正文与分页结构一致
-4. **Given** 一篇谱文，**When** 删除，**Then** 其分页与页面媒体按声明的删除语义级联或置空
+3. **Given** 一篇谱文，**When** 保存并刷新，**Then** `SELECT count(*) FROM article_page WHERE article_id = :id` 与保存前相等、每页 `version` 单调递增且正文分页序号连续（`FR-ART-02` 乐观锁）。
+4. **Given** 一篇谱文，**When** 删除，**Then** `SELECT count(*) FROM article_page WHERE article_id = :id` = 0（`fk_article_page_article` `CASCADE`），`article_page_media` 关联行清空、`media_asset` 字节按提交后回调清理；规则见 `invariants.md` §10。
 
 ---
 
@@ -173,7 +173,7 @@
 
 1. **Given** 一个项目，**When** 通过服务端代理上传一个媒体文件，**Then** 文件进入私有桶并生成 `media_asset` 记录
 2. **Given** 一个媒体资产，**When** 未授权用户尝试下载，**Then** 被拒绝（对象存储不做公开读）
-3. **Given** 一条人物媒体关联，**When** 删除该关联，**Then** 媒体资产按声明的语义处理，不产生悬空引用
+3. **Given** 一条人物媒体关联，**When** 删除该关联，**Then** `SELECT count(*) FROM person_media WHERE id = :id` = 0，`fk_person_media_media` 保持 `RESTRICT`，`media_asset` 行保留且对象字节按 `DM-MED-05` 在事务提交后删除。
 
 ---
 
@@ -404,7 +404,7 @@
 
 **#44 ✚ FK 引用侧索引覆盖**
 - When 跑 `db/verify/fk_indexes.sql`
-- Then 37 条外键有支撑索引；18 条未覆盖项全部在白名单中且附理由；白名单与 §11.2 完全一致
+- Then 37 条外键有支撑索引；18 条未覆盖项全部在白名单中且附理由；白名单与 `indexes.md` §11.2 逐条一致且未登记例外 = 0。
 
 **#45 ✚ RLS 全表覆盖**
 - When 跑 `db/verify/rls.sql`

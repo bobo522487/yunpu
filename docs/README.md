@@ -21,6 +21,18 @@
 |---|---|---|
 | 由 Task 8 登记 | — | — |
 
+## Phase 0 未决项表
+
+> 下列契约项在 Phase 0 仍**未决**，**阻塞该批次 `/speckit-tasks`**：tasks.md 不得在这些项定值前生成。结论编号与已定值项见 [stack.md](architecture/stack.md)，需求侧清单见 [functional.md](requirements/functional.md)。
+
+| 结论 | 未决契约项 | 为什么未决 | 解除条件 |
+| --- | --- | --- | --- |
+| C3 | 完整权限名矩阵 | 权限本体 `packages/shared/src/permissions.ts` 尚未落地 | 权限清单定值并回写 conventions.md |
+| C4 | 分页参数名 | 需与前端列表契约一致 | 定游标 / 每页大小 / 上限的参数名 |
+| C5 | 限流配额 | 依赖部署容量测算 | 定配额数值、返回状态码与响应体 |
+| C6 | 通用幂等机制 | 需确认重试语义与存储 | 定 `Idempotency-Key` 是否启用及存活期 |
+| C8 | 增删改 / 兑换邀请 / 审计查询端点 | 需产品确认 V1 范围 | 端点清单定值并回写 endpoints.md |
+
 ## 编号索引
 
 > 以下为重构前的编号索引原文；由 Task 5/9 去重、纠正位置并补齐引用。

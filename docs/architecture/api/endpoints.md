@@ -1,6 +1,8 @@
 # API 端点表
 
 > 本文件是「端点形状、请求响应与逐端点约束」的唯一权威；其他主题见 `docs/README.md` 导航，同一主题不复制表格。
+>
+> **Phase 0 处置**：本表原 73 个「未定义」单元格不在此复制结论值，逐项按 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）定值；未决项登记在 [README.md](../../README.md) 的 Phase 0 未决项表并阻塞该批次 `/speckit-tasks`，需求侧索引见 [functional.md](../../requirements/functional.md) §4。
 
 ## 2. 端点表
 

@@ -289,6 +289,16 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 ---
 
 
-## 待补齐契约项
+## Phase 0 结论（九类契约项）
 
-见 [`functional.md`](../requirements/functional.md)：原 api.md §4 列出的 9 类 Phase 0 待补齐契约项由结论补齐；本文不复制清单。
+> 原 api.md §4 的九类契约项已在 Phase 0 一次性收口，终态不留待澄清标记。本节是结论的唯一权威；需求侧只保留「类别 → 结论编号 → 状态」索引（见 [functional.md](../requirements/functional.md)），未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表。判定标准：能量化为具体值并可由校验脚本核对的记「已定值」；依赖尚未落地的代码或产品决策的记「未决」并阻塞该批次 `/speckit-tasks`。
+
+1. **Zod schema 名（C1）**：已定值。沿用 `<动词><实体>Schema` 规则；已点名的 4 个 schema 保留，其余端点入参按同规则置于 `packages/shared/src/schemas`，不再逐个留空。
+2. **逐端点关键状态码（C2）**：已定值。除 `201` / `400` / `401` / `403` / `404` / `409` / `413` / `500` / `504` 外不引入新码；`RATE_LIMITED` 定为 `429`，见 [conventions.md](api/conventions.md) §1.11。
+3. **完整权限名矩阵（C3）**：未决。矩阵本体 `packages/shared/src/permissions.ts` 未落地，阻塞该批次 `/speckit-tasks`。
+4. **分页参数名（C4）**：未决。游标、每页大小与上限的 HTTP 参数名需与前端列表契约一起定，阻塞该批次 `/speckit-tasks`。
+5. **限流配额（C5）**：未决。配额数值、返回状态码与响应体依赖部署容量测算，阻塞该批次 `/speckit-tasks`。
+6. **通用幂等机制（C6）**：未决。是否启用 `Idempotency-Key`、键的存活期与存储未定，阻塞该批次 `/speckit-tasks`。
+7. **批量端点上限（C7）**：已定值。V1 端点清单中没有批量导入 / 批量写入端点，故无上限可定；将来引入时按 [out-of-scope.md](../requirements/out-of-scope.md) 的复评条件处理。
+8. **端点清单（C8）**：未决。增删改、兑换邀请具体路径与审计查询端点是否纳入 V1 需产品确认，阻塞该批次 `/speckit-tasks`。
+9. **ErrorCode 到 HTTP 映射（C9）**：已定值。[errors.md](data/errors.md) §9.4 是唯一权威；`RATE_LIMITED` → `429` 已写入该表，其余按枚举逐行映射。

@@ -4,7 +4,7 @@
 
 ## 0. 阅读约定
 
-- **未定义**：plan.md §8 未给出该项信息，本文不做推断补充，需在实现阶段由 spec 补齐。
+- **未定义项的 Phase 0 处置**：原 plan.md §8 未给出的项由 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）统一收口；本文不推断补充、不留到实现阶段。已定值项直接引用结论，未决项见 [README.md](../../README.md) 的 Phase 0 未决项表并阻塞该批次 `/speckit-tasks`。
 - **Zod schema 名**：plan.md 只显式给出了少数 schema（`CreateNodeSchema`、`NodeIdParamsSchema`、`NodeResponseSchema`、`ErrorSchema`），其余端点的入参 schema 名在 plan.md 中**未定义**；按 §8.5 的规则它们应位于 `packages/shared/src/schemas`。
 - **权限名**：plan.md 只显式点名 `person.write`、`release.purge`（§10、§7.5 `ARCH-PERM-01`），完整矩阵在 `packages/shared/src/permissions.ts`，本文中未列出的权限名记为**未定义**。
 - 路径参数一律使用**内部 UUID**；URL 不承担授权，授权由会话 + RBAC + RLS 完成（§8.9 末段）。
@@ -148,8 +148,8 @@ export type ErrorCode =
 | ------------------------------------ | ------------------------------------------------ | ---- |
 | 中间件                               | `rateLimit()`，注册在认证**之后**                | §8.2 |
 | 粒度                                 | 按用户（按 IP 更差且会被未认证流量打满共享配额） | §8.2 |
-| 具体配额数值、返回状态码、限流响应体 | **未定义**                                       | —    |
-| `RATE_LIMITED` 错误码                | 存在于 `ErrorCode` 枚举                          | §8.3 |
+| 具体配额数值、返回状态码、限流响应体 | 未决（Phase 0 结论 `C5`，见 [stack.md](../stack.md)） | C5   |
+| `RATE_LIMITED` 错误码                | 已定值：映射为 HTTP `429`（Phase 0 结论 `C9`）  | C9   |
 
 > 来源：plan.md §8.2、§8.3
 

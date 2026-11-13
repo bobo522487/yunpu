@@ -13,6 +13,7 @@
 | `clock_timestamp()` vs `now()` 的严格递增行为 | 待验证 | 需真实事务复现 |
 | `drizzle-orm@0.45.4` `pg-core/columns/common.js` 第 28 行 `mode` 默认值 | 待验证 | 需源码核对；文档按 `DM-GEN-20` 显式写 `mode: 'stored'` |
 | Playwright 1.65.0 在 Bun 1.4.4 上运行 E2E | 待验证 | 需装 Bun + Playwright 跑最小用例；官方依据见 [`../architecture/stack.md`](../architecture/stack.md) |
+| `SC-PER-01` 列表接口 1 万行 P95 < 200ms | 待验证 | 需压测报告；Article IX 先测量再优化，未压测不得判达标 |
 
 ## 复现步骤（执行后把上表状态改为「已验证」并附日志路径）
 

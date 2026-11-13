@@ -10,10 +10,9 @@ yunpu/
 ├─ apps/
 │  ├─ api/                          Hono 服务（API + 静态资源）
 │  │  ├─ src/
-│  │  │  ├─ index.ts                Bun.serve 入口 + 启动自检
+│  │  │  ├─ index.ts                默认导出 { port, fetch } + 启动自检
 │  │  │  ├─ app.ts                  组装中间件与路由（链式，勿拆）
 │  │  │  ├─ env.ts                  环境变量解析与校验（唯一读取方）
-│  │  │  ├─ middleware/             request-context · auth · rate-limit
 │  │  │  ├─ modules/                ← 业务域，见 §5
 │  │  │  │  └─ <domain>/
 │  │  │  │     ├─ router.ts       Hono 子路由（export default + export const routes）

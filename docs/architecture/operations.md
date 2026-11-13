@@ -38,7 +38,7 @@ COPY packages/db/package.json   packages/db/
 COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile --prod
 
-FROM oven/bun:1-slim AS runtime
+FROM oven/bun:1.4.4 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production PORT=3000
 COPY --from=build   /app/apps/api/dist ./dist

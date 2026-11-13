@@ -26,14 +26,14 @@
 |---|---|---|
 | `23505` | `unique_violation` | 不变 |
 | `23503` | `foreign_key_violation` | **仅**表示 `NO ACTION` / `SET NULL` / `SET DEFAULT` 动作下的引用违规 |
-| `23001` | `restrict_violation` | **`ON DELETE RESTRICT` 的专属码**。PG 18 起 RESTRICT 不再报 `23503`（§2.1 #2，实测 #02） |
+| `23001` | `restrict_violation` | **`ON DELETE RESTRICT` 的专属码**。PG 18 起 RESTRICT 不再报 `23503`（§2.1 #2，待验证 #02） |
 | `23514` | `check_violation` | 不变 |
 | `42501` | `insufficient_privilege` | 权限不足（不是约束错误，不进约束名匹配分支） |
 | `22P02` | `invalid_text_representation` | 输入格式错误（如非法 UUID 字符串） |
 | `55P03` | `lock_not_available` | 拿不到 advisory lock（`lock_timeout` 触发） |
 | `57014` | `query_canceled` | `statement_timeout` 触发 |
 
-> **1.1 版的错误**：「唯一、外键、CHECK 错误沿用原生 `23505` / `23503` / `23514` / `23001`」把 `23001` 和 `23503` 并列而未区分触发条件。按 PG 18 实测，`ON DELETE RESTRICT` 与普通外键违规是**两个不同的码**。应用若把两者合并处理，就无法区分「引用了被保护的对象」和「级联动作被拒」。
+> **1.1 版的错误**：「唯一、外键、CHECK 错误沿用原生 `23505` / `23503` / `23514` / `23001`」把 `23001` 和 `23503` 并列而未区分触发条件。按 PG 18 官方文档推导（待验证），`ON DELETE RESTRICT` 与普通外键违规是**两个不同的码**。应用若把两者合并处理，就无法区分「引用了被保护的对象」和「级联动作被拒」。
 >
 > 错误映射按「SQLSTATE → 约束名 → 文案」两级解析（[`overview.md`](../overview.md) §8.3），**不解析中文消息**（`DM-GEN-18`）。
 

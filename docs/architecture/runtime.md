@@ -6,7 +6,7 @@
 
 ### 8.1 Hono 组织方式
 
-> `ARCH-HONO-01`（1.2 修正）：原 1.1 版的示例代码**调用了不存在的 API**：`createFactory()` 返回的是 `Factory` 实例，它只有 `createApp()` / `createMiddleware()` / `createHandlers()` 三个方法，**没有 `.use()` / `.get()` / `.post()`**。把 `Factory` 当成 `Hono` 实例用，代码根本编译不过。官方推荐的「大型应用」结构是：**每个子路由是一个独立的 `Hono` 实例，`export default` 出去；顶层用 `app.route()` 挂载并链式赋值给一个具名变量**。
+> `ARCH-HONO-01`（1.3 修正）：官方 [Factory Helper](https://hono.dev/docs/helpers/factory) 支持 `createFactory({ initApp })` 做跨文件依赖注入（逐字引文见 [`stack.md`](stack.md) 第 6.1 节）。本项目**选择** `Hono<AppEnv>` + `c.get()`，理由是装配集中在 `app.ts`、测试用 `app.request(input, init, env)` 注入 mock；这是取舍，不是「官方不支持注入」。官方推荐的「大型应用」结构仍是：**每个子路由是一个独立的 `Hono` 实例，`export default` 出去；顶层用 `app.route()` 挂载并链式赋值给一个具名变量**。
 
 **每个模块的 router.ts**（`apps/api/src/modules/genealogy/router.ts`）：
 
@@ -78,19 +78,9 @@ export type AppType = typeof routes;
 
 > `ARCH-HONO-04`：路径参数、查询参数**必须**经 `zValidator` 校验后才使用。Hono 的 `c.req.param()` 返回 `string`，直接把它当 UUID 用等于不做校验。
 
-### 8.1.1 依赖注入：为什么不用 `createFactory`
+### 8.1.1 依赖注入：为什么选 `Hono<AppEnv>` + `c.get()`
 
-`createFactory` 的用途是**给中间件和 handler 复用同一套 `Env` 类型**，而不是注入运行时依赖。它的 API 是：
-
-```ts
-const factory = createFactory<AppEnv>();
-const authMiddleware = factory.createMiddleware(async (c, next) => { … });
-const app = factory.createApp();          // 可带 initApp / defaultAppOptions
-```
-
-它**不提供** `use()` / `get()` / `post()`，也不能注入 `db`、`services` 这类运行时对象。
-
-本项目需要注入的是运行时依赖（数据库连接池、服务实例、对象存储客户端），因此走 **`Hono<AppEnv>` + `c.get()`** 路线：
+[Factory Helper](https://hono.dev/docs/helpers/factory) 官方提供两条路径：`createFactory({ initApp })` 可为 `createApp()` 产出的 app 注册中间件并注入运行时依赖（跨文件，适用于多个独立 app 共享装配）；`createMiddleware` 用同一套 `Env` 类型生成中间件。本项目按 `ARCH-HONO-01` 选 `Hono<AppEnv>` + `c.get()`：
 
 ```ts
 export type AppBindings = {
@@ -102,7 +92,7 @@ export type AppBindings = {
 export type AppEnv = { Variables: AppBindings };
 ```
 
-`createFactory` 的 `createMiddleware` 仍然值得用——共享中间件（`authMiddleware`、`rateLimit`）用它可以自动带上 `AppEnv` 类型，不必每个文件重复标注泛型。**两者不冲突：工厂用于中间件类型，`Hono` 实例用于路由与依赖注入。**
+这样依赖在 `apps/api/src/app.ts` 一处装配，路由/集成测试用 `app.request(input, init, env)` 注入 mock，不需要额外的工厂初始化路径（`ARCH-TST-04`）。`createFactory<AppEnv>().createMiddleware` 仍值得用：共享中间件（`authMiddleware`、`rateLimit`）自动带上 `AppEnv` 类型，不必每个文件重复标注泛型。工厂用于中间件类型复用，`Hono` 实例用于路由与依赖装配，两者不互斥，也不必二选一。
 
 > `ARCH-HONO-05`（1.2 修正）：**不要用全局 `declare module 'hono'` 扩展 `ContextVariableMap` 来放业务变量。** 官方文档明确指出：`ContextVariableMap` 是**全局**增强——即使某个 handler 根本没挂载写入该变量的中间件，`c.get('x')` 也会被类型成非 `undefined`，**运行时的 `undefined` 被类型系统掩盖**。本项目的 `Variables` 全部声明在 `AppEnv` 上（`Hono<AppEnv>`），作用域限定在真正使用了它的 app 实例，不做全局增强。
 

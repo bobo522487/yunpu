@@ -86,7 +86,7 @@
 
 **PostgreSQL 不会为外键的引用侧自动建索引。** 缺索引的后果是：删除或更新被引用行时，数据库要对引用表做全表扫描（`SELECT ... FROM child WHERE fk_col = $1 FOR KEY SHARE`）。表越大越慢，而且这种慢是**在删除操作的锁持有期间**发生的，会放大阻塞。
 
-本表由 `db/verify/fk_indexes.sql` 自动生成并断言，逐条对应 `pg_constraint.conkey` 与 `pg_index.indkey` 的前缀匹配。**实测（§17 #14）：55 条外键中 37 条有支撑索引，18 条无。**
+本表由 `db/verify/fk_indexes.sql` 自动生成并断言，逐条对应 `pg_constraint.conkey` 与 `pg_index.indkey` 的前缀匹配。**待验证（§17 #14）：55 条外键中 37 条有支撑索引，18 条无。**
 
 **已覆盖（37 条，无需动作）**：
 
@@ -125,7 +125,7 @@
 
 - `ltree` 原生有 GiST 操作符类；`uuid` 没有，因此需要 **`btree_gist`** 扩展把 uuid 纳入 GiST。
 - 有了 `btree_gist`，`uuid` 列可以作为 GiST 索引的前导列，从而在同一个索引里同时过滤「哪个 Project / 哪个谱系」和「路径子树」。
-- **实测（§17 #12）**：`EXPLAIN` 显示 `Index Scan using node_path_gist on node`，`Index Cond: ((project_id = ...) AND (lineage_id = ...) AND (path <@ '0020'))`——**三列条件全部下推为 Index Cond**，没有额外的 Filter 行。这正是复合 GiST 想要的形状。
+- **待验证（§17 #12）**：复现时执行 `EXPLAIN`，预期 `Index Scan using node_path_gist on node` 且 `Index Cond: ((project_id = ...) AND (lineage_id = ...) AND (path <@ '0020'))`——**预期三列条件下推为 Index Cond**、无额外 Filter 行；这是复合 GiST 想要的形状，以真实计划为准。
 - 若只建 `gist (path)`，则 `project_id` / `lineage_id` 只能作为回表后的 Filter，扫描量放大到整个实例的所有节点。
 
 ### 11.4 测量方法（v1.2 修正）
@@ -138,6 +138,6 @@
 | 多列 B-tree 首列缺失 | 索引不可用 | 支持 **skip scan**，可能仍命中 | `(project_id, X)` 的索引在首列未约束时**可能**被用于 `X` 的查找，因此不能仅凭「首列缺失」断定索引无效，必须看实际计划 |
 | `initdb` 默认 | 无数据校验和 | **默认启用数据校验和** | `pg_upgrade` 要求两端校验和设置一致，部署文档需写明 |
 
-**实测（§17 #13）**：`EXPLAIN (ANALYZE, TIMING off, COSTS off) SELECT count(*) FROM person;` 的输出中，`Aggregate`、`Seq Scan on person`、`Planning` 三个节点**各自**都带 `Buffers: shared hit=1`——确认 PG 18 的 `ANALYZE` 已自动输出缓冲区信息。
+**待验证（§17 #13）**：复现时执行 `EXPLAIN (ANALYZE, TIMING off, COSTS off) SELECT count(*) FROM person;`，预期 `Aggregate`、`Seq Scan on person`、`Planning` 三个节点**各自**都带 `Buffers: shared hit=1`——若成立则说明 PG 18 的 `ANALYZE` 自动输出缓冲区信息，以真实计划为准。
 
 ---

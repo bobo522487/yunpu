@@ -287,7 +287,7 @@ PERFORM pg_advisory_xact_lock(
 | `statement_timeout`                   | 连接级 `30s`                                                 |
 | `idle_in_transaction_session_timeout` | 连接级 `60s`，防 advisory lock 长期占用                      |
 
-三个超时在连接池初始化连接时统一 `SET`。
+三个超时由连接串 `PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'` 下发，并设 `prepare: false`（`DM-POOL-01`；见 [`data/migrations.md`](data/migrations.md)）。
 
 service 不需要预先做图遍历；它只需要捕获 `GX001` 并转换成领域错误。**并发正确性由数据库保证，不由应用层的「先查再写」保证。**
 
@@ -386,9 +386,9 @@ service 不需要预先做图遍历；它只需要捕获 `GX001` 并转换成领
 | 单元 | `bun test`                      | 领域规则、权限矩阵、路径分配、错误映射             |
 | 路由 | `bun test` + Hono `app.request` | 入参校验、状态码、DTO 形状；service 用 mock        |
 | 集成 | `bun test` + 真实 PostgreSQL 18 | 事务、RLS、复合外键、触发器、并发、advisory lock   |
-| E2E  | Playwright（Node）              | 登录、建组织、建项目、录人物、连关系、写谱文、发布 |
+| E2E  | Playwright 1.65.0（Bun 1.4）   | 登录、建组织、建项目、录人物、连关系、写谱文、发布 |
 
-> `ARCH-TST-03`（1.1 修正）：旧版列了三套 runner（`bun test` + Vitest + Playwright），但**没给 Vitest 存在的硬理由**。`bun test` 一样能连真 PG 跑集成；Playwright 需要 Node 是 E2E 的事，不构成单元/集成再开一个 runner 的理由。**收敛成 `bun test` + Playwright。** 每多一个工具链，就多一份升级、配置和 CI 维护成本。
+> `ARCH-TST-03`（1.3 修正）：旧版列了三套 runner（`bun test` + Vitest + Playwright），但**没给 Vitest 存在的硬理由**。`bun test` 一样能连真 PG 跑集成；官方 [Bun 1.4](https://bun.sh/blog/bun-v1.4) 与 [Playwright release notes](https://playwright.dev/docs/release-notes) 已确认 Playwright 可在 Bun 上运行，因此也不再需要为 E2E 单独保留 Node runner。**收敛成 `bun test` + Playwright。** 每多一个工具链，就多一份升级、配置和 CI 维护成本。
 
 **路由测试的官方调用约定**（`ARCH-TST-04`）：`app.request(input, requestInit?, env?, executionCtx?)`
 

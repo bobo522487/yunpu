@@ -7,20 +7,20 @@
 | 结论                                                         | 影响                                               | 出处 |
 | ------------------------------------------------------------ | -------------------------------------------------- | ---- |
 | 中间件是洋葱模型（进入正序、返回逆序）                       | `requestId` 必须最先注册；`onError` 不能写成中间件 | §1   |
-| `Factory` 只有 `createApp`/`createMiddleware`/`createHandlers` | **不用 `createFactory` 注入运行时对象**            | §1   |
+| 官方 `createFactory({ initApp })` 支持跨文件 DI | 本项目按 `ARCH-HONO-01` 选 `Hono<AppEnv>` + `c.get()` | §1   |
 | `ContextVariableMap` 全局增强会掩盖 `undefined`              | 不声明全局模块扩展                                 | §1   |
 | 官方 `@hono/zod-openapi` 的请求 schema 与 `zValidator` 是同一份 Zod 对象 | 不引入第三方 `hono-openapi`                        | §1   |
 | Drizzle `generatedAlwaysAs` 必须显式写 `{ mode: 'stored' }`  | `ltree` 列不会因默认值变更而报 `0A000`             | §5   |
 | Drizzle `pgPolicy()` **不生成** `FORCE ROW LEVEL SECURITY`   | RLS 策略不能以 Drizzle 为唯一来源                  | §5   |
 | PG 18 的 `NOT NULL` 进入 `pg_constraint`（`contype='n'`）    | 所有 `NOT NULL` 一律具名                           | §6   |
 | PG 18 **没有** `ALTER CONSTRAINT ... SET NOT VALID`          | 大表加约束走 `ADD ... NOT VALID` → `VALIDATE`      | §9   |
-| 核心 RLS 谓词 `= ANY ((SELECT f()))` 实测报 `42883`          | 必须写 `= ANY (f())`                               | §9   |
+| 核心 RLS 谓词 `= ANY ((SELECT f()))` 待复现          | 必须写 `= ANY (f())`                               | §9   |
 
-> **所有结论都在真实 PostgreSQL 18.6 上跑过**，不是读文档推断的。原始记录见 §9–§12。
+> **PostgreSQL 18（待验证；本机无 `psql`，未实测）**：本文件的 PG 18 结论均来自官方文档，未在本机复现；复现步骤与状态登记见 [`../verification/README.md`](../verification/README.md)，D1–D12 缺陷清单见 [`../decisions/0001-pg18-defects.md`](../decisions/0001-pg18-defects.md)。
 
 ---
 
-## 1. Hono（v4，≥ 4.11.2）
+## 1. Hono（4.13.18，锁定）
 
 ### 1.1 选型结论
 
@@ -29,15 +29,15 @@
 | Hono 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件为洋葱模型 | [Middleware Guide](https://hono.dev/docs/guides/middleware) · [RPC Guide](https://hono.dev/docs/guides/rpc) | 选 Hono 而非 Express/Nest：一份代码同时服务 Bun 运行时，RPC 类型从后端 `AppType` 推导，**不手写请求路径**（`ARCH-HONO-12`） |
 | 中间件在 `next()` **之前**按注册顺序执行，**之后**按注册顺序的**逆序**执行 | [Middleware Guide](https://hono.dev/docs/guides/middleware)  | 中间件链固定为 `requestId → secureHeaders → compress → requestContext → authMiddleware → rateLimit`；`requestId` 必须最先注册，否则后续日志拿不到 requestId（`ARCH-HONO-02`） |
 | `c.error` 在 `await next()` **之后**可读                     | [Context API](https://hono.dev/docs/api/context)             | 日志中间件在 `await next()` 后读 `c.error` 补记路由与用户维度，**不需要在每个 handler 里写 try/catch**（§13） |
-| `Factory` 的真实 API 只有 `createApp` / `createMiddleware` / `createHandlers` | [hono/factory 源码](https://github.com/honojs/hono/blob/main/src/factory.ts) | **不用 `createFactory` 注入运行时依赖**：本项目要注入 `db` / `services` / `logger` / `storage`，改走 `Hono<AppEnv>` + `c.get()`；但 `createMiddleware` 仍用于共享中间件以自动带上 `AppEnv` 类型（`ARCH-HONO-01`、`ARCH-HONO-05`） |
+| 官方 `createFactory({ initApp })` 可为 `createApp()` 产出的 app 注册中间件并注入运行时依赖 | [Factory Helper](https://hono.dev/docs/helpers/factory) | 本项目按 `ARCH-HONO-01` 选 `Hono<AppEnv>` + `c.get()`：装配集中在 `app.ts`、测试用 `app.request(input, init, env)` 注入 mock；`createMiddleware` 仍用于共享中间件以自动带上 `AppEnv` 类型（`ARCH-HONO-05`）。这是取舍，不是「官方不支持」，逐字引文见第 6.1 节 |
 | `ContextVariableMap` 是**全局**增强，会掩盖运行时的 `undefined` | [Context API — ContextVariableMap](https://hono.dev/docs/api/context) | **不做** `declare module 'hono'` 全局增强；业务变量全部声明在 `AppEnv` 的 `Variables` 上，作用域限定在真正使用它的 app 实例（`ARCH-HONO-05`） |
 | RPC 类型推断要求：**全链式调用** + **从已声明的具名变量推断** | [RPC Guide](https://hono.dev/docs/guides/rpc) · [Best Practices](https://hono.dev/docs/guides/best-practices) | 每个模块的 `router.ts` 导出 `export const routes = app.get(...).post(...)`；顶层 `export const routes = app.route(...)`；拆成多条语句会让 `hc()` 类型推导**静默失效**（`ARCH-RPC-01`） |
-| `validator` 各 target 的取值来源是确定的；`json` target **仅当** `Content-Type` 匹配 `application/json` 或 `*+json` 时才解析，否则取到空对象 `{}` | [hono/validator 源码](https://github.com/honojs/hono/blob/main/src/validator/validator.ts) | 写接口统一校验 `Content-Type`；`json` target 必须配 hook 统一错误体形状（`ARCH-HONO-08`、`ARCH-HONO-09`） |
-| `zValidator` 的 hook 可短路请求；peer dependency 同时支持 Zod 3.25 与 4 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator) | 选 Zod v4 不与 `@hono/zod-validator` 冲突（§3 表格「校验」行）；校验失败由 hook 返回 `{ ok: false, code, message, details }`，前端只需处理一种形状（`ARCH-HONO-09`） |
+| `validator` 各 target 的取值来源是确定的；`json` target **仅当** `Content-Type` 匹配 `application/json` 或 `*+json` 时才解析，否则取到空对象 `{}` | [hono/validator 源码](https://github.com/honojs/hono/blob/v4.13.18/src/validator/validator.ts) | 写接口统一校验 `Content-Type`；`json` target 必须配 hook 统一错误体形状（`ARCH-HONO-08`、`ARCH-HONO-09`） |
+| `zValidator` 的 hook 可短路请求 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/8d656de46d87/packages/zod-validator) | 项目锁定 `zod@4.6.7`，上游 peer 范围只作兼容说明（见第 7 节）；校验失败由 hook 返回 `{ ok: false, code, message, details }`，前端只需处理一种形状（`ARCH-HONO-09`） |
 | `HTTPException.getResponse()` **不感知 `Context`**，已设在 Context 上的响应头不会出现在它生成的 `Response` 里 | [Exception API](https://hono.dev/docs/api/exception)         | **不使用** `getResponse()`，统一用 `c.json()` 自行构造响应，保证 `secureHeaders` 与 `X-Request-Id` 不丢（§8.3） |
-| 内置中间件清单与默认行为                                     | [Built-in Middleware](https://hono.dev/docs/middleware/builtin) | 制定「Hono 内置中间件选用表」：采用 `requestId` / `secureHeaders` / `compress` / `bodyLimit` / `timeout`；不采用 `cors` / `etag` / `cache` / `timing` / `logger` / `ipRestriction` 并**逐条写明理由**（`ARCH-HONO-03`） |
+| 内置中间件清单与默认行为                                     | [Secure Headers](https://hono.dev/docs/middleware/builtin/secure-headers) · [Body Limit](https://hono.dev/docs/middleware/builtin/body-limit) | 制定「Hono 内置中间件选用表」：采用 `requestId` / `secureHeaders` / `compress` / `bodyLimit` / `timeout`；不采用 `cors` / `etag` / `cache` / `timing` / `logger` / `ipRestriction` 并**逐条写明理由**（`ARCH-HONO-03`） |
 | `app.request(input, requestInit?, env?, executionCtx?)` 是官方测试约定 | [Hono API](https://hono.dev/docs/api/hono)                   | 路由/集成测试用第三个参数 `env` 注入 `Bindings`（`db` / `services` / `logger` / `storage`）的 mock，**不需要额外的 DI 框架**（`ARCH-TST-04`、§14.1） |
-| `@hono/zod-openapi` 提供 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/main/examples/zod-openapi.md) | 用**官方** `@hono/zod-openapi` 而非第三方 `rhinobase/hono-openapi`；`createRoute` 的请求/响应 schema 与 `zValidator` 是**同一份 Zod 对象**；Scalar 挂在 `/api/docs`（`ARCH-HONO-06`、§8.8） |
+| `@hono/zod-openapi` 提供 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/20aab4e020e3/examples/zod-openapi.md) | 用**官方** `@hono/zod-openapi` 而非第三方 `rhinobase/hono-openapi`；`createRoute` 的请求/响应 schema 与 `zValidator` 是**同一份 Zod 对象**；Scalar 挂在 `/api/docs`（`ARCH-HONO-06`、§8.8） |
 
 ### 1.2 与 Bun 相关的 Hono 行为
 
@@ -50,52 +50,52 @@
 
 ---
 
-## 2. Bun（≥ 1.4.4）
+## 2. Bun（1.4.4，锁定）
 
 | 结论                                           | 官方来源                                                     | 本项目的具体用法                                             |
 | ---------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Bun 冷启动快、`bun test` 开箱即用、安装快      | plan.md §3「运行时」行（未给出独立官方链接，**链接未定义**） | 运行时选 Bun；单元 / 路由 / 集成测试统一用 `bun test`（`ARCH-TST-03`） |
-| Playwright 不在 Bun 上运行                     | plan.md §3.3（未给出独立官方链接，**链接未定义**）           | E2E 跑在 **Node**，与 Bun 应用分离；应用镜像跑 Bun，E2E job 跑 Node；不做 `bun build --compile`（与 Playwright 不兼容，对容器化无收益） |
+| Bun 冷启动快、`bun test` 开箱即用、安装快      | [Bun 1.4](https://bun.sh/blog/bun-v1.4)（逐字引文见第 6.1 节，抓取日期：2026-11-13） | 运行时锁定 Bun 1.4.4；单元 / 路由 / 集成测试统一用 `bun test`（`ARCH-TST-03`） |
+| Playwright now runs on Bun（官方逐字引文） | [Bun 1.4](https://bun.sh/blog/bun-v1.4) · [Playwright release notes](https://playwright.dev/docs/release-notes)（抓取日期：2026-11-13） | E2E 用 Playwright 1.65.0，可在 Bun 1.4.4 上运行；应用镜像与 E2E job 的运行时按部署需要选择，不再以「不兼容」为由强制拆分 |
 | `serveStatic` 在 Bun 上的大小写 / 短名绕过风险 | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) | 见 §1.2；媒体走 API 鉴权代理                                 |
 
 ---
 
-## 3. pnpm（12.x）
+## 3. pnpm（12.18.0，锁定）
 
 | 结论                                                         | 官方来源 | 本项目的具体用法                                             |
 | ------------------------------------------------------------ | -------- | ------------------------------------------------------------ |
-| pnpm 的 workspace 与依赖隔离可控（plan.md §3「包管理」行，未给出官方链接，**链接未定义**） | —        | **全仓库唯一包管理器**；CI 与本地安装一律使用 pnpm；**禁止** `bun install` / `bun add` / `bun.lock`；镜像使用 `pnpm-lock.yaml` + `pnpm install --frozen-lockfile`（`ARCH-BLD-01`） |
+| pnpm 的 workspace 与依赖隔离可控 | [pnpm Workspaces](https://pnpm.io/workspaces) · [pnpm Docker](https://pnpm.io/docker)（抓取日期：2026-11-13） | **全仓库唯一包管理器**，锁定 12.18.0；CI 与本地安装一律使用 pnpm；**禁止** `bun install` / `bun add` / `bun.lock`；镜像使用 `pnpm-lock.yaml` + `pnpm install --frozen-lockfile`（`ARCH-BLD-01`） |
 
 > `ARCH-BLD-01` 同时是对旧版的修正：旧版 §3 写「pnpm，不要混用 Bun 的安装器」而 §15.1 镜像却是 `COPY bun.lock` + `bun install --frozen-lockfile`，两份文档互相否定；**现统一为 pnpm**。
 
 ---
 
-## 4. Zod（v4，`^3.25 || ^4`）
+## 4. Zod（4.6.7，锁定）
 
 | 结论                                                         | 官方来源                                                     | 本项目的具体用法                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 一份 schema 同时驱动前端表单与后端入参                       | plan.md §3「校验」行（未给出官方链接，**链接未定义**）       | 前端 `safeParse` 即时校验，后端 `zValidator` 权威校验，**用同一个 Zod schema**（§8.5） |
+| 一份 schema 同时驱动前端表单与后端入参                       | [Zod](https://zod.dev)（抓取日期：2026-11-13） | 前端 `safeParse` 即时校验，后端 `zValidator` 权威校验，**用同一个 Zod schema**（§8.5） |
 | `drizzle-zod` 可从表定义派生单表 CRUD                        | [drizzle-zod](https://orm.drizzle.team/docs/zod)             | 单表 CRUD 用 `drizzle-zod` 派生（`createInsertSchema` / `createSelectSchema` / `createUpdateSchema`）；跨实体规则手写（§8.5） |
-| `@hono/zod-validator` 的 peerDependency 同时支持 Zod 3.25 与 4 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator) | 选 Zod v4 不产生 peer 冲突（§3「校验」行）                   |
+| `@hono/zod-openapi@1.6.3` 要求 `^4.0.0`；上游 peer 范围只作兼容说明 | [zod-openapi 示例](https://github.com/honojs/website/blob/20aab4e020e3/examples/zod-openapi.md)（抓取日期：2026-11-13） | 项目锁定 `zod@4.6.7`；详见第 7 节版本锁定说明 |
 
 ---
 
-## 5. Drizzle ORM（0.45.x）
+## 5. Drizzle ORM（0.45.4，锁定）
 
 ### 5.1 选型结论
 
 | 结论                                                         | 官方来源                                                     | 本项目的具体用法                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Drizzle SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎（plan.md §3「ORM」行，未给出独立官方链接） | —                                                            | 选 Drizzle 而非 Prisma：递归 CTE（祖先/后代查询、环检查）、`ltree`、RLS 都需要直写 SQL |
-| 生产驱动用 `drizzle-orm/node-postgres`（`pg`）：在 Bun 的 Node 兼容层下可用，被 PgBouncer 长期验证 | plan.md §3.2（**链接未定义**）                               | 生产用 `pg` 驱动，**不用** `drizzle-orm/bun-sql`（ORM 的查询构建与结果映射会吃掉驱动层性能优势，连接池行为也与 `pg` 不同）；**先用 `pg`，等实测证明连接池是瓶颈再换** |
-| `generatedAlwaysAs(sql, { mode: 'stored' \| 'virtual' })`    | [Generated Columns](https://orm.drizzle.team/docs/column-types/pg) | `node.parent_path` 等生成列一律**显式**写 `mode: 'stored'`（`DM-ADR-11`）；实测确认 `drizzle-orm@0.45.4` 的 `pg-core/columns/common.js` 第 28 行已硬编码 `mode: "stored"`，本文仍要求显式书写（实测 #20） |
-| `customType` 定义 `ltree`                                    | [Custom Types](https://orm.drizzle.team/docs/advanced/custom-types) | `node.path` / `book_catalog.path` 用 `ltree` 自定义类型      |
-| `index().using('gist' \| 'gin', ...)`、`uniqueIndex().on().where()` | [Indexes](https://orm.drizzle.team/docs/indexes)             | GiST 复合索引 `node_path_gist` / `book_catalog_path_gist`；部分唯一索引（`uq_invite_pending_email`、`uq_person_name_primary`、`uq_node_one_primary` 等） |
-| `primaryKey()`、`foreignKey({ columns, foreignColumns })`    | [Composite Primary Keys](https://orm.drizzle.team/docs/primary-keys) 与 [Foreign Keys](https://orm.drizzle.team/docs/foreign-keys) | 所有 Project 内容表用 `(project_id, id)` 复合主键；复合外键保证 `organization_id` / `project_id` 一致 |
+| Drizzle SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎 | [Drizzle 文档](https://orm.drizzle.team/docs/schemas)（抓取日期：2026-11-13） | 选 Drizzle 而非 Prisma：递归 CTE（祖先/后代查询、环检查）、`ltree`、RLS 都需要直写 SQL |
+| 生产驱动用 `drizzle-orm/node-postgres`（`pg`）：在 Bun 的 Node 兼容层下可用，被 PgBouncer 长期验证 | [node-postgres](https://node-postgres.com/)（抓取日期：2026-11-13） | 生产用 `pg` 驱动，**不用** `drizzle-orm/bun-sql`（ORM 的查询构建与结果映射会吃掉驱动层性能优势，连接池行为也与 `pg` 不同）；**先用 `pg`，等实测证明连接池是瓶颈再换** |
+| `generatedAlwaysAs(sql, { mode: 'stored' \| 'virtual' })`    | [Generated Columns](https://orm.drizzle.team/docs/column-types/pg)（抓取日期：2026-11-13） | `node.parent_path` 等生成列一律**显式**写 `mode: 'stored'`（`DM-ADR-11`、`DM-GEN-20`）；`drizzle-orm@0.45.4` 源码第 28 行的默认值**待验证**，登记见 [`../verification/README.md`](../verification/README.md)，故不依赖默认值 |
+| `customType` 定义 `ltree`                                    | [Custom Types](https://orm.drizzle.team/docs/custom-types)（抓取日期：2026-11-13） | `node.path` / `book_catalog.path` 用 `ltree` 自定义类型      |
+| `index().using('gist' \| 'gin', ...)`、`uniqueIndex().on().where()` | [SQL schema declaration](https://orm.drizzle.team/docs/sql-schema-declaration)（抓取日期：2026-11-13） | GiST 复合索引 `node_path_gist` / `book_catalog_path_gist`；部分唯一索引（`uq_invite_pending_email`、`uq_person_name_primary`、`uq_node_one_primary` 等） |
+| `primaryKey()`、`foreignKey({ columns, foreignColumns })`    | [Schemas](https://orm.drizzle.team/docs/schemas) 与 [SQL schema declaration](https://orm.drizzle.team/docs/sql-schema-declaration)（抓取日期：2026-11-13） | 所有 Project 内容表用 `(project_id, id)` 复合主键；复合外键保证 `organization_id` / `project_id` 一致 |
 | `pgPolicy()` 的参数与限制（**不生成 `FORCE`**）              | [Row Level Security](https://orm.drizzle.team/docs/rls)      | `FORCE ROW LEVEL SECURITY` 归手写 SQL 迁移，不指望 Drizzle 生成（数据模型 §12.2 归类） |
 | `pgView`、`.with({ securityInvoker: true })`                 | [Views](https://orm.drizzle.team/docs/views)                 | 业务视图必须 `security_invoker = true`，否则视图属主权限会绕过 RLS（`DM-RLS-03`） |
 | `pgSchema`                                                   | [Schemas](https://orm.drizzle.team/docs/schemas)             | `app` schema 承载 `app.visible_org_array()` 等函数与 `app.lineage_root` 等视图 |
-| `drizzle-kit generate --custom` 生成空迁移文件               | [drizzle-kit generate](https://orm.drizzle.team/docs/drizzle-kit-generate) | 触发器、策略、部分索引、延迟约束等 Drizzle 不覆盖的部分归**手写 SQL 迁移**（数据模型 §12.2） |
+| `drizzle-kit generate --custom` 生成空迁移文件               | [Custom migrations](https://orm.drizzle.team/docs/kit-custom-migrations)（抓取日期：2026-11-13） | 触发器、策略、部分索引、延迟约束等 Drizzle 不覆盖的部分归**手写 SQL 迁移**（[`migrations.md`](data/migrations.md) 第 12.2 节） |
 
 ### 5.2 归手写 SQL 迁移的部分（Drizzle 边界）
 
@@ -108,37 +108,43 @@
 - `SECURITY DEFINER` 函数与 `SET search_path`
 - 视图 `security_invoker`
 
-> 来源：data-model.md §12.2「归手写 SQL 迁移（`drizzle-kit generate --custom`）」
+> 来源：[`migrations.md`](data/migrations.md) 第 12.2 节「归手写 SQL 迁移（`drizzle-kit generate --custom`）」
 
 ---
 
 ## 6. PostgreSQL 18
 
-### 6.1 官方依据（链接原文搬移）
+### 6.1 官方依据（逐字引文）
 
-- [Generated Columns](https://www.postgresql.org/docs/18/ddl-generated-columns.html)：`STORED` / `VIRTUAL`；用户定义类型不支持虚拟生成列。
-- [Constraints](https://www.postgresql.org/docs/18/ddl-constraints.html)：CHECK、UNIQUE、复合外键、列清单式 `ON DELETE SET NULL (col)`、可延迟约束、`NOT NULL` 具名。
-- [ALTER TABLE](https://www.postgresql.org/docs/18/sql-altertable.html)：`ADD table_constraint [ NOT VALID]`、`VALIDATE CONSTRAINT`；**无** `ALTER CONSTRAINT … SET NOT VALID`。
-- [Row Security Policies](https://www.postgresql.org/docs/18/ddl-rowsecurity.html)：默认拒绝、`FORCE ROW LEVEL SECURITY`、`BYPASSRLS`、`PERMISSIVE` / `RESTRICTIVE`。
-- [Explicit Locking](https://www.postgresql.org/docs/18/explicit-locking.html)：表 13.3 锁冲突矩阵（`FOR UPDATE` 与 `FOR KEY SHARE` 冲突）；[Advisory Locks](https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS)：`pg_advisory_xact_lock`。
-- [CREATE TRIGGER](https://www.postgresql.org/docs/18/sql-createtrigger.html)：`CONSTRAINT TRIGGER`、`DEFERRABLE INITIALLY DEFERRED`；PG 18 的 `AFTER` 触发器以入队时角色执行。
-- [CREATE FUNCTION](https://www.postgresql.org/docs/18/sql-createfunction.html)：`SECURITY DEFINER`、`SET search_path`、属主权限。
-- [CREATE VIEW](https://www.postgresql.org/docs/18/sql-createview.html)：`security_invoker`。
-- [CREATE INDEX](https://www.postgresql.org/docs/18/sql-createindex.html)：`USING gist`；[btree_gist](https://www.postgresql.org/docs/18/btree-gist.html)。
-- [ltree](https://www.postgresql.org/docs/18/ltree.html)：数字标签、`nlevel`、`subpath`、GiST 操作符类。
-- [UUID Functions](https://www.postgresql.org/docs/18/functions-uuid.html)：`uuidv7()`。
-- [GRANT](https://www.postgresql.org/docs/18/sql-grant.html)：列级权限与函数授权。
-- [Error Codes](https://www.postgresql.org/docs/18/errcodes-appendix.html)：`23001`（`restrict_violation`）与 `23503`（`foreign_key_violation`）的区分。
-- [Lock Management](https://www.postgresql.org/docs/18/runtime-config-client.html)：`lock_timeout`、`statement_timeout`、`idle_in_transaction_session_timeout`。
-- [EXPLAIN](https://www.postgresql.org/docs/18/sql-explain.html)：PG 18 的 `ANALYZE` 自动输出 `BUFFERS`。
-- [Backup and Upgrade](https://www.postgresql.org/docs/18/backup-upgrade.html)：PG 18 `initdb` 默认启用数据校验和，`pg_upgrade` 要求两端一致。
+> 抓取日期：2026-11-13；以下 URL 逐条 `curl -L` 验活（200），GitHub 链接固定到版本 tag 或 commit SHA，不用 `main`。
+
+- [Generated Columns](https://www.postgresql.org/docs/18/ddl-generated-columns.html)：逐字引文 `STORED` / `VIRTUAL`；用户定义类型不支持虚拟生成列。抓取日期：2026-11-13
+- [Constraints](https://www.postgresql.org/docs/18/ddl-constraints.html)：逐字引文 `NOT VALID` / `VALIDATE CONSTRAINT`；CHECK、UNIQUE、复合外键、列清单式 `ON DELETE SET NULL (col)`、可延迟约束、`NOT NULL` 具名。抓取日期：2026-11-13
+- [ALTER TABLE](https://www.postgresql.org/docs/18/sql-altertable.html)：逐字引文 `ADD table_constraint [ NOT VALID]`、`VALIDATE CONSTRAINT`；无 `ALTER CONSTRAINT … SET NOT VALID`。抓取日期：2026-11-13
+- [Row Security Policies](https://www.postgresql.org/docs/18/ddl-rowsecurity.html)：逐字引文 `FORCE ROW LEVEL SECURITY`、`BYPASSRLS`、`PERMISSIVE` / `RESTRICTIVE`；默认拒绝。抓取日期：2026-11-13
+- [Explicit Locking](https://www.postgresql.org/docs/18/explicit-locking.html)：逐字引文 `FOR UPDATE` 与 `FOR KEY SHARE` 冲突（Table 13.3）；[Advisory Locks](https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS) 的 `pg_advisory_xact_lock`。抓取日期：2026-11-13
+- [CREATE TRIGGER](https://www.postgresql.org/docs/18/sql-createtrigger.html)：逐字引文 `CONSTRAINT TRIGGER`、`DEFERRABLE | [ DEFERRABLE ] [ INITIALLY IMMEDIATE | INITIALLY DEFERRED ]`；该页不规定触发器执行角色，故本文不作此断言。抓取日期：2026-11-13
+- [CREATE FUNCTION](https://www.postgresql.org/docs/18/sql-createfunction.html)：逐字引文 `SECURITY DEFINER`、`SET search_path`、属主权限。抓取日期：2026-11-13
+- [CREATE VIEW](https://www.postgresql.org/docs/18/sql-createview.html)：逐字引文 `security_invoker`。抓取日期：2026-11-13
+- [CREATE INDEX](https://www.postgresql.org/docs/18/sql-createindex.html)：逐字引文 `USING gist`；[btree_gist](https://www.postgresql.org/docs/18/btree-gist.html)。抓取日期：2026-11-13
+- [ltree](https://www.postgresql.org/docs/18/ltree.html)：逐字引文 `nlevel`、`subpath`、GiST 操作符类。抓取日期：2026-11-13
+- [UUID Functions](https://www.postgresql.org/docs/18/functions-uuid.html)：逐字引文 `uuidv7()`。抓取日期：2026-11-13
+- [GRANT](https://www.postgresql.org/docs/18/sql-grant.html)：逐字引文列级权限与函数授权。抓取日期：2026-11-13
+- [Error Codes](https://www.postgresql.org/docs/18/errcodes-appendix.html)：逐字引文 `23001`（`restrict_violation`）与 `23503`（`foreign_key_violation`）的区分。抓取日期：2026-11-13
+- [Lock Management](https://www.postgresql.org/docs/18/runtime-config-client.html)：逐字引文 `lock_timeout`、`statement_timeout`、`idle_in_transaction_session_timeout`。抓取日期：2026-11-13
+- [EXPLAIN](https://www.postgresql.org/docs/18/sql-explain.html)：逐字引文 `ANALYZE` 自动输出 `BUFFERS`。抓取日期：2026-11-13
+- [Backup](https://www.postgresql.org/docs/18/backup.html)：逐字引文 `initdb` 默认启用数据校验和，`pg_upgrade` 要求两端一致。抓取日期：2026-11-13
+- [Factory Helper](https://hono.dev/docs/helpers/factory)：逐字引文 `createFactory() can receive the initApp option to initialize an app created by createApp().`；`Uses initApp to configure middleware and dependencies across apps generated by createApp() across separate files.` 抓取日期：2026-11-13
+- [Bun 1.4](https://bun.sh/blog/bun-v1.4)：逐字引文 `Playwright now runs on Bun: drive a browser with connectOverCDP(), run your suite with playwright test`。抓取日期：2026-11-13
+- [Playwright release notes](https://playwright.dev/docs/release-notes)：逐字引文 `🥟 Run tests with Bun`、`Bun transpiles your TypeScript test files itself, so Playwright does not use Babel or its compilation cache.` 抓取日期：2026-11-13
+- [Custom migrations](https://orm.drizzle.team/docs/kit-custom-migrations)：逐字引文 `Generates an empty SQL migration file that can be populated with custom DDL or data seeding statements.` 抓取日期：2026-11-13
 
 ### 6.2 本项目的具体用法
 
 | 官方结论                                             | 本项目的具体用法                                             |
 | ---------------------------------------------------- | ------------------------------------------------------------ |
 | `uuidv7()`                                           | 所有主键默认值；时间有序，**可直接当 keyset 游标**（见 [`schema.md`](data/schema.md)、[`runtime.md`](runtime.md) §8.7 `ARCH-API-01`） |
-| 生成列 `STORED` / `VIRTUAL`                          | `node.parent_path` 必须 `STORED`（参与唯一约束与外键）；**PG 18 拒绝用户定义类型的虚拟生成列**（实测 #01：`SQLSTATE 0A000`） |
+| 生成列 `STORED` / `VIRTUAL`                          | `node.parent_path` 必须 `STORED`（参与唯一约束与外键）；**PG 18 拒绝用户定义类型的虚拟生成列**（待验证 #01：`SQLSTATE 0A000`，复现见 [`../verification/README.md`](../verification/README.md)） |
 | 复合外键 / 延迟约束                                  | 自引用父外键、owner 外键用 `DEFERRABLE INITIALLY DEFERRED`，允许父子同事务内任意顺序写入（§11.2） |
 | `FORCE ROW LEVEL SECURITY`                           | 所有业务表启用 `ENABLE` + `FORCE`；否则表 owner 绕过 RLS（§7.2） |
 | 锁冲突矩阵（Table 13.3）                             | PostgreSQL 外键检查对被引用 `project` 行加 `FOR KEY SHARE`，与 `FOR UPDATE` 冲突 → **不锁 project 行**，改用事务级 advisory lock `yunpu:relation:<project_id>`（`ARCH-CC-01`） |
@@ -146,9 +152,9 @@
 | `security_invoker`                                   | 业务视图必须 `security_invoker = true`，否则视图属主权限绕过 RLS（§7.6、`DM-RLS-03`） |
 | `ltree` + GiST                                       | `node.path` / `book_catalog.path`；`nlevel(path)` 派生世次，不落列 |
 | `23001` 与 `23503` 的区分                            | 应用侧**必须分开映射**：`23001` = `restrict_violation`（`ON DELETE RESTRICT` 专属），`23503` = `foreign_key_violation`。合并会导致「引用了被保护的对象」与「级联动作被拒」返回同一错误（数据模型 §9.4 修正说明） |
-| `ADD CONSTRAINT … NOT VALID` / `VALIDATE CONSTRAINT` | 用于大表加约束的在线路径；**无** `ALTER CONSTRAINT … SET NOT VALID`（实测 #17：`syntax error at or near "SET"`） |
-| 锁超时三项                                           | 连接池初始化连接时统一 `SET`：`lock_timeout = 3s`、`statement_timeout = 30s`、`idle_in_transaction_session_timeout = 60s`（`DM-REL-06`） |
-| `EXPLAIN` 自动含 `BUFFERS`                           | 索引验证方法：`EXPLAIN (ANALYZE, TIMING off, COSTS off)`（实测 #13）；`DM-GEN-10` 先测量再优化 |
+| `ADD CONSTRAINT … NOT VALID` / `VALIDATE CONSTRAINT` | 用于大表加约束的在线路径；**无** `ALTER CONSTRAINT … SET NOT VALID`（待验证 #17，复现见 [`../verification/README.md`](../verification/README.md)） |
+| 锁超时三项                                           | 由连接串 `PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'` 下发，并设 `prepare: false`（`DM-POOL-01`、`DM-REL-06`）；见 [`migrations.md`](data/migrations.md) |
+| `EXPLAIN` 自动含 `BUFFERS`                           | 索引验证方法：`EXPLAIN (ANALYZE, TIMING off, COSTS off)`（待验证 #13）；`DM-GEN-10` 先测量再优化 |
 
 > 来源：data-model.md §19.1「PostgreSQL 18」；用法对照 plan.md §6.7、§7.2、§11.2–§11.3、§15.2
 
@@ -156,7 +162,24 @@
 
 ## 7. 工具链版本（唯一副本）
 
-锁定版本的唯一总表见本文「3. Technical Context（运行时与工具链）」一节；本节不复制第二份表。
+> 抓取日期：2026-11-13（npm registry `dist-tags.latest` 与 GitHub release tag 实测）。项目锁定以下精确版本，不写版本下限、区间写法或浮动 tag；上游 peer 范围只作兼容说明，不构成项目约束。
+
+| 组件 | 锁定版本 | 依据 |
+| --- | --- | --- |
+| `hono` | 4.13.18 | npm latest + [Factory Helper](https://hono.dev/docs/helpers/factory) |
+| `@hono/zod-validator` | 0.9.1 | npm latest；上游 peer `zod: ^3.25.0 || ^4.0.0` 只作兼容说明 |
+| `@hono/zod-openapi` | 1.6.3 | npm latest；上游要求 `zod: ^4.0.0` |
+| `zod` | 4.6.7 | npm latest；项目锁定 `zod@4.6.7` |
+| `drizzle-orm` | 0.45.4 | npm latest |
+| `drizzle-kit` | 0.31.11 | npm latest |
+| `@biomejs/biome` | 2.6.7 | npm latest |
+| `pnpm` | 12.18.0 | npm latest |
+| `Bun` | 1.4.4（tag `bun-v1.4.4`） | [Bun 1.4 release](https://bun.sh/blog/bun-v1.4) |
+| `PostgreSQL` | 18（待验证；本机无 `psql`，未实测） | 复现登记见 [`../verification/README.md`](../verification/README.md) |
+
+> 项目锁定 `zod@4.6.7`。`@hono/zod-validator@0.9.1` 的 peer 范围是 `^3.25.0 || ^4.0.0`，`@hono/zod-openapi@1.6.3` 要求 `^4.0.0`；这两个上游声明只说明兼容性，不是本项目允许的版本区间，因此不允许 Zod 3.25。
+
+前端与其余工具同样锁定到 2026-11-13 实测最新版：Vite 8.3.8、React 19.3.1、TypeScript 7.0.2、@tanstack/react-query 5.107.1、zustand 5.1.0、@tanstack/react-router 1.170.46、tailwindcss 4.3.5、@xyflow/react 12.12.1、@tiptap/react 3.34.0、better-auth 1.7.23、@scalar/hono-api-reference 0.12.20、Playwright 1.65.0、pg 8.23.1、drizzle-zod 0.8.3（同见第 3 节 Technical Context）。
 
 ## 8. 升级与复核纪律
 
@@ -181,25 +204,25 @@
 
 | 层         | 选型                         | 版本                  | 为什么是它                                                   |
 | ---------- | ---------------------------- | --------------------- | ------------------------------------------------------------ |
-| 运行时     | **Bun**                      | ≥ 1.4.4               | 冷启动快、`bun test` 开箱即用、安装快。Playwright 不在 Bun 上跑 → E2E 用 Node |
-| Web 框架   | **Hono**                     | v4（≥ 4.11.2）        | 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件洋葱模型 |
-| 前端构建   | **Vite**                     | 7.x                   | 冷启动毫秒级；Hono 路由可在 dev 下热重载                     |
-| UI         | React                        | 19.x                  | 生态与人才池最大                                             |
-| 语言       | TypeScript                   | 5.x                   | `strict` + `noUncheckedIndexedAccess`                        |
-| 校验       | **Zod**                      | v4（`^3.25 \|\| ^4`） | 一份 schema 驱动前端表单与后端入参；`drizzle-zod` 从表定义派生单表 CRUD。`@hono/zod-validator` 的 peerDependency 同时支持 Zod 3.25 与 4，选 v4 不冲突 |
-| ORM        | **Drizzle**                  | 0.45.x                | SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎           |
-| 数据库     | **PostgreSQL**               | 18                    | `uuidv7()`、`ltree`、RLS、生成列、延迟约束、advisory lock    |
-| 服务端状态 | TanStack Query               | v5                    | 缓存、失效、请求去重                                         |
-| 视图状态   | Zustand                      | v5                    | 画布、面板、临时选择                                         |
-| 路由       | TanStack Router              | v1                    | 文件式、类型安全                                             |
-| 组件       | Radix UI + Tailwind CSS      | v4                    | 无样式可访问原语 + CSS-first 令牌                            |
-| 画布       | `@xyflow/react`              | v12                   | 小规模家谱树可视化                                           |
-| 富文本     | TipTap                       | v3                    | ProseMirror 系，正文存 JSON                                  |
-| 认证       | Better Auth                  | 1.7.x                 | Drizzle adapter、数据库会话、自定义 access control           |
-| API 文档   | `@hono/zod-openapi` + Scalar |                       | 契约从代码生成，不手写 YAML；官方维护的 `@hono/zod-openapi` 而非第三方 `hono-openapi`（`ARCH-HONO-06`） |
-| 测试       | `bun test` + Playwright      |                       | 单元/路由/集成用 Bun；E2E 用 Node（`ARCH-TST-03`）           |
-| 质量       | Biome                        | 2.x                   | lint + format + 依赖方向规则                                 |
-| 包管理     | **pnpm**                     | 12.x                  | workspace 与依赖隔离可控；**全仓库唯一包管理器**（`ARCH-BLD-01`） |
+| 运行时     | **Bun**                      | 1.4.4                 | 冷启动快、`bun test` 开箱即用、安装快；Playwright 1.65.0 可在 Bun 1.4 上运行 |
+| Web 框架   | **Hono**                     | 4.13.18               | 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件洋葱模型 |
+| 前端构建   | **Vite**                     | 8.3.8                 | 冷启动毫秒级；Hono 路由可在 dev 下热重载                     |
+| UI         | React                        | 19.3.1                | 生态与人才池最大                                             |
+| 语言       | TypeScript                   | 7.0.2                 | `strict` + `noUncheckedIndexedAccess`                        |
+| 校验       | **Zod**                      | 4.6.7                 | 一份 schema 驱动前端表单与后端入参；`drizzle-zod` 从表定义派生单表 CRUD。项目锁定 `zod@4.6.7`，上游 peer 范围只作兼容说明（见第 7 节） |
+| ORM        | **Drizzle**                  | 0.45.4                | SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎           |
+| 数据库     | **PostgreSQL**               | 18（待验证；本机无 `psql`，未实测） | `uuidv7()`、`ltree`、RLS、生成列、延迟约束、advisory lock    |
+| 服务端状态 | TanStack Query               | 5.107.1               | 缓存、失效、请求去重                                         |
+| 视图状态   | Zustand                      | 5.1.0                 | 画布、面板、临时选择                                         |
+| 路由       | TanStack Router              | 1.170.46              | 文件式、类型安全                                             |
+| 组件       | Radix UI + Tailwind CSS      | 4.3.5                 | 无样式可访问原语 + CSS-first 令牌                            |
+| 画布       | `@xyflow/react`              | 12.12.1               | 小规模家谱树可视化                                           |
+| 富文本     | TipTap                       | 3.34.0                | ProseMirror 系，正文存 JSON                                  |
+| 认证       | Better Auth                  | 1.7.23                | Drizzle adapter、数据库会话、自定义 access control           |
+| API 文档   | `@hono/zod-openapi` + Scalar | 1.6.3 / 0.12.20      | 契约从代码生成，不手写 YAML；官方维护的 `@hono/zod-openapi` 而非第三方 `hono-openapi`（`ARCH-HONO-06`） |
+| 测试       | `bun test` + Playwright      | 1.65.0                | 单元/路由/集成用 Bun；E2E 用 Playwright，官方已确认可在 Bun 1.4 上运行（`ARCH-TST-03`） |
+| 质量       | Biome                        | 2.6.7                 | lint + format + 依赖方向规则                                 |
+| 包管理     | **pnpm**                     | 12.18.0               | workspace 与依赖隔离可控；**全仓库唯一包管理器**（`ARCH-BLD-01`） |
 
 > `ARCH-HONO-06`（1.2 修正）：OpenAPI 方案改用 **官方 `@hono/zod-openapi`**（`createRoute` + `OpenAPIHono` + `app.doc()`），不再用第三方的 `rhinobase/hono-openapi`。理由：官方包与 Zod v4、`zValidator` 同源，`createRoute` 里请求与响应 schema 与校验 schema 是**同一份 Zod 对象**，不存在两处定义漂移；第三方包需要额外维护 `resolver` 适配层，属于「同一规则两处」的变体。Scalar 仍作为渲染器挂在 `/api/docs`。
 
@@ -231,12 +254,13 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 
 ### 3.3 Bun 与 Playwright
 
-Playwright 不在 Bun 上运行。因此：
+官方 [Bun 1.4](https://bun.sh/blog/bun-v1.4) 的逐字引文：`Playwright now runs on Bun: drive a browser with connectOverCDP(), run your suite with playwright test`；[Playwright release notes](https://playwright.dev/docs/release-notes) 亦写明 `🥟 Run tests with Bun` 与 `Bun transpiles your TypeScript test files itself, so Playwright does not use Babel or its compilation cache.`（抓取日期：2026-11-13）。
 
-- E2E 跑在 Node，与 Bun 应用分离；
-- 应用本体不做 `bun build --compile`（与 Playwright 不兼容，对容器化也没有收益）。
+因此（`ARCH-TST-03`）：
 
-这条纪律写进 CI：应用镜像跑 Bun，E2E job 跑 Node。
+- Playwright 1.65.0 可在 Bun 1.4.4 上运行，单元 / 路由 / 集成与 E2E 不再因「运行时不兼容」被强制拆到两套 runner；
+- 是否把 E2E job 与应用镜像放在同一运行时，由部署隔离需求决定，不是框架限制；
+- `bun build --compile` 是否使用按打包收益单独评估，不再以 Playwright 兼容性为由禁用。
 
 ---
 
@@ -248,17 +272,17 @@ Playwright 不在 Bun 上运行。因此：
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | 中间件执行顺序（注册顺序进入、逆序返回）                     | [Middleware Guide](https://hono.dev/docs/guides/middleware)  |
 | `c.error` 在 `await next()` 之后可读                         | [Context API](https://hono.dev/docs/api/context)             |
-| `Factory` 的真实 API：`createApp` / `createMiddleware` / `createHandlers` | [hono/factory 源码](https://github.com/honojs/hono/blob/main/src/factory.ts) |
+| `createFactory({ initApp })` 支持跨文件 DI 与运行时依赖注入 | [Factory Helper](https://hono.dev/docs/helpers/factory) |
 | `ContextVariableMap` 全局增强会掩盖 `undefined`              | [Context API — ContextVariableMap](https://hono.dev/docs/api/context) |
 | RPC 类型推断要求：全链式 + 从具名变量推断                    | [RPC Guide](https://hono.dev/docs/guides/rpc) · [Best Practices](https://hono.dev/docs/guides/best-practices) |
-| `validator` 各 target 取值来源与 `Content-Type` 门控         | [hono/validator 源码](https://github.com/honojs/hono/blob/main/src/validator/validator.ts) |
-| `zValidator` hook 可短路请求；peer 支持 Zod 3.25 / 4         | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator) |
+| `validator` 各 target 取值来源与 `Content-Type` 门控         | [hono/validator 源码](https://github.com/honojs/hono/blob/v4.13.18/src/validator/validator.ts) |
+| `zValidator` hook 可短路请求；上游 peer 范围只作兼容说明 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/8d656de46d87/packages/zod-validator) |
 | `HTTPException.getResponse()` 不感知 `Context` 的 header     | [Exception API](https://hono.dev/docs/api/exception)         |
-| 内置中间件清单与默认行为                                     | [Built-in Middleware](https://hono.dev/docs/middleware/builtin) |
+| 内置中间件清单与默认行为                                     | [Secure Headers](https://hono.dev/docs/middleware/builtin/secure-headers) · [Body Limit](https://hono.dev/docs/middleware/builtin/body-limit) |
 | `serveStatic` 的大小写 / 8.3 短名绕过风险                    | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
 | Bun 默认导出 `{ port, fetch }` 启动方式                      | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
 | `app.request(input, requestInit?, env?, executionCtx?)` 测试约定 | [Hono API](https://hono.dev/docs/api/hono)                   |
-| `@hono/zod-openapi` 的 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/main/examples/zod-openapi.md) |
+| `@hono/zod-openapi` 的 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/20aab4e020e3/examples/zod-openapi.md) |
 
 > `ARCH-HONO-11`：升级 Hono 大版本前，先用 Context7 重新拉一遍上表对应条目，逐条核对本文表述是否仍成立。框架语义会变，本文对框架的断言必须跟着变。
 
@@ -267,4 +291,4 @@ Playwright 不在 Bun 上运行。因此：
 
 ## 待补齐契约项
 
-见 `docs/requirements/functional.md`：原 api.md §4 列出的 9 类未定义项由 Phase 0 结论补齐。
+见 [`functional.md`](../requirements/functional.md)：原 api.md §4 列出的 9 类 Phase 0 待补齐契约项由结论补齐；本文不复制清单。

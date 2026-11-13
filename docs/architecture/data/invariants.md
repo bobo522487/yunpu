@@ -76,6 +76,9 @@
 | `DM-PURGE-01` | Person 物理清除（GDPR） | V1 不做 | 独立运维流程 + 审计 | — |
 | `DM-MED-05` | 对象字节在事务提交后删除 | 跨系统事务，无两阶段提交 | 应用层提交后回调 + 对账脚本 | #34 / #26 |
 | [`DM-AUD-01`](./schema.md) | 尽力而为审计路径 | 「大家记得调」不是约束 | 指标 `audit_write_failures_total` + 告警 | #32 |
+| 待验证（PG 18） | PG 18 语义、D1–D12 与 21 组结论 | 本机无 `psql` / `pg_ctl`，无法复现 | `docs/verification/README.md` 复现步骤 + `scripts/check-docs.sh --strict` 门禁 | 待验证 |
+
+> **PG 18 结论降级登记（用户 2026-11-13 决策）**：本机无 `psql` / `pg_ctl`，`docs/decisions/0001-pg18-defects.md` 的 D1–D12 与 21 组 PG 18 结论全部标为待验证，本文档不保留以完成口吻陈述的验证断言；复现步骤见 `docs/verification/README.md`，补偿手段是 `scripts/check-docs.sh --strict` 门禁与目标仓库真实 PG 18 复现，通过后再升级为「已验证」。
 
 ---
 
@@ -105,7 +108,7 @@
 
 **v1.2 澄清的两点**：
 
-1. **`ON DELETE SET NULL (folder_id)` 用的是列清单式**（PG 15+ 语法），不是整行置空。`folder_id` 被置 NULL，但同一行的 `organization_id` / `project_id` 保持不变——否则会破坏 scope 不变量（`DM-SCP-01`）。这一语法在 PG 18 上实测通过（§17 #18）。
+1. **`ON DELETE SET NULL (folder_id)` 用的是列清单式**（PG 15+ 语法），不是整行置空。`folder_id` 被置 NULL，但同一行的 `organization_id` / `project_id` 保持不变——否则会破坏 scope 不变量（`DM-SCP-01`）。这一语法需在 PG 18 上复现验证（§17 #18），结论待验证。
 2. **`fk_node_parent` 与 `fk_book_catalog_parent` 是自引用外键**，未声明 `ON DELETE`，即默认 `NO ACTION`；配合 `DEFERRABLE INITIALLY DEFERRED`，删除一整棵子树时必须**在单个事务内**完成，否则中途提交会因「父行已删、子行还在」而被拒绝。
 
 **关键纪律**：

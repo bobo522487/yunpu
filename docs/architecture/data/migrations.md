@@ -31,7 +31,7 @@ parentPath: ltree('parent_path').generatedAlwaysAs(
 ),
 ```
 
-> **v1.2 补充说明（重要，但结论是「安全」）**：Drizzle 官方文档中 `generatedAlwaysAs` 的 `mode` 选项支持 `'stored'` 与 `'virtual'`。实测 Drizzle ORM 0.45.4 的 `pg-core/columns/common.js` 源码，第 28 行**硬编码** `mode: "stored"`——即 PG 方言的默认值已经是 `STORED`，与 PG 18 的 VIRTUAL 默认相反。
+> **v1.2 补充说明（重要，但结论是「安全」）**：Drizzle 官方文档中 `generatedAlwaysAs` 的 `mode` 选项支持 `'stored'` 与 `'virtual'`。`drizzle-orm@0.45.4` 的 `pg-core/columns/common.js` 第 28 行默认值**待验证**（源码核对与复现登记见 [`../../verification/README.md`](../../verification/README.md)），故本文按 `DM-GEN-20` 一律显式写 `{ mode: 'stored' }`，不依赖任何库默认值。
 >
 > 但**本文仍要求显式写 `{ mode: 'stored' }`**，理由是 `DM-GEN-20`：语义不能依赖某个库的当前默认值。Drizzle 未来若跟随 PG 18 改成 `virtual` 默认，`ltree` 列会立刻报 `0A000`（用户自定义类型不允许虚拟生成列）。**显式写出来，这个风险就不存在。**
 
@@ -80,10 +80,10 @@ export const lineageRoot = pgView('lineage_root', {
 
 ### 12.2 归手写 SQL 迁移（`drizzle-kit generate --custom`）
 
-用官方推荐的 `--custom` 生成空迁移文件后手写：
+用 [Custom migrations](https://orm.drizzle.team/docs/kit-custom-migrations) 的 `--custom` 生成空迁移文件后手写（抓取日期：2026-11-13）：
 
 ```bash
-bunx drizzle-kit generate --custom --name=rls_policies
+pnpm drizzle-kit generate --custom --name=rls_policies
 ```
 
 | 归手写的内容 | 为什么 Drizzle 表达不了 / 不该由它表达 |
@@ -115,7 +115,7 @@ bunx drizzle-kit generate --custom --name=rls_policies
 | `db/verify/constraints.sql` | 断言 `pg_constraint` 中不存在匿名约束（`conname` 全部非空且符合前缀规范）；断言 `contype='n'` 的具名 `NOT NULL` 存在 | CI 失败 |
 | `db/verify_schema_consistency.ts` | 对比 `information_schema` / `pg_catalog` 与 Drizzle 定义（表、列、CHECK 名单、唯一索引名单） | CI 失败 |
 | `db/verify/*.sql` 行为断言 | **每个触发器至少一条负向用例**（证明它会拒绝，而不只是存在） | CI 失败 |
-| CI | `bun run gen:sql && git diff --exit-code db/generated/`；迁移与 schema 不一致即失败 | 合并被阻塞 |
+| CI | `pnpm gen:sql && git diff --exit-code db/generated/`；迁移与 schema 不一致即失败 | 合并被阻塞 |
 
 ### 12.4 Drizzle 边界总表
 
@@ -190,7 +190,7 @@ PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transactio
 |---|---|
 | 生成列 | 一律显式 `STORED`。PG 18 默认 VIRTUAL，且 `ltree` 属用户自定义类型，VIRTUAL 会报 `0A000` |
 | `NOT NULL` | 具名（`CONSTRAINT x_not_null NOT NULL`）。PG 18 起 `NOT NULL` 进入 `pg_constraint`（`contype='n'`） |
-| 大表加约束 | `ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` 两步。**没有** `ALTER CONSTRAINT ... SET NOT VALID`（实测语法错误） |
+| 大表加约束 | `ADD CONSTRAINT ... NOT VALID` → `VALIDATE CONSTRAINT` 两步。**没有** `ALTER CONSTRAINT ... SET NOT VALID`（待验证：官方无此语法） |
 | `NOT NULL` 的低锁路径 | `NOT NULL` 不能走 `NOT VALID` 路线（`VALIDATE CONSTRAINT` 不接受 `contype='n'`）。先加 `CHECK (col IS NOT NULL) NOT VALID` → `VALIDATE` → 再 `ALTER COLUMN ... SET NOT NULL` |
 | 外键 | 显式声明 `ON DELETE`；`RESTRICT` 的报错码是 `23001`（不是 `23503`） |
 | `initdb` | 默认启用数据校验和；`pg_upgrade` 要求两端一致 |

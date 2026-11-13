@@ -87,7 +87,7 @@
 | `ARCH-ERR-01`  | 错误两级映射：先看 SQLSTATE，再看约束名              | §8.3             |
 | `ARCH-FE-05`   | 只做一条画布渲染路径                                 | §9.2             |
 | `ARCH-GOV-01`  | 400 行红线是警报，不是合并门禁（定义见 `.specify/memory/constitution.md`） | [`constitution.md`](../.specify/memory/constitution.md) |
-| `ARCH-HONO-01` | 不用 `createFactory` 注入运行时对象                  | [`runtime.md`](architecture/runtime.md) |
+| `ARCH-HONO-01` | DI 选 `Hono<AppEnv>` + `c.get()`；官方 `createFactory({ initApp })` 亦可跨文件注入 | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-RPC-01`  | RPC 类型推断：全链式调用 + 具名变量推断               | [`stack.md`](architecture/stack.md) |
 | `ARCH-HONO-02` | 中间件洋葱模型：进入正序、返回逆序                   | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-03` | 优先用 Hono 内置中间件，不采用须写明理由             | §3.1             |
@@ -105,7 +105,7 @@
 | `ARCH-OPS-01`  | 回滚 = 恢复备份，不是 down migration                 | §15.3, §15.5     |
 | `ARCH-PERM-01` | 同一授权规则不允许写两遍                             | §7.5, §10        |
 | `ARCH-PUB-01`  | 出版同步起步，有明确上限，不留白                     | §11.6            |
-| `ARCH-TST-03`  | 测试分层：`bun test` 跑集成，E2E 用 Node             | §3, §14.1        |
+| `ARCH-TST-03`  | 测试分层：`bun test` + Playwright，均可跑在 Bun 1.4 上 | [`stack.md`](architecture/stack.md) |
 | `ARCH-TST-04`  | 路由测试用 `app.request()` 官方调用约定              | §14.1            |
 
 **编号规则**：`ARCH-<域>-<序号>`。域代码含义——`AR` 架构原则 / `API` 接口分页 / `AUD` 审计 / `BLD` 构建 / `CC` 并发控制 / `ERR` 错误 / `FE` 前端 / `GOV` 治理 / `HONO` Hono 官方实践 / `IDX` 索引 / `MOD` 模块 / `OPS` 运维 / `PERM` 权限 / `PUB` 出版 / `TST` 测试。

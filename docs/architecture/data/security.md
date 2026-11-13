@@ -25,7 +25,7 @@ CREATE POLICY tenant_isolation ON person
 
 要点：
 
-1. **谓词必须写成 `= ANY (app.visible_org_array())`，不能写 `= ANY ((SELECT app.visible_org_array()))`**。后者会被 PostgreSQL 解析为**表子查询**比较而非标量数组表达式，实测报 `42883 operator does not exist: uuid = uuid[]`（§17 #05）——**核心租户谓词直接无法执行**。正确写法会被常量折叠为 InitPlan 求值一次（§17 #06）。
+1. **谓词必须写成 `= ANY (app.visible_org_array())`，不能写 `= ANY ((SELECT app.visible_org_array()))`**。后者会被 PostgreSQL 解析为**表子查询**比较而非标量数组表达式，预期（待验证）报 `42883 operator does not exist: uuid = uuid[]`（§17 #05）——**核心租户谓词直接无法执行**。正确写法会被常量折叠为 InitPlan 求值一次（§17 #06）。
 2. `FORCE ROW LEVEL SECURITY`：表 owner 也受策略约束。业务连接必须用非 owner 角色。
 3. 上下文缺失时返回 `'{}'::uuid[]`，默认拒绝，不报错、不返回全表（`DM-RLS-01`）。
 4. `organization` 表自身用 `id = ANY (...)`。

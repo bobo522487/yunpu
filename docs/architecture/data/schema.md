@@ -12,7 +12,7 @@
 > **上游**：[`functional.md`](../../requirements/functional.md) 定义做什么与验收标准；[`.specify/memory/constitution.md`](../../../.specify/memory/constitution.md) 是最高约束。  
 > **架构侧对应**：[`overview.md`](../overview.md) 只定义边界与归属；本文定义数据结构与执行者。冲突时以本文为准（plan.md §1.5）。  
 > **SDD 角色**：**Phase 1 设计产物**（spec-kit 流水线）。下游是 `tasks.md`（由 `/speckit-tasks` 在 `specs/` 后期分批生成，当前不存在） 与 `packages/db` 的 Drizzle schema。  
-> **本版**：1.2 —— 按 PostgreSQL 18 与 Drizzle ORM 官方文档重构。全部结论在真实 PostgreSQL 18.0 实例上实测（§17）。
+> **本版**：1.2 —— 按 PostgreSQL 18 与 Drizzle ORM 官方文档重构。目标环境 **PostgreSQL 18（待验证；本机无 `psql`，未实测）**，复现步骤与状态登记见 [`../../verification/README.md`](../../verification/README.md)。
 
 ---
 
@@ -46,14 +46,14 @@
 | `DM-GEN-10` | 先测量再优化：索引按查询模式建，用 `EXPLAIN (ANALYZE)` 验证                          | 索引清单                                          | §11                                  |
 | `DM-GEN-11` | 约束保护事实，不保护排版。展示顺序类字段不做唯一约束                                        | 索引清单                                          | `DM-REL-04`                          |
 | `DM-GEN-12` | 锁只加在真正需要串行化的写者上，不与外键检查隐含的锁冲突                                      | 触发器 + 事务                                      | `DM-REL-05`                          |
-| `DM-GEN-13` | 约束必须具名                                                            | 外键/检查/唯一/外键定义                                 | [`verification/README.md`](../../verification/README.md) 实测 #12                         |
+| `DM-GEN-13` | 约束必须具名                                                            | 外键/检查/唯一/外键定义                                 | [`verification/README.md`](../../verification/README.md) 待验证 #12                         |
 | `DM-GEN-14` | 任何「非空文本」字段必须带 `btrim(x) <> ''`，纯空白不是内容                            | CHECK 约束                                      | §8 不变量 #17                           |
-| `DM-GEN-15` | `updated_at` 由 DB 推进且**严格单调递增**（用 `clock_timestamp()`，不用 `now()`） | `app.touch_updated_at()`                      | [`verification/README.md`](../../verification/README.md) 实测 #03                         |
+| `DM-GEN-15` | `updated_at` 由 DB 推进且**严格单调递增**（用 `clock_timestamp()`，不用 `now()`） | `app.touch_updated_at()`                      | [`verification/README.md`](../../verification/README.md) 待验证 #03                         |
 | `DM-GEN-16` | 软约束必须登记在 [`invariants.md`](./invariants.md) §7.2「软约束登记表」并有补偿测试；软约束不是垃圾桶                              | 文档评审 + 用例                                     | 验收清单 #38                             |
 | `DM-GEN-17` | 每条外键的引用侧列必须有支撑索引（PostgreSQL 不会自动建）                                | 索引清单                                          | §11 FK→索引覆盖表                         |
 | `DM-GEN-18` | 应用错误按「SQLSTATE + 约束名」两级映射，**不解析消息文本**                             | 应用层                                           | §4.6 错误码表                            |
 | `DM-GEN-19` | 清单类内容（表清单、枚举、RLS 策略矩阵、权限矩阵）必须由生成物产出并被反向校验                         | `scripts/gen-sql.ts` + `db/verify/tables.sql` | CI `gen:sql && git diff --exit-code` |
-| `DM-GEN-20` | **不依赖数据库默认值**：凡默认值会随版本变化的语法，必须显式写出关键字                             | DDL 审查                                        | [`verification/README.md`](../../verification/README.md) 实测 #01                         |
+| `DM-GEN-20` | **不依赖数据库默认值**：凡默认值会随版本变化的语法，必须显式写出关键字                             | DDL 审查                                        | [`verification/README.md`](../../verification/README.md) 待验证 #01                         |
 | `DM-GEN-21` | 编号唯一且可追溯：同一编号不得承载两条规则，引用编号必须有定义                                   | 文档评审                                          | §18 编号索引表                            |
 
 ---
@@ -62,8 +62,8 @@
 
 | 项      | 选择                                              | 说明                                                         |
 | ------ | ----------------------------------------------- | ---------------------------------------------------------- |
-| 数据库    | PostgreSQL 18.0                                 | `uuidv7()`、虚拟生成列、具名 `NOT NULL`、`PERIOD` 排他约束、skip scan、AIO |
-| ORM    | Drizzle ORM 0.45.x                              | 表/列/CHECK/索引/视图；复杂 DDL 走手写迁移                               |
+| 数据库    | PostgreSQL 18（待验证；本机无 `psql`，未实测） | `uuidv7()`、虚拟生成列、具名 `NOT NULL`、`PERIOD` 排他约束、skip scan、AIO |
+| ORM    | Drizzle ORM 0.45.4（锁定）                      | 表/列/CHECK/索引/视图；复杂 DDL 走手写迁移                               |
 | 主键     | `uuidv7()`                                      | 时间有序，B-tree 局部性好；应用不生成                                     |
 | 扩展     | `ltree`、`btree_gist`                            | `ltree` 管路径；`btree_gist` 让 uuid 与 `ltree` 共处一个复合 GiST 索引   |
 | Schema | `public` 业务表 / `app` 函数与视图 / `auth` Better Auth | 业务迁移不建 `auth` 表                                            |
@@ -75,13 +75,13 @@
 
 ### 2.1 PG 18 语义差异表（v1.2 新增）
 
-**这一节是 1.1 版最缺的东西**：1.1 大量写法依赖「PG 默认行为」，而 PG 18 恰好改了几个默认值。以下差异全部经真实 PG 18.0 实测（§17）。
+**这一节是 1.1 版最缺的东西**：1.1 大量写法依赖「PG 默认行为」，而 PG 18 恰好改了几个默认值。以下差异依据 PG 18 官方文档整理，**待验证**（复现见 [`../../verification/README.md`](../../verification/README.md)）。
 
-| # | 主题                          | PG 17 及以前               | **PG 18 实际行为**                                                                                            | 本模型的处理                                                           | 实测  |
+| # | 主题                          | PG 17 及以前               | **PG 18 实际行为**                                                                                            | 本模型的处理                                                           | 复现项  |
 | - | --------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --- |
 | 1 | 生成列默认类型                     | 只能 `STORED`             | `GENERATED ALWAYS AS (...)` **默认是 `VIRTUAL`**                                                             | 全部生成列**显式写 `STORED`**；`ltree` 是用户自定义类型，VIRTUAL 生成列**不允许**用户自定义类型 | #01 |
 | 2 | `RESTRICT` 违规的 SQLSTATE     | `23503`                 | **`23001` (`restrict_violation`)**                                                                        | 错误映射表把 `23001` 与 `23503` 分开列                                     | #02 |
-| 3 | `AFTER` 触发器的执行角色            | 提交时的当前角色                | **入队时的角色**                                                                                                | 延迟约束触发器以 `genealogy_app` 身份在提交时执行；已在权限设计中预留该角色所需的 `SELECT`       | #13 |
+| 3 | `AFTER` 触发器的执行角色            | 提交时的当前角色                | **待验证**：官方 `CREATE TRIGGER` 文档未规定执行角色语义                          | 环检查所需 `SELECT` 权限在 §8.4 显式授予，不依赖未验证的角色假设        | 待验证 |
 | 4 | `NOT NULL` 约束               | 匿名，不可进 `pg_constraint`  | **存入 `pg_constraint`（`contype='n'`），可具名**                                                                 | `NOT NULL` 一律具名（`ck_*_not_null`），配合 `DM-GEN-13`                  | #12 |
 | 5 | 约束的 `NOT VALID`             | 只在 `ADD CONSTRAINT` 时可用 | **`ADD CONSTRAINT ... NOT VALID` + `VALIDATE CONSTRAINT`**；**没有** `ALTER CONSTRAINT ... SET NOT VALID` 子句 | 大表加 CHECK/FK 走 `ADD ... NOT VALID` → `VALIDATE CONSTRAINT` 两步    | #11 |
 | 6 | `EXPLAIN ANALYZE` 的 BUFFERS | 需显式 `BUFFERS`           | **自动包含 `BUFFERS`**                                                                                        | `DM-GEN-10` 统一写 `EXPLAIN (ANALYZE)`                              | #14 |
@@ -90,11 +90,11 @@
 
 > `DM-GEN-20` 的含义：**凡是「不写关键字就可能变义」的地方，一律显式写。** 这不是冗余，是把版本风险变成可见的文本差异。
 >
-> **关于 `NOT VALID` 的精确边界（实测 #11、#21、#22）**：
+> **关于 `NOT VALID` 的精确边界（待验证 #11、#21、#22）**：
 >
-> - `ADD CONSTRAINT ... NOT VALID` **只对 `CHECK` 和 `FOREIGN KEY` 有效**（实测 `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...) NOT VALID` → ACCEPTED；`ADD CONSTRAINT ... FOREIGN KEY ... NOT VALID` → ACCEPTED）。
+> - `ADD CONSTRAINT ... NOT VALID` **只对 `CHECK` 和 `FOREIGN KEY` 有效**（待验证 `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...) NOT VALID` → ACCEPTED；`ADD CONSTRAINT ... FOREIGN KEY ... NOT VALID` → ACCEPTED）。
 > - `ALTER TABLE ... VALIDATE CONSTRAINT name` 是**唯一**的验证入口。
-> - **PG 18 没有 `ALTER CONSTRAINT ... SET NOT VALID` 这个子句**（实测 `syntax error at or near "SET"`）。想撤除一个已 `NOT VALID` 的约束，只能 `DROP CONSTRAINT` 后重建。
+> - **PG 18 没有 `ALTER CONSTRAINT ... SET NOT VALID` 这个子句**（待验证 `syntax error at or near "SET"`）。想撤除一个已 `NOT VALID` 的约束，只能 `DROP CONSTRAINT` 后重建。
 > - **具名 `NOT NULL` 约束无法走 `NOT VALID` 路线**：`VALIDATE CONSTRAINT person_surname_not_null` → `42704 constraint ... does not exist`（`NOT NULL` 走 `contype='n'`，不参与 `VALIDATE` 的候选集）。因此给大表加 `NOT NULL` 的唯一低锁路径是：先加 `CHECK (col IS NOT NULL) NOT VALID` → `VALIDATE` → 再 `ALTER COLUMN ... SET NOT NULL`（后者会短暂持锁）。
 
 ### 2.2 PG 18 新能力中「本模型明确不做」的部分
@@ -248,7 +248,7 @@ erDiagram
 | `audit_log.created_at` | **`clock_timestamp()`** | 同一事务内多条审计必须有可区分的先后顺序，否则按时间排序与分区裁剪都失效 |
 | `invite.accepted_at` / `revoked_at` | `now()` | 状态切换是一次业务事实，与事务同生 |
 
-> **实测结论（§17 #03）**：`now()` 版触发器在同一事务内两次 UPDATE，`updated_at` 完全不变；`clock_timestamp()` 版严格递增。这是 1.1 版验收清单 #31「`updated_at` 严格大于原值」在真实 PG 18 上**必然失败**的原因。
+> **待验证预期（§17 #03）**：按 `now()` / `clock_timestamp()` 的语义推导——`now()` 版触发器在同一事务内两次 UPDATE，`updated_at` 预期不变；`clock_timestamp()` 版预期严格递增。若复现成立，则 1.1 版验收清单 #31「`updated_at` 严格大于原值」在真实 PG 18 上**预期失败**，故改用 `clock_timestamp()`。
 
 `updated_at` 由 `app.touch_updated_at()` 在 `BEFORE UPDATE` 统一推进；应用不得手写该列。
 
@@ -281,7 +281,7 @@ export const AUDIT_ENTITY_TYPES = [/* 由 TABLE_NAMES 派生 */] as const;
 
 **v1.2 追加**：同一生成器同时产出 `db/generated/tables.sql`（表清单 + 主键形态）与 `db/generated/rls_policies.sql`（逐表策略表达式），使 §3.1 与 §8.2 的矩阵也变成生成物（`DM-GEN-19`）。
 
-CI 只做一件事：`bun run gen:sql && git diff --exit-code db/generated/`。不再解析 `pg_indexes` / `pg_proc` 文本。
+CI 只做一件事：`pnpm gen:sql && git diff --exit-code db/generated/`。不再解析 `pg_indexes` / `pg_proc` 文本。
 
 ## 5. 实体定义
 
@@ -371,7 +371,7 @@ CREATE UNIQUE INDEX uq_invite_pending_email
 
 - **token 熵**（`DM-INV-01`）：明文 token 由应用用 CSPRNG 生成，≥ 32 字节随机（≥ 256 bit），Base64URL 编码；数据库只存 `sha256(convert_to(token,'UTF8'))`（32 字节 `bytea`）。明文只在创建响应里返回一次。
 - **邮箱一致性**（`DM-INV-02`）：`app.accept_invite()` 比对邀请 `email` 与当前登录用户的邮箱（小写化后），不一致抛 `GX009`。用户不能兑换发给别人的邀请。
-  - **v1.2 修复**：比对必须用 `IS DISTINCT FROM`，不能用 `<>`。当登录用户没有邮箱（`v_email IS NULL`）时，`<>` 的结果是 NULL，`IF NULL THEN` 不成立 → **校验被静默跳过**，任何持有有效 token 的人都能兑换他人邀请。实测见 §17 #08。
+  - **v1.2 修复**：比对必须用 `IS DISTINCT FROM`，不能用 `<>`。当登录用户没有邮箱（`v_email IS NULL`）时，`<>` 的结果是 NULL，`IF NULL THEN` 不成立 → **校验被静默跳过**，任何持有有效 token 的人都能兑换他人邀请。待验证见 §17 #08。
 - **并发兑换**（`DM-INV-03`）：兑换用单条条件更新抢占：
   `UPDATE invite SET status='accepted', accepted_at=now() WHERE token_hash = $1 AND status='pending' AND expires_at > now() RETURNING id;`
   返回 0 行 → 抛 `GX010`（已被兑换/已撤销）或 `GX005`（过期）。抢占成功后才插入成员行，因此同一 token 只可能被兑换一次。
@@ -556,7 +556,7 @@ UNIQUE (project_id, from_person_id, to_person_id, kind)
 2. **提交时**：`CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED` 用递归 CTE 从 `NEW.to_person_id` 沿世系父边向下走；若到达 `NEW.from_person_id`（排除 `NEW.id` 自身），抛 `GX001`。
 3. `step_parent` / `foster_parent` 不参与第 1、2 步。
 4. 删除关系不会形成环，不需要触发器。
-5. **v1.2 补充（PG 18 语义）**：PG 18 起 `AFTER` 触发器**以事件入队时的角色**执行，而不是提交时的当前角色（§2.1 #3，实测 #13）。本模型在事务开始即 `SET LOCAL ROLE genealogy_app`，因此延迟约束触发器以 `genealogy_app` 身份运行——它必须能 `SELECT person_relation`。该权限已在 §8.4 明确给出；**撤销 `genealogy_app` 对 `person_relation` 的 SELECT 会让环检查在提交阶段失败**，而不是在写入阶段，这是 PG 18 的新行为，必须写进权限变更评审清单。
+5. **执行角色（待验证）**：`AFTER` / 延迟约束触发器的执行角色语义，官方 [CREATE TRIGGER](https://www.postgresql.org/docs/18/sql-createtrigger.html) 文档未作规定（§2.1 #3，复现项 #13，结论待验证）。本模型在事务开始即 `SET LOCAL ROLE genealogy_app`，并显式授予该角色 `SELECT person_relation`（§8.4），因此环检查不依赖任何未验证的执行角色假设；权限变更评审清单仍须核对这一授权未被撤销。
 
 **为什么用 advisory lock 而不是 `FOR UPDATE` 锁 project 行**（`DM-GEN-12`）：
 
@@ -723,7 +723,7 @@ FOREIGN KEY (project_id, lineage_id, parent_path)
   DEFERRABLE INITIALLY DEFERRED
 ```
 
-> **`STORED` 是强制的**（v1.2，实测 #01）：PG 18 起 `GENERATED ALWAYS AS (...)` **默认是 `VIRTUAL`**；而虚拟生成列**不允许使用用户自定义类型**，`ltree` 正是用户自定义类型。省略 `STORED` 的 DDL 在 PG 18 上直接被拒绝。同时，虚拟生成列不能出现在外键的引用侧，而 `parent_path` 正是被引用的那一侧——双重不兼容。这条必须写死（`DM-GEN-20`）。
+> **`STORED` 是强制的**（v1.2，待验证 #01）：PG 18 起 `GENERATED ALWAYS AS (...)` **默认是 `VIRTUAL`**；而虚拟生成列**不允许使用用户自定义类型**，`ltree` 正是用户自定义类型。省略 `STORED` 的 DDL 在 PG 18 上直接被拒绝。同时，虚拟生成列不能出现在外键的引用侧，而 `parent_path` 正是被引用的那一侧——双重不兼容。这条必须写死（`DM-GEN-20`）。
 
 > 必须用 `CASE`。`subpath(path, 0, nlevel(path) - 1)` 在根节点返回空 ltree，不是 `NULL`；直接写会让所有根共享空路径并触发外键失败。
 
@@ -1256,7 +1256,7 @@ $$;
 
 > **为什么必须是 `INVOKER` 而不是 `SECURITY DEFINER`**：这个函数只读自定义 GUC，不需要绕过任何权限检查。给它 `SECURITY DEFINER` 只会扩大一个本可以被审阅的函数的可信面——审阅者会下意识地跳过它。
 >
-> **实测（§17 #07）**：无上下文 → 0 行；`app.user_id = 'not-a-uuid'` → 0 行且 `current_user_id() IS NULL` 为 true；合法成员上下文 → 1 行。fail-closed 三种路径全部验证通过。
+> **待验证（§17 #07）**：预期无上下文 → 0 行；`app.user_id = 'not-a-uuid'` → 0 行且 `current_user_id() IS NULL` 为 true；合法成员上下文 → 1 行。fail-closed 三种路径需在复现时逐条核对。
 
 ### 9.2 触发器清单
 
@@ -1269,7 +1269,7 @@ $$;
 | `trg_book_release_snapshot` | `book_release` | `BEFORE` | `UPDATE` | `app.guard_book_release_snapshot()` | 1 |
 | `trg_audit_log_append_only` | `audit_log` | `BEFORE` | `UPDATE OR DELETE` | `app.guard_append_only()` | 1 |
 
-合计 **42 个触发器**（18 + 20 + 1 + 1 + 1 + 1）。触发器全部由脚本批量创建，不手写 42 遍——手写就会漏，漏一个就是一处静默失效。**实测（§17 #15）：`pg_trigger` 中 `tgisinternal = false` 且位于 `public` schema 的触发器共 42 个，与本表逐条一致。**
+合计 **42 个触发器**（18 + 20 + 1 + 1 + 1 + 1）。触发器全部由脚本批量创建，不手写 42 遍——手写就会漏，漏一个就是一处静默失效。**待验证（§17 #15）：复现时预期 `pg_trigger` 中 `tgisinternal = false` 且位于 `public` schema 的触发器共 42 个，并逐条核对是否与本表一致。**
 
 **关键实现：`app.touch_updated_at()`**
 
@@ -1348,7 +1348,7 @@ CREATE CONSTRAINT TRIGGER trg_person_relation_cycle
 - **必须用 `CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED`**：环是跨行图规则，`CHECK` 做不到；`AFTER` 触发器在提交时统一跑，才能看到事务内全部写入。
 - `down` 递归里**不含 `NEW.id`**，因此不会因为「刚插入的这一行」自我匹配。
 - 只对世系父边生效（`app.relation_kind_is_lineage_parent`），`step_parent` / `foster_parent` 不参与（`DM-REL-10`）。
-- **实测（§17 #10）**：世系二元反向环 → 提交时 `GX001`；`step_parent` 双向并存 → 两次都成功（2 行）。
+- **待验证（§17 #10）**：预期世系二元反向环 → 提交时 `GX001`；`step_parent` 双向并存 → 两次均成功（2 行），复现时核对。
 
 **关键实现：`app.guard_book_release_snapshot()`**
 
@@ -1422,7 +1422,7 @@ $$;
   END IF;
 ```
 
-> **v1.2 修复（真实漏洞）**：1.1 版用 `IF v_inv.email <> v_email THEN`。在 SQL 里 `a <> b` 遇到 `NULL` 结果是 `NULL`（不是 `TRUE`），`IF NULL` 走**不抛错**分支——**当登录用户邮箱为 NULL 时，邮箱一致性校验被整体跳过**，任何人都能兑换别人的邀请。实测（§17 #08）确认该漏洞成立。修法是 `IS DISTINCT FROM`，它把 `NULL` 与非 `NULL` 判为「不一致」，语义正确。
+> **v1.2 修复（真实漏洞）**：1.1 版用 `IF v_inv.email <> v_email THEN`。在 SQL 里 `a <> b` 遇到 `NULL` 结果是 `NULL`（不是 `TRUE`），`IF NULL` 走**不抛错**分支——**当登录用户邮箱为 NULL 时，邮箱一致性校验被整体跳过**，任何人都能兑换别人的邀请。待验证（§17 #08）：按静态分析该漏洞成立，仍需在 PG 18 复现。修法是 `IS DISTINCT FROM`，它把 `NULL` 与非 `NULL` 判为「不一致」，语义正确。
 >
 > 注意 `IS DISTINCT FROM` 是**对称**的：`NULL IS DISTINCT FROM NULL` 为 false，因此「邀请邮箱为空且用户邮箱也为空」不会误杀；但 `invite.email` 本身有 `NOT NULL` 约束，所以实际只有一侧可能为 NULL。
 

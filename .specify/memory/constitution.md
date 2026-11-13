@@ -1,44 +1,8 @@
-<!--
-SYNC IMPACT REPORT
-Scope: .specify/memory/constitution.md only (template layers untouched).
-Version change: unversioned template scaffold → 1.0.0 (initial ratification)
-Bump rationale: This is the first ratified constitution; the previous file was the
-  unmodified Spec Kit scaffold with only [ALL_CAPS] placeholders and no governance
-  content. Replacing a non-ratified scaffold with a full principle set is an initial
-  MAJOR-equivalent adoption, set at 1.0.0 rather than 0.x.
-Modified principles:
-- [PRINCIPLE_1_NAME] .. [PRINCIPLE_5_NAME] (5 template slots) → Article I–IX,
-  9 non-negotiable principles, each with 规范 / 执行者 / 验证方式 and rationale.
-Added sections:
-- 复杂度预算（Complexity Budget）
-- 安全与数据约束（Security & Data Constraints）: 租户隔离 / 权限 / 数据完整 / 媒体与隐私
-- 开发流程与质量门禁（Process & Quality Gates）: Constitution Check 门禁 / 检查清单 /
-  开发流程 / 阻塞级门禁 / 文档规则
-- Governance: 修订流程、违反处理（both from user input） plus 版本策略 and a
-  合规评审 pointer, required by the template's Governance structure.
-Removed sections:
-- Template example comments and [SECTION_2_*], [SECTION_3_*], [GOVERNANCE_RULES],
-  [GUIDANCE_FILE] placeholders — scaffold only; no previously ratified rules lost.
-Follow-up TODOs (human review before commit):
-- TODO(PRINCIPLE_COUNT): 输入标题写「五条不可变原则」，正文却列出 Article I–IX
-  共 9 条。本次按正文完整保留 9 条、未删减，也未改写措辞（治理文本修改须走
-  Governance 流程）；请确认标题措辞或调整条款数量。
-- TODO(CROSS_REFERENCES): 文本引用 ARCH-AR-01..09、DM-GEN-01..21、data-model.md、
-  plan.md、spec.md、§4.6 错误码表、§18 编号索引表、scripts/gen-sql.ts、
-  packages/db、packages/shared 等。当前仓库仅有 .specify 脚手架，这些文档与编号
-  尚无定义；按 Article III 与 DM-GEN-21 属悬空引用，需在后续 /speckit-specify、
-  /speckit-plan 产物中补齐定义，或删除引用，不允许既不补也不删。
-- TODO(PROJECT_NAME): [PROJECT_NAME] 由目录名推断为 Yunpu；若有正式项目名请修订标题。
-- Intentionally retained bracket token: `[P]` in 开发流程 item 2 is the Spec Kit
-  parallel-task marker from the user's own text, not an unresolved placeholder.
-- This report is temporary scratch material: remove this HTML comment before committing.
--->
-
 # Yunpu Constitution
 
 ## Core Principles
 
-Core Principles（五条不可变原则）：这五条是 Linus 哲学在本项目里的落地形态。
+Core Principles（九条不可变原则）：这九条是 Linus 哲学在本项目里的落地形态。
 它们不随版本变化。要修改，必须走 Governance 流程并写明代价。
 
 ### Article I — 简单胜过聪明（Simple Beats Clever）
@@ -206,14 +170,15 @@ GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.
 2. 是否引入了新表？——为什么不能用现有结构表达？
 3. 是否新增了依赖方向？——依赖图是否仍然单向？
 4. 新约束的执行者是谁？——写不出名字就删掉这条约束。
-5. 新错误码是否已在 §4.6 错误码表登记？
-6. 新编号是否在 §18 编号索引表登记？——引用编号必须能找到定义。
+5. 新错误码是否已在 `docs/architecture/data/errors.md` 登记？
+6. 新编号是否在 `docs/README.md` 编号索引登记？——引用编号必须能找到定义。
 7. 是否触碰「明确不做」清单？——触碰就必须写 Complexity Tracking。
 
 ### 开发流程（Superpowers 方法论）
 
 1. 先写规格：功能开发前先在 `specs/<编号>-<特性名>/` 下产出 spec.md，
-   明确验收标准（Given / When / Then），再动手。
+   明确验收标准（Given / When / Then），再动手。`docs/` 是完整目标架构基线，
+   `specs/<编号>-<特性名>/` 只用于后期分批实现的批次工件，二者不互相复制。
 2. 写实施计划：产出 plan.md（含 Constitution Check）与 tasks.md
    （可执行、标 [P] 并行标记与依赖），再写代码。
 3. 测试驱动：先写会失败的测试，再写实现。集成测试连真 PostgreSQL 18，
@@ -221,18 +186,20 @@ GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.
 4. 代码评审：按本文 Article I–IX 逐条对照，不按个人偏好。
 5. 收尾：合并前 `gen:sql && git diff --exit-code` 通过，编号一致性校验零悬空。
 
+第 2 步的 `[P]` 是 Spec Kit 并行任务标记（来自用户输入），不是未解析占位符。
+
 ### 阻塞级门禁（不过不许合并）
 
 - CI lint（含 Biome 依赖方向检查）通过。
 - 集成测试在真 PG 18 上通过，RLS 跨租户隔离用例必须覆盖。
 - 编号一致性校验：悬空引用 0、一号两义 0、未引用 0。
+- `SC-DOC-01`｜编号一致性校验：悬空引用 0、一号两义 0、未引用 0、断链 0、无 CRLF｜执行者：`scripts/check-docs.sh --strict`（测试）｜验证方式：`scripts/check-docs.sh --root docs --strict` exit=0。
 - 变更涉及数据模型时，data-model.md 同步更新并重跑生成物校验。
 
 ### 文档规则
 
-- 文档分层不重叠：spec.md 说「做什么与验收」，plan.md 说「怎么做与边界」，
-  data-model.md 说「数据长什么样」。同一主题只在一个文档里定义，其余用编号引用。
-- 「明确不做」清单只存一份（spec.md），其他文档引用编号，不复制表格。
+- 文档分层不重叠：`docs/requirements/` 说「做什么与验收」，`docs/architecture/` 说「怎么做与边界、数据长什么样」，`docs/decisions/` 说「为什么」，`docs/verification/` 说「实测证据」。同一主题只在一个文档里定义，其余用编号引用。
+- 「明确不做」清单只存一份（`docs/requirements/out-of-scope.md`），其他文档引用编号，不复制表格。
 - 每条可验证规范写成「规范陈述 + 执行者 + 验证方式」三段式。
 - 编号唯一且可追溯：同一编号不得承载两条规则，引用编号必须有定义（DM-GEN-21）。
 
@@ -262,6 +229,7 @@ GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.
 - MINOR：新增原则或章节，或实质性扩充指引。
 - PATCH：澄清、措辞与错别字修正、非语义精修。
 - 每次修订同步更新 Version 与 Last Amended；Ratified 保持首次采纳日期不变。
+- 1.1.0（2026-11-13）：新增 `SC-DOC-01` 执行者定义、文档分层规则改为主题化目录、修正条款计数与悬空引用说明，未删除任何原则 → MINOR。
 
 ### 合规评审
 
@@ -269,4 +237,4 @@ GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.
 Phase 0 之前与 Phase 1 之后各一次的 Constitution Check 门禁、
 以及 plan.md 的 Complexity Tracking 登记。本节不重复定义，只作引用。
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-13
+**Version**: 1.1.0 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-13

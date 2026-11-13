@@ -1,8 +1,6 @@
-# 技术调研：云谱 V1（Cloud Genealogy V1）
+# 技术栈、锁定版本与官方依据
 
-
-
----
+> 本文件是「技术选型、锁定版本、Phase 0 调研与官方依据」的唯一权威；其他主题见 `docs/README.md` 导航，同一主题不复制表格。
 
 ## 0. 调研摘要
 
@@ -273,7 +271,7 @@
 
 ---
 
-> 本文中所有条目均出自 [`data-model.md`](./data-model.md) §17 / §17.1 原文；测试项编号、方法与结果未作改写。
+> 本文中所有条目均出自 [`schema.md`](data/schema.md) §17 / §17.1 原文；测试项编号、方法与结果未作改写。
 
 ---
 
@@ -282,7 +280,7 @@
 本节汇总 v1.1 → v1.2 期间在真实 PostgreSQL 18.6 实例上发现的 **12 项可复现缺陷**。
 其中 4 项属致命或安全级——**RLS 核心谓词 SQL 报错**意味着整套多租户隔离失效。
 
-> 修复记录见 [`data-model.md`](./data-model.md) §16 修订记录（26 项）与 §17 实测记录（21 组）。
+> 修复记录见 [`schema.md`](data/schema.md) §16 修订记录（26 项）与 §17 实测记录（21 组）。
 
 | #    | 位置  | 缺陷                                                         | 复现                                                    | 影响                                         | v1.2 修复                                                    |
 | ---- | ----- | ------------------------------------------------------------ | ------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------ |
@@ -318,3 +316,94 @@
 > 完整 21 组实测记录见 `data-model.md` §17。
 
 ---
+## 3. Technical Context（运行时与工具链）
+
+| 层         | 选型                         | 版本                  | 为什么是它                                                   |
+| ---------- | ---------------------------- | --------------------- | ------------------------------------------------------------ |
+| 运行时     | **Bun**                      | ≥ 1.4.4               | 冷启动快、`bun test` 开箱即用、安装快。Playwright 不在 Bun 上跑 → E2E 用 Node |
+| Web 框架   | **Hono**                     | v4（≥ 4.11.2）        | 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件洋葱模型 |
+| 前端构建   | **Vite**                     | 7.x                   | 冷启动毫秒级；Hono 路由可在 dev 下热重载                     |
+| UI         | React                        | 19.x                  | 生态与人才池最大                                             |
+| 语言       | TypeScript                   | 5.x                   | `strict` + `noUncheckedIndexedAccess`                        |
+| 校验       | **Zod**                      | v4（`^3.25 \|\| ^4`） | 一份 schema 驱动前端表单与后端入参；`drizzle-zod` 从表定义派生单表 CRUD。`@hono/zod-validator` 的 peerDependency 同时支持 Zod 3.25 与 4，选 v4 不冲突 |
+| ORM        | **Drizzle**                  | 0.45.x                | SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎           |
+| 数据库     | **PostgreSQL**               | 18                    | `uuidv7()`、`ltree`、RLS、生成列、延迟约束、advisory lock    |
+| 服务端状态 | TanStack Query               | v5                    | 缓存、失效、请求去重                                         |
+| 视图状态   | Zustand                      | v5                    | 画布、面板、临时选择                                         |
+| 路由       | TanStack Router              | v1                    | 文件式、类型安全                                             |
+| 组件       | Radix UI + Tailwind CSS      | v4                    | 无样式可访问原语 + CSS-first 令牌                            |
+| 画布       | `@xyflow/react`              | v12                   | 小规模家谱树可视化                                           |
+| 富文本     | TipTap                       | v3                    | ProseMirror 系，正文存 JSON                                  |
+| 认证       | Better Auth                  | 1.7.x                 | Drizzle adapter、数据库会话、自定义 access control           |
+| API 文档   | `@hono/zod-openapi` + Scalar |                       | 契约从代码生成，不手写 YAML；官方维护的 `@hono/zod-openapi` 而非第三方 `hono-openapi`（`ARCH-HONO-06`） |
+| 测试       | `bun test` + Playwright      |                       | 单元/路由/集成用 Bun；E2E 用 Node（`ARCH-TST-03`）           |
+| 质量       | Biome                        | 2.x                   | lint + format + 依赖方向规则                                 |
+| 包管理     | **pnpm**                     | 12.x                  | workspace 与依赖隔离可控；**全仓库唯一包管理器**（`ARCH-BLD-01`） |
+
+> `ARCH-HONO-06`（1.2 修正）：OpenAPI 方案改用 **官方 `@hono/zod-openapi`**（`createRoute` + `OpenAPIHono` + `app.doc()`），不再用第三方的 `rhinobase/hono-openapi`。理由：官方包与 Zod v4、`zValidator` 同源，`createRoute` 里请求与响应 schema 与校验 schema 是**同一份 Zod 对象**，不存在两处定义漂移；第三方包需要额外维护 `resolver` 适配层，属于「同一规则两处」的变体。Scalar 仍作为渲染器挂在 `/api/docs`。
+
+### 3.1 Hono 内置中间件选用表
+
+Hono 自带一批经过审计的内置中间件。**先用内置的，不要自己写**（`ARCH-HONO-03`）：
+
+| 中间件            | import                | 用途                                                         | 本项目决定                                                   |
+| ----------------- | --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `requestId()`     | `hono/request-id`     | 读入站 `X-Request-Id` 或生成，回写到响应头，设置 `c.get('requestId')` | **采用**，作为最外层中间件                                   |
+| `secureHeaders()` | `hono/secure-headers` | 默认已启用 HSTS / `X-Frame-Options: SAMEORIGIN` / `X-Content-Type-Options: nosniff` / `Referrer-Policy: no-referrer` / COOP / CORP，并移除 `X-Powered-By` | **采用**；CSP 按需配置                                       |
+| `compress()`      | `hono/compress`       | gzip/deflate，默认阈值 1024 字节；带 `Cache-Control: no-transform` 的响应自动跳过 | **采用**                                                     |
+| `bodyLimit()`     | `hono/body-limit`     | 限制请求体大小，默认抛 `413`；有 `Content-Length` 且无 `transfer-encoding` 时直接拒绝，否则按流读取到上限 | **采用**，上传端点必配                                       |
+| `timeout()`       | `hono/timeout`        | 超时抛 `504`；`next()` 先完成则自动清除定时器                | **采用**，长耗时端点按需挂载                                 |
+| `cors()`          | `hono/cors`           | CORS 头与预检 `204`                                          | **不采用**：前后端同源部署，由反向代理处理                   |
+| `etag()`          | `hono/etag`           | GET/HEAD 条件请求，`304`                                     | **不采用**：谱牒数据不缓存，缓存是浏览器的事                 |
+| `cache()`         | `hono/cache`          | 响应缓存                                                     | **不采用**：会缓存到边缘，且必须置于认证之后并带 `vary: Cookie` 才安全；本项目无此需求 |
+| `timing()`        | `hono/timing`         | `Server-Timing` 响应头与分段计时                             | **不采用**：性能观测走 APM + `Server-Timing` 由网关补        |
+| `logger()`        | `hono/logger`         | 控制台访问日志                                               | **不采用**：自研结构化日志（§13）需要 JSON 输出与字段裁剪    |
+| `ipRestriction()` | `hono/ip-restriction` | IP 白/黑名单                                                 | **不采用**：边缘层已做 WAF                                   |
+
+> `ARCH-HONO-03` 纪律：新增中间件前先查这张表。内置件不采用时必须写明理由——这张表本身是「不用什么」的记录，避免下一个人重新论证一遍。
+
+> `ARCH-BLD-01`（1.1 修正）：包管理纪律与 Dockerfile 必须一致。旧版 §3 写「pnpm，不要混用 Bun 的安装器」，而 §15.1 镜像却是 `COPY bun.lock` + `bun install --frozen-lockfile`——两份文档互相否定，执行者不知道听谁的。**现统一为 pnpm**，镜像使用 `pnpm-lock.yaml` + `pnpm install --frozen-lockfile`。CI 与本地安装一律使用 pnpm；禁止出现 `bun install`、`bun add`、`bun.lock`。
+
+### 3.2 Drizzle 驱动
+
+生产用 `drizzle-orm/node-postgres`（`pg`）。它在 Bun 的 Node 兼容层下可用，并被 PgBouncer 长期验证。`drizzle-orm/bun-sql` 是官方路径，但 ORM 的查询构建与结果映射会吃掉驱动层的性能优势，连接池行为也与 `pg` 不同。**先用 `pg`，等实测证明连接池是瓶颈再换。**
+
+### 3.3 Bun 与 Playwright
+
+Playwright 不在 Bun 上运行。因此：
+
+- E2E 跑在 Node，与 Bun 应用分离；
+- 应用本体不做 `bun build --compile`（与 Playwright 不兼容，对容器化也没有收益）。
+
+这条纪律写进 CI：应用镜像跑 Bun，E2E job 跑 Node。
+
+---
+
+## 18. Hono 官方实践依据
+
+本文所有与 Hono 相关的表述，均对照 Hono 官方文档与源码核实（经 Context7 拉取）：
+
+| 主题                                                         | 官方来源                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 中间件执行顺序（注册顺序进入、逆序返回）                     | [Middleware Guide](https://hono.dev/docs/guides/middleware)  |
+| `c.error` 在 `await next()` 之后可读                         | [Context API](https://hono.dev/docs/api/context)             |
+| `Factory` 的真实 API：`createApp` / `createMiddleware` / `createHandlers` | [hono/factory 源码](https://github.com/honojs/hono/blob/main/src/factory.ts) |
+| `ContextVariableMap` 全局增强会掩盖 `undefined`              | [Context API — ContextVariableMap](https://hono.dev/docs/api/context) |
+| RPC 类型推断要求：全链式 + 从具名变量推断                    | [RPC Guide](https://hono.dev/docs/guides/rpc) · [Best Practices](https://hono.dev/docs/guides/best-practices) |
+| `validator` 各 target 取值来源与 `Content-Type` 门控         | [hono/validator 源码](https://github.com/honojs/hono/blob/main/src/validator/validator.ts) |
+| `zValidator` hook 可短路请求；peer 支持 Zod 3.25 / 4         | [@hono/zod-validator](https://github.com/honojs/middleware/tree/main/packages/zod-validator) |
+| `HTTPException.getResponse()` 不感知 `Context` 的 header     | [Exception API](https://hono.dev/docs/api/exception)         |
+| 内置中间件清单与默认行为                                     | [Built-in Middleware](https://hono.dev/docs/middleware/builtin) |
+| `serveStatic` 的大小写 / 8.3 短名绕过风险                    | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
+| Bun 默认导出 `{ port, fetch }` 启动方式                      | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
+| `app.request(input, requestInit?, env?, executionCtx?)` 测试约定 | [Hono API](https://hono.dev/docs/api/hono)                   |
+| `@hono/zod-openapi` 的 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/main/examples/zod-openapi.md) |
+
+> `ARCH-HONO-11`：升级 Hono 大版本前，先用 Context7 重新拉一遍上表对应条目，逐条核对本文表述是否仍成立。框架语义会变，本文对框架的断言必须跟着变。
+
+---
+
+
+## 待补齐契约项
+
+见 `docs/requirements/functional.md`：原 api.md §4 列出的 9 类未定义项由 Phase 0 结论补齐。

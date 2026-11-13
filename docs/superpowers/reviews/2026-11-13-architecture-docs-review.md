@@ -284,11 +284,11 @@ specs/<NNN>-<feature>/
 
 ### 最终计数（实测，可复跑）
 
-- `scripts/check-docs.sh --root docs --strict` → **`VIOLATIONS=0 WARN=0`**，exit=0。规则 `R1 link` / `R2 eol` / `R3 oos-dup` / `R4 dangling` / `R5 dual` / `R6 needs-clarification` / `R7 section` / `R8 size` 全部为 0；两处 >400 行主题文件（`overview.md` / `user-stories.md`）已在 `docs/README.md` 的 Complexity Tracking 三列表登记，故 `R8` 不再违规。
-- `bash tests/docs/check-docs.test.sh` → **`TESTS=12 FAILURES=0`**（12 个 fixture 覆盖 R1–R8）。
+- `scripts/check-docs.sh --root docs --strict` → **`VIOLATIONS=0 WARN=0`**，exit=0。规则 `R1 link` / `R2 eol` / `R3 oos-dup` / `R4 dangling` / `R5 dual` / `R6 needs-clarification` / `R7 section` / `R8 size` 全部为 0；**三处** >400 行主题文件（`overview.md` 447 / `user-stories.md` 451 / `data/schema.md` **1496**）均在 `docs/README.md` 的 Complexity Tracking 三列表登记。全分支评审指出 `R8` 曾**假阴性**（扫描整份 README，导航表的行即可当作登记）：已**收紧**为只接受 `## Complexity Tracking` 段内登记行，并由 `tests/docs/check-docs-review.test.sh` 的 `r8-strict` / `r8-registered` 正负用例守住。
+- `bash tests/docs/check-docs.test.sh` → **`TESTS=12 FAILURES=0`**（12 个 fixture 覆盖 R1–R7 与 4 个回归场景）；`sh tests/docs/check-docs-review.test.sh` → **`REVIEW_TESTS=4 FAILURES=0`**（全分支评审补的 R8 CT 段限定、`--strict` 升级、`--json` 输出、R7 裸 `.md` 豁免收紧）。
 - `python3 .superpowers/sdd/2026-11-13-architecture-docs-refactor/task-4-dups.py docs` → `DUP_LINES=0`（跨文件逐字重复长行已清零）。
 - **`NO_SPECS_OK`**：`test ! -d specs` 与 `test ! -e .specify/feature.json` 均通过；`find docs/architecture -maxdepth 1` 的旧文件名（`api.md` / `data-model.md` / `plan.md` / `research.md` / `spec.md`）计数 = `0`；`git status --short` 无 `?? specs/`、无 `feature.json`。
-- 目标架构按主题重组为 **17 个主题文件**（`docs/architecture/` 13 + `docs/requirements/` 4），加 `docs/README.md`、`docs/decisions/0001-pg18-defects.md`、`docs/verification/README.md` 共 20 个非过程文档；`find docs -name '*.md' -not -path '*/superpowers/*' -exec wc -l {} +` 合计 **5037 行**（重构前 5 份平铺文档 5613 行）。
+- 目标架构按主题重组为 **17 个主题文件**（`docs/architecture/` 13 + `docs/requirements/` 4），加 `docs/README.md`、`docs/decisions/0001-pg18-defects.md`、`docs/verification/README.md` 共 20 个非过程文档；`find docs -name '*.md' -not -path '*/superpowers/*' -exec wc -l {} +` 合计 **5039 行**（重构前 5 份平铺文档 5613 行）。
 - docs/ 与 scripts/ 全 LF（`grep -rlc $'\r' docs/ scripts/ --include='*.md' --include='*.sh'` 无输出）；`sh -n scripts/check-docs.sh` 通过。
 - 十个 Task 的 verify 脚本全绿：T4 `16/0`、T5 `31/0`、T6 `34/0`、T7 `27/0`、T8 `33/0`、T9 `25/0`、T10 `48/0`（另 T1/T2/T3 为复合断言与 12 fixtures），无 prior-verify 回归。
 
@@ -312,4 +312,26 @@ specs/<NNN>-<feature>/
 
 ---
 
-> 本次实施的全部自裁决见 `/home/bobo/project/yunpu/.superpowers/sdd/2026-11-13-architecture-docs-refactor/progress.md`（54 条 `Ruling:`）；末尾 whole-branch review 的 Minor 项由该评审单独记录，不在此处预先声明。
+> 本次实施的全部自裁决见会话内 SDD ledger（`progress.md`，该目录按 `.gitignore` 不随仓库分发）；逐条 WHAT / WHY / COST 在最终答复列出。末尾 whole-branch review 的 Minor 项由最终答复以 `Final: minor (deferred)` 逐条登记，不在此处预先声明。
+
+### 全分支评审 fix wave（2026-11-14，一次 fix pass）
+
+末尾 whole-branch review 判 `Ready to merge? **With fixes**`、**Critical: None**、3 项 Important。按
+`/executing-plans` 只做一次 fix pass：先写会失败的测试（`tests/docs/check-docs-review.test.sh` 的 4 个
+review fixture，RED `REVIEW_TESTS=4 FAILURES=2`），再逐项修到 GREEN。
+
+- **Important 1（R8 假阴性）**：`scripts/check-docs.sh` 的 `R8 size` 原扫描整份 `docs/README.md`，
+  Task 9 的 17 行导航表让每个主题文件都凑出一行三列填齐行，`R8` 永不触发。现收紧为只接受
+  `## Complexity Tracking` 段内登记行；`data/schema.md`（1496 行）补进三列表，三处 >400 行文件全部登记。
+  新增 `r8-strict`（CT 外伪登记须报违规）与 `r8-registered`（CT 内登记须放行）正负用例。
+- **Important 2（裸基线引用 + R7 豁免过宽）**：全树 40 处 `plan.md` / `api.md` / `data-model.md` 的
+  `§N.N` 来源行统一加「重构前基线定位符，见 git 历史 `5cbb72b`」；`stack.md` 的悬空 `§19.1` / `§6.7`
+  改为现行权威指针；`R7` 的 `.md` 豁免收紧为只认 markdown 链接形式，新增 `r7-dead-md` 用例；
+  `stack.md` 重复 `## 3.` 重编号为 `## 10.`（子节同步 10.1–10.3，`docs/README.md` 的
+  `ARCH-HONO-03` 位置列同步改 `§10.1`）。
+- **Important 3（编号错配）**：`docs/README.md` 第二次 Constitution Check 第 6 行的 `ARCH-RPC-01`
+  改为 `ARCH-ERR-01`，执行者改为具体测试脚本 `tests/docs/check-docs.test.sh`，不再把 `SC-DOC-01`
+  当执行者。
+
+6 项 Minor 按 `/executing-plans` 记为 `Final: minor (deferred)`，见最终答复；其中第 ② 项的 fixture
+覆盖面措辞已随本 wave 订正为真实覆盖面，第 ① 项的过期计数与 gitignored 绝对路径已从本报告移除。

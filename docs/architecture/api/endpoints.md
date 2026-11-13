@@ -16,7 +16,7 @@
 | `PATCH` | `/api/v1/account`          | 修改个人资料 | 未定义                   | 需登录   | 未定义     |
 | `POST`  | `/api/v1/account/password` | 修改密码     | 未定义                   | 需登录   | 未定义     |
 
-> 来源：plan.md §8.9
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9
 
 ### 2.2 组织
 
@@ -32,8 +32,8 @@
 | `PUT`    | `/api/v1/organizations/:organizationId/owner`             | 转移所有权（CAS 条件更新）                  | 未定义                   | **仅当前 owner**；新 owner 必须已是成员                      | 未定义；并发失败 → `GX010` → 409 |
 | —        | 兑换邀请                                                  | 兑换邀请（明文 token 只返回一次）           | 未定义                   | 公开端点；兑换时校验当前登录用户邮箱与邀请邮箱一致（`GX009` → 403） | 未定义；已被兑换 → `GX010` → 409 |
 
-> 说明：兑换邀请的**具体路径**在 plan.md §8.9 端点清单中**未定义**（§8.2 仅说明它是公开端点）。
-> 来源：plan.md §8.9、§10、§11.4
+> 说明：兑换邀请的**具体路径**在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 端点清单中**未定义**（§8.2 仅说明它是公开端点）。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§10、§11.4
 
 ### 2.3 项目与分类
 
@@ -47,8 +47,8 @@
 | `GET`    | `/api/v1/projects/:projectId/folders`            | 分类列表 | —                        | 项目所属组织成员                     | 未定义                           |
 | `POST`   | `/api/v1/projects/:projectId/folders`            | 创建分类 | 未定义                   | 项目所属组织成员                     | 未定义                           |
 
-> 说明：plan.md §8.9 未列出 folder 的修改 / 删除端点；未定义。
-> 来源：plan.md §8.9
+> 说明：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 未列出 folder 的修改 / 删除端点；未定义。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9
 
 ### 2.4 谱系与节点
 
@@ -65,7 +65,7 @@
 | `DELETE` | `/api/v1/nodes/:nodeId`                | 删除子树                                                   | 未定义                                                      | 项目所属组织成员                     | 未定义                           |
 
 > 补充：§8.8 的 OpenAPI 示例另给出 `GET /lineages/{lineageId}/nodes/{nodeId}`（节点详情），其响应 schema 为 `NodeResponseSchema`、`404` 使用 `ErrorSchema`。该路径未出现在 §8.9 的骨架表中。
-> 来源：plan.md §8.9、§8.1、§8.8、§11.2
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§8.1、§8.8、§11.2
 
 ### 2.5 人物与姓名
 
@@ -79,8 +79,8 @@
 | `GET`    | `/api/v1/persons/:personId/names`     | 姓名列表                                               | —                        | 项目所属组织成员                                           | 未定义                           |
 | `POST`   | `/api/v1/persons/:personId/names`     | 新增姓名                                               | 未定义                   | 项目所属组织成员                                           | 未定义                           |
 
-> 说明：姓名的修改 / 删除端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9、§8.7、§12.1
+> 说明：姓名的修改 / 删除端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§8.7、§12.1
 
 ### 2.6 关系
 
@@ -89,8 +89,8 @@
 | `GET`  | `/api/v1/persons/:personId/relations` | 关系边列表 | —                        | 项目所属组织成员 | 未定义                                                       |
 | `POST` | `/api/v1/persons/:personId/relations` | 新增关系   | 未定义                   | 项目所属组织成员 | 未定义；祖先环 → `GX001` → 409；对称关系顺序错误 → `23514` → 400 |
 
-> 说明：关系的修改 / 删除端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9、§11.3
+> 说明：关系的修改 / 删除端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§11.3
 
 ### 2.7 事件
 
@@ -99,8 +99,8 @@
 | `GET`  | `/api/v1/persons/:personId/events` | 事件列表 | —                        | 项目所属组织成员 | 未定义     |
 | `POST` | `/api/v1/persons/:personId/events` | 新增事件 | 未定义                   | 项目所属组织成员 | 未定义     |
 
-> 说明：事件的修改 / 删除端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9
+> 说明：事件的修改 / 删除端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9
 
 ### 2.8 来源与考证引用
 
@@ -111,8 +111,8 @@
 | `GET`  | `/api/v1/projects/:projectId/citations` | 考证引用列表 | —                        | 项目所属组织成员 | 未定义     |
 | `POST` | `/api/v1/projects/:projectId/citations` | 新增考证引用 | 未定义                   | 项目所属组织成员 | 未定义     |
 
-> 说明：来源 / 引用的修改、删除端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9
+> 说明：来源 / 引用的修改、删除端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9
 
 ### 2.9 谱文（文章与分页富文本）
 
@@ -126,8 +126,8 @@
 | `PUT`    | `/api/v1/articles/:articleId/pages/:pageId` | 保存分页富文本（**乐观锁**，`version` CAS） | 未定义                   | 项目所属组织成员 | 版本冲突 → **409**（§11.1）      |
 | `DELETE` | `/api/v1/articles/:articleId/pages/:pageId` | 删除分页                                    | 未定义                   | 项目所属组织成员 | 未定义                           |
 
-> 说明：分页的创建端点（`POST .../pages`）在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9、§11.1、§12.1
+> 说明：分页的创建端点（`POST .../pages`）在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§11.1、§12.1
 
 ### 2.10 谱书与编目
 
@@ -138,8 +138,8 @@
 | `GET`  | `/api/v1/books/:bookId/catalog`     | 编目树列表 | —                        | 项目所属组织成员 | 未定义                           |
 | `POST` | `/api/v1/books/:bookId/catalog`     | 新增编目项 | 未定义                   | 项目所属组织成员 | 未定义                           |
 
-> 说明：编目项的修改 / 删除端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9
+> 说明：编目项的修改 / 删除端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9
 
 ### 2.11 出版（快照）
 
@@ -150,7 +150,7 @@
 | `POST` | `/api/v1/releases/:releaseId/revoke` | 作废版本（快照不可修改）                                     | 未定义                   | 项目所属组织成员                                             | 未定义；重复作废 → `GX007` → 409                       |
 | `POST` | `/api/v1/releases/:releaseId/purge`  | 清除出版版本（**仅组织所有者**）                             | 未定义                   | **owner 专属**；权限名 `release.purge`，矩阵中标注 `ownerOnly` | 非 owner → `GX006` → 403；产物缺失 → `GX011` → **500** |
 
-> 来源：plan.md §8.9、§11.6、§7.5、§8.3
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§11.6、§7.5、§8.3
 
 ### 2.12 媒体
 
@@ -159,8 +159,8 @@
 | `POST` | `/api/v1/projects/:projectId/media-assets` | 上传媒体（服务端代理；`bodyLimit` 10 MB；校验会话、项目权限、大小、content-type，计算 SHA-256） | 未定义                   | 项目所属组织成员；`object_key` 由服务端生成，客户端不能指定 | 超出大小 → **413**；其余未定义 |
 | `GET`  | `/api/v1/media-assets/:mediaAssetId`       | 鉴权下载                                                     | —                        | 项目所属组织成员（走鉴权代理或短时签名 URL）                | 未定义                         |
 
-> 说明：媒体删除、人物/文章与媒体的关联端点在 plan.md §8.9 中**未定义**。
-> 来源：plan.md §8.9、§12.1、§15.1.2
+> 说明：媒体删除、人物/文章与媒体的关联端点在 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 中**未定义**。
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§12.1、§15.1.2
 
 ### 2.13 探活与文档
 
@@ -169,7 +169,7 @@
 | `GET` | `/api/health` | 探活（只检查进程与数据库连通性，不检查对象存储） | —                        | 公开端点   | 未定义     |
 | —     | `/api/docs`   | Scalar 渲染的 OpenAPI 文档（`app.doc()` 输出）   | —                        | **未定义** | 未定义     |
 
-> 来源：plan.md §8.9、§13、`ARCH-HONO-06`
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9、§13、`ARCH-HONO-06`
 
 ### 2.14 审计
 
@@ -177,6 +177,6 @@ plan.md **未定义**任何审计查询端点。
 
 审计的两个级别（DB 级强审计 / 应用级尽力而为审计）见 §12.2：强审计由受控 `SECURITY DEFINER` 函数内部 `INSERT audit_log` 完成，尽力而为审计由各域 service 调 `audit.record()`。
 
-> 来源：plan.md §8.9（端点清单中无审计端点）、§12.2
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9（端点清单中无审计端点）、§12.2
 
 ---

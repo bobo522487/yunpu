@@ -4,9 +4,9 @@
 
 ## 0. 阅读约定
 
-- **未定义项的 Phase 0 处置**：原 plan.md §8 未给出的项由 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）统一收口；本文不推断补充、不留到实现阶段。已定值项直接引用结论，未决项见 [README.md](../../README.md) 的 Phase 0 未决项表并阻塞该批次 `/speckit-tasks`。
-- **Zod schema 名**：plan.md 只显式给出了少数 schema（`CreateNodeSchema`、`NodeIdParamsSchema`、`NodeResponseSchema`、`ErrorSchema`），其余端点的入参 schema 名在 plan.md 中**未定义**；按 §8.5 的规则它们应位于 `packages/shared/src/schemas`。
-- **权限名**：plan.md 只显式点名 `person.write`、`release.purge`（§10、§7.5 `ARCH-PERM-01`），完整矩阵在 `packages/shared/src/permissions.ts`，本文中未列出的权限名记为**未定义**。
+- **未定义项的 Phase 0 处置**：原 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8 未给出的项由 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）统一收口；本文不推断补充、不留到实现阶段。已定值项直接引用结论，未决项见 [README.md](../../README.md) 的 Phase 0 未决项表并阻塞该批次 `/speckit-tasks`。
+- **Zod schema 名**：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） 只显式给出了少数 schema（`CreateNodeSchema`、`NodeIdParamsSchema`、`NodeResponseSchema`、`ErrorSchema`），其余端点的入参 schema 名在 plan.md 中**未定义**；按 §8.5 的规则它们应位于 `packages/shared/src/schemas`。
+- **权限名**：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） 只显式点名 `person.write`、`release.purge`（§10、§7.5 `ARCH-PERM-01`），完整矩阵在 `packages/shared/src/permissions.ts`，本文中未列出的权限名记为**未定义**。
 - 路径参数一律使用**内部 UUID**；URL 不承担授权，授权由会话 + RBAC + RLS 完成（§8.9 末段）。
 
 ---
@@ -35,7 +35,7 @@
 | `Content-Type`  | 写接口**必须**带 `application/json`；缺失时 `zValidator('json', …)` 取到空对象 `{}`，schema 全可选时会静默通过 | §8.6 纪律 1、§14.1 |
 | `X-Request-Id`  | 入站最多 255 字符；`requestId()` 读入或生成，回写到响应头，并放入 `c.get('requestId')` | §13                |
 
-> 来源：plan.md §8.1.2、§8.6、§13、§14.1
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.1.2、§8.6、§13、§14.1
 
 ### 1.3 中间件链（固定顺序）
 
@@ -60,7 +60,7 @@ LIMIT $3;
 | 总数           | 用单独的估算查询，不每次 `COUNT(*)`                          | §8.7               |
 
 > 分页参数的**具体命名**（如 `cursor` / `limit` 字段名、每页上限）在 plan.md 中**未定义**。
-> 来源：plan.md §8.7
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.7
 
 ### 1.5 乐观锁（version）
 
@@ -77,7 +77,7 @@ RETURNING version;
 - **不做编辑锁**（会带来超时、僵尸锁、「谁先打开谁赢」）。
 - 其余写入（人物、关系、事件、来源、引用、谱书目录）为**最后写入获胜**，不做编辑锁。
 
-> 来源：plan.md §11.1、§11.5
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §11.1、§11.5
 
 ### 1.6 错误响应格式
 
@@ -97,7 +97,7 @@ export type ErrorCode =
   `{ ok: false, code: 'VALIDATION', message, details: result.error.flatten().fieldErrors }`。
 - 不使用 `HTTPException.getResponse()`（它不感知 `Context`，会丢安全响应头与 `X-Request-Id`），统一用 `c.json()` 构造。
 
-> 来源：plan.md §8.3、§8.6
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.3、§8.6
 
 ### 1.7 错误码到 HTTP 状态的映射
 
@@ -117,7 +117,7 @@ export type ErrorCode =
 
 > 一般性的 `Idempotency-Key` 请求头机制在 plan.md 中**未定义**。
 
-> 来源：plan.md §10、§11.1–§11.5、§12.1
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §10、§11.1–§11.5、§12.1
 
 ### 1.9 请求体大小与超时（按端点）
 
@@ -131,16 +131,16 @@ export type ErrorCode =
 - 业务层的 10 MB 校验与 `bodyLimit` **并存**：中间件是粗筛，service 里的校验是业务规则（返回领域错误文案）。
 - 出版客户端超时 180s（§11.6）。
 
-> 来源：plan.md §15.1.2、§11.6、§12.1
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §15.1.2、§11.6、§12.1
 
 ### 1.10 批量操作上限
 
 | 项                            | 规定                                                         | 出处                |
 | ----------------------------- | ------------------------------------------------------------ | ------------------- |
 | 出版规模上限                  | 单次发布的编目节点数 ≤ 2 000、文章页总数 ≤ 5 000；超出返回 `413`，提示「规模超出版本同步上限」 | §11.6 `ARCH-PUB-01` |
-| 批量导入/批量写入类端点的上限 | **未定义**（plan.md §8.9 的端点清单中没有批量端点）          | §8.9                |
+| 批量导入/批量写入类端点的上限 | **未定义**（plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.9 的端点清单中没有批量端点）          | §8.9                |
 
-> 来源：plan.md §11.6、§8.9
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §11.6、§8.9
 
 ### 1.11 限流
 
@@ -151,7 +151,7 @@ export type ErrorCode =
 | 具体配额数值、返回状态码、限流响应体 | 未决（Phase 0 结论 `C5`，见 [stack.md](../stack.md)） | C5   |
 | `RATE_LIMITED` 错误码                | 已定值：映射为 HTTP `429`（Phase 0 结论 `C9`）  | C9   |
 
-> 来源：plan.md §8.2、§8.3
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.2、§8.3
 
 ### 1.12 依赖注入与契约生成
 
@@ -174,6 +174,6 @@ export type ErrorCode =
 | 错误不进 handler               | handler 不写 try/catch，由 `onError` 统一映射                | §8.3                     |
 | 服务层不感知 HTTP              | service 通过参数接收依赖，路由负责把 `c.get('services')` 转成参数 | §8.4、§5.2               |
 
-> 来源：plan.md §8.1、§8.3、§8.4、§8.6、§8.9、§7.5、§10
+> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.1、§8.3、§8.4、§8.6、§8.9、§7.5、§10
 
 ---

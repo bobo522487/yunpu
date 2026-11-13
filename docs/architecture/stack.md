@@ -156,7 +156,7 @@
 | 锁超时三项                                           | 由连接串 `PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'` 下发，并设 `prepare: false`（`DM-POOL-01`、`DM-REL-06`）；见 [`migrations.md`](data/migrations.md) |
 | `EXPLAIN` 自动含 `BUFFERS`                           | 索引验证方法：`EXPLAIN (ANALYZE, TIMING off, COSTS off)`（待验证 #13）；`DM-GEN-10` 先测量再优化 |
 
-> 来源：data-model.md §19.1「PostgreSQL 18」；用法对照 plan.md §6.7、§7.2、§11.2–§11.3、§15.2
+> 来源（重构前基线定位符，见 git 历史 `5cbb72b`）：原 `data-model.md` 的「PostgreSQL 18」版本说明；用法对照原 `plan.md` 的工具链、RLS、索引与部署章节。现行权威见本文第 1–9 节与 `data/schema.md`。
 
 ---
 
@@ -200,7 +200,7 @@
 
 21 组 PG 18 实测与 D1–D12 缺陷清单的唯一副本见 [../decisions/0001-pg18-defects.md](../decisions/0001-pg18-defects.md)；复现方式与「待验证」登记见 [../verification/README.md](../verification/README.md)。本文不复制实测表。
 
-## 3. Technical Context（运行时与工具链）
+## 10. Technical Context（运行时与工具链）
 
 | 层         | 选型                         | 版本                  | 为什么是它                                                   |
 | ---------- | ---------------------------- | --------------------- | ------------------------------------------------------------ |
@@ -226,7 +226,7 @@
 
 > `ARCH-HONO-06`（1.2 修正）：OpenAPI 方案改用 **官方 `@hono/zod-openapi`**（`createRoute` + `OpenAPIHono` + `app.doc()`），不再用第三方的 `rhinobase/hono-openapi`。理由：官方包与 Zod v4、`zValidator` 同源，`createRoute` 里请求与响应 schema 与校验 schema 是**同一份 Zod 对象**，不存在两处定义漂移；第三方包需要额外维护 `resolver` 适配层，属于「同一规则两处」的变体。Scalar 仍作为渲染器挂在 `/api/docs`。
 
-### 3.1 Hono 内置中间件选用表
+### 10.1 Hono 内置中间件选用表
 
 Hono 自带一批经过审计的内置中间件。**先用内置的，不要自己写**（`ARCH-HONO-03`）：
 
@@ -248,11 +248,11 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 
 > `ARCH-BLD-01`（1.1 修正）：包管理纪律与 Dockerfile 必须一致。旧版 §3 写「pnpm，不要混用 Bun 的安装器」，而 §15.1 镜像却是 `COPY bun.lock` + `bun install --frozen-lockfile`——两份文档互相否定，执行者不知道听谁的。**现统一为 pnpm**，镜像使用 `pnpm-lock.yaml` + `pnpm install --frozen-lockfile`。CI 与本地安装一律使用 pnpm；禁止出现 `bun install`、`bun add`、`bun.lock`。
 
-### 3.2 Drizzle 驱动
+### 10.2 Drizzle 驱动
 
 生产用 `drizzle-orm/node-postgres`（`pg`）。它在 Bun 的 Node 兼容层下可用，并被 PgBouncer 长期验证。`drizzle-orm/bun-sql` 是官方路径，但 ORM 的查询构建与结果映射会吃掉驱动层的性能优势，连接池行为也与 `pg` 不同。**先用 `pg`，等实测证明连接池是瓶颈再换。**
 
-### 3.3 Bun 与 Playwright
+### 10.3 Bun 与 Playwright
 
 官方 [Bun 1.4](https://bun.sh/blog/bun-v1.4) 的逐字引文：`Playwright now runs on Bun: drive a browser with connectOverCDP(), run your suite with playwright test`；[Playwright release notes](https://playwright.dev/docs/release-notes) 亦写明 `🥟 Run tests with Bun` 与 `Bun transpiles your TypeScript test files itself, so Playwright does not use Babel or its compilation cache.`（抓取日期：2026-11-13）。
 
@@ -291,7 +291,7 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 
 ## Phase 0 结论（九类契约项）
 
-> 原 api.md §4 的九类契约项已在 Phase 0 一次性收口，终态不留待澄清标记。本节是结论的唯一权威；需求侧只保留「类别 → 结论编号 → 状态」索引（见 [functional.md](../requirements/functional.md)），未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表。判定标准：能量化为具体值并可由校验脚本核对的记「已定值」；依赖尚未落地的代码或产品决策的记「未决」并阻塞该批次 `/speckit-tasks`。
+> 原 api.md（重构前基线定位符，见 git 历史 `5cbb72b`） §4 的九类契约项已在 Phase 0 一次性收口，终态不留待澄清标记。本节是结论的唯一权威；需求侧只保留「类别 → 结论编号 → 状态」索引（见 [functional.md](../requirements/functional.md)），未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表。判定标准：能量化为具体值并可由校验脚本核对的记「已定值」；依赖尚未落地的代码或产品决策的记「未决」并阻塞该批次 `/speckit-tasks`。
 
 1. **Zod schema 名（C1）**：已定值。沿用 `<动词><实体>Schema` 规则；已点名的 4 个 schema 保留，其余端点入参按同规则置于 `packages/shared/src/schemas`，不再逐个留空。
 2. **逐端点关键状态码（C2）**：已定值。除 `201` / `400` / `401` / `403` / `404` / `409` / `413` / `500` / `504` 外不引入新码；`RATE_LIMITED` 定为 `429`，见 [conventions.md](api/conventions.md) §1.11。

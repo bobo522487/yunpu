@@ -73,6 +73,7 @@
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
 | 400 行警报：`overview.md`（447 行）与 `user-stories.md`（451 行） | 两文件分别是实施计划总览与 45 条 Given/When/Then 验收清单，内容内聚，机械切分会制造跨文件重复定义 | 按行数切碎违反 `ARCH-GOV-01`（400 行是警报不是合并门禁）；保持单文件并在此登记内聚理由 |
+| 400 行警报：`data/schema.md`（1496 行） | 表清单、字段、约束、RLS、索引与删除语义是同一主题，机械切分会制造跨文件重复定义 | 按行数切碎违反 `ARCH-GOV-01`（400 行是警报不是合并门禁）；保持单文件并在此登记内聚理由 |
 | 18 条外键引用侧无支撑索引 | 55 条外键中 18 条缺少引用侧索引，按 Article IX 先测量再优化，逐条给理由 | 盲目补齐 18 条索引会引入写放大且未证明查询收益；改在 `data/invariants.md` 软约束登记表登记例外，由 `SC-INT-03` 断言未登记例外 = 0 |
 | PgBouncer + Sentry + APM + WAF 使基础设施组件超出 3 个预算 | 连接池、错误聚合、性能追踪、边缘防护各自不可替代，缺一会造成线上不可观测 | 合并进单进程会丢失连接池复用或错误上报；按宪法 Governance 显式登记例外，不假装预算内 |
 | `app.current_user_id()` 的 `EXCEPTION ... RETURN NULL` 容错 | 非法 GUC 上下文时返回 NULL，让 RLS 谓词 fail-closed（0 行），而不是抛错拖垮整库 | 抛异常会让所有含 RLS 的请求在配置错误时全量 500；按 Article VIII 登记为受控降级，补偿用例断言 0 行 |
@@ -124,7 +125,7 @@
 | 3 | 删除语义与级联规则 | DB 约束：具名 `fk_*` 外键 `RESTRICT` / `CASCADE` | `DM-GEN-02` | `docs/README.md` 编号索引表 |
 | 4 | 事务提交后删除对象字节 | 服务层：提交后回调 + 对账脚本（软约束，见 §7.2） | `DM-MED-05` | `docs/README.md` 编号索引表 |
 | 5 | 归档后禁止新写入 | 服务层：写入前状态检查（软约束，见 §7.2） | `DM-ORG-05` | `docs/README.md` 编号索引表 |
-| 6 | 错误码到 HTTP 的单一映射 | 测试：`errors.md` 与 `SC-DOC-01` 一致性校验 | `ARCH-RPC-01` | `docs/README.md` 编号索引表 |
+| 6 | 错误码到 HTTP 的单一映射 | 测试：`tests/docs/check-docs.test.sh` 断言 `errors.md` 的映射表与 `ErrorCode` 枚举一致 | `ARCH-ERR-01` | `docs/README.md` 编号索引表 |
 | 7 | 模块清单与源码目录树 | 服务层：`MODULES` 常量 + 测试断言，清单只一份 | `ARCH-MOD-01` | `docs/README.md` 编号索引表 |
 
 **触发 Complexity Tracking 的条件**：任何设计需要突破 §1.3 复杂度预算、引入新抽象层、或放宽「明确不做」清单。登记三列——Violation / Why Needed / Simpler Alternative Rejected Because（见 §20）。
@@ -162,7 +163,7 @@
 | `ARCH-HONO-01` | DI 选 `Hono<AppEnv>` + `c.get()`；官方 `createFactory({ initApp })` 亦可跨文件注入 | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-RPC-01`  | RPC 类型推断：全链式调用 + 具名变量推断               | [`stack.md`](architecture/stack.md) |
 | `ARCH-HONO-02` | 中间件洋葱模型：进入正序、返回逆序                   | [`runtime.md`](architecture/runtime.md) |
-| `ARCH-HONO-03` | 优先用 Hono 内置中间件，不采用须写明理由             | §3.1             |
+| `ARCH-HONO-03` | 优先用 Hono 内置中间件，不采用须写明理由             | §10.1            |
 | `ARCH-HONO-04` | 路径参数与查询参数必须经 `zValidator` 校验           | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-05` | 不用全局 `declare module 'hono'` 扩展变量            | [`runtime.md`](architecture/runtime.md) |
 | `ARCH-HONO-06` | OpenAPI 用官方 `@hono/zod-openapi`                   | §3, §8.8         |

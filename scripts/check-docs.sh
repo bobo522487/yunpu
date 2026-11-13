@@ -153,14 +153,14 @@ function process(f, iss,   line, ln, loc, fence, eol_reported, dolink, clean,
     if (iss && index(line, NEED) > 0)
       emit("R6 needs-clarification", loc, "unresolved Phase 0 marker")
 
-    # ---- R7 section：裸 §x.y 在文档集内找不到标题即违规；带 .md 前缀视为显式跨文档 ----
+    # ---- R7 section：裸 §x.y 在文档集内找不到标题即违规；仅 markdown 链接形式的跨文档引用豁免（全分支评审 Important 2） ----
     if (iss) {
       tmp = line
       while (match(tmp, SEC)) {
         sec = substr(tmp, RSTART, RLENGTH); sub(/^§/, "", sec)
         recent = substr(tmp, 1, RSTART - 1)
         if (length(recent) > 60) recent = substr(recent, length(recent) - 59)
-        if (!(sec in gheads) && recent !~ /\.md/)
+        if (!(sec in gheads) && recent !~ /\]\([^)]*[.]md/)
           emit("R7 section", loc, "§" sec " has no heading anywhere in the doc set")
         tmp = substr(tmp, RSTART + RLENGTH)
       }
@@ -244,8 +244,13 @@ END {
     f = order[k]
     if (!(f in scan) || nlines[f] <= 400) continue
     ok = 0
+    inct = 0
     while ((getline row < READ) > 0) {
-      if (index(row, basename(f)) > 0 && filled(row)) { ok = 1; break }
+      # R8 只接受 ## Complexity Tracking 段内的三列登记行；导航表 / 编号索引表
+      # 里的同名 basename 不构成登记（全分支评审 Important 1，R8 曾假阴性）。
+      if (row ~ /^## Complexity Tracking([[:space:]]|$)/) { inct = 1; continue }
+      if (inct && row ~ /^## /) { inct = 0 }
+      if (inct && index(row, basename(f)) > 0 && filled(row)) { ok = 1; break }
     }
     close(READ)
     d = "over 400 lines (" nlines[f] "); register in " ROOT "/README.md Complexity Tracking (Violation / Why Needed / Simpler Alternative Rejected Because)"

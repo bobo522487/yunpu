@@ -10,7 +10,7 @@
 > **不在范围**：API 形状、UI、部署、计费。  
 > **规格编号**：`DM-<域>-<序号>`。编号一旦发布不复用；被废弃的规格标 `已废弃` 并保留编号。  
 > **上游**：[`functional.md`](../../requirements/functional.md) 定义做什么与验收标准；[`.specify/memory/constitution.md`](../../../.specify/memory/constitution.md) 是最高约束。  
-> **架构侧对应**：[`overview.md`](../overview.md) 只定义边界与归属；本文定义数据结构与执行者。冲突时以本文为准（plan.md §1.5）。  
+> **架构侧对应**：[`overview.md`](../overview.md) 只定义边界与归属；本文定义数据结构与执行者。冲突时以本文为准（plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §1.5）。  
 > **SDD 角色**：**Phase 1 设计产物**（spec-kit 流水线）。下游是 `tasks.md`（由 `/speckit-tasks` 在 `specs/` 后期分批生成，当前不存在） 与 `packages/db` 的 Drizzle schema。  
 > **本版**：1.2 —— 按 PostgreSQL 18 与 Drizzle ORM 官方文档重构。目标环境 **PostgreSQL 18（待验证；本机无 `psql`，未实测）**，复现步骤与状态登记见 [`../../verification/README.md`](../../verification/README.md)。
 

@@ -141,7 +141,7 @@
 - **与架构文档的分工**：「明确不做」的唯一权威副本见 [out-of-scope.md](out-of-scope.md)（`OOS-01`..`OOS-19`）；架构文档只引用编号，不复制表格。
 ## 4. Phase 0 结论（九类契约项）
 
-> 原 api.md §4 的九类契约项已在 Phase 0 一次性收口：结论正文（含逐字引文与定值）是 [stack.md](../architecture/stack.md) 的唯一权威；本文只列「类别 → 结论编号 → 状态」，不复制结论正文（Article VI「同一主题只定义一次」）。已定值项已写回对应契约文件；未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表并**阻塞该批次 `/speckit-tasks`**，tasks.md 不得在这些项定值前生成。
+> 原 api.md（重构前基线定位符，见 git 历史 `5cbb72b`） §4 的九类契约项已在 Phase 0 一次性收口：结论正文（含逐字引文与定值）是 [stack.md](../architecture/stack.md) 的唯一权威；本文只列「类别 → 结论编号 → 状态」，不复制结论正文（Article VI「同一主题只定义一次」）。已定值项已写回对应契约文件；未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表并**阻塞该批次 `/speckit-tasks`**，tasks.md 不得在这些项定值前生成。
 
 | 类别 | 契约项 | 结论编号 | 状态 |
 | --- | --- | --- | --- |

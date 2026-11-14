@@ -8,3 +8,5 @@
 .env.test
 .local/
 bun.lock
+# installed dependencies
+node_modules/

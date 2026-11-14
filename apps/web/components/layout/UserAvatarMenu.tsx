@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { usePreferencesStore } from '../../store/usePreferencesStore';
+import { useAuthStore } from '../../features/auth/useAuthStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import ProfileSettingsDialog from '../../features/profile/components/ProfileSettingsDialog';
 import { ThemeMode } from '../../types';
@@ -31,7 +32,7 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({
   const user = usePreferencesStore((s) => s.user);
   const themeMode = usePreferencesStore((s) => s.themeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
-  const logout = usePreferencesStore((s) => s.logout);
+  const signOut = useAuthStore((s) => s.signOut);
 
   const notifications = useWorkspaceStore((s) => s.notifications);
   const markNotificationRead = useWorkspaceStore((s) => s.markNotificationRead);
@@ -85,10 +86,13 @@ export const UserAvatarMenu: React.FC<UserAvatarMenuProps> = ({
     { id: 'dark', label: '深色', icon: Moon },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsAvatarOpen(false);
-    logout();
-    navigate('/login', { replace: true });
+    try {
+      await signOut();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   };
 
   const userMenuPopover = isAvatarOpen && (

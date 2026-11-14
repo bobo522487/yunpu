@@ -13,15 +13,12 @@ export const resolveIsDarkMode = (mode: ThemeMode): boolean => {
 };
 
 interface PreferencesState {
-  isAuthenticated: boolean;
   themeMode: ThemeMode;
   isDarkMode: boolean;
   theme: AppTheme;
   activeDevice: DeviceType;
   isProjectSidebarCollapsed: boolean;
   user: UserProfile;
-  login: (payload?: { email?: string; name?: string }) => void;
-  logout: () => void;
   setThemeMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   setAppTheme: (theme: AppTheme) => void;
@@ -34,28 +31,17 @@ interface PreferencesState {
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
     (set, get) => ({
-      isAuthenticated: false,
       themeMode: 'light',
       isDarkMode: false,
       theme: 'vscode',
       activeDevice: 'desktop',
       isProjectSidebarCollapsed: false,
       user: {
-        name: '电波',
-        email: 'bobo522487@gmail.com',
-        role: '工作区管理员',
-        bio: '专注于数据建模与低代码应用构建。',
+        name: '',
+        email: '',
+        role: '',
+        bio: '',
       },
-      login: (payload) =>
-        set((state) => ({
-          isAuthenticated: true,
-          user: {
-            ...state.user,
-            email: payload?.email?.trim() || state.user.email,
-            name: payload?.name?.trim() || state.user.name,
-          },
-        })),
-      logout: () => set({ isAuthenticated: false }),
       setThemeMode: (themeMode) =>
         set({
           themeMode,
@@ -81,7 +67,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     }),
     {
       name: 'nocoapp:preferences',
-      version: 2,
+      version: 3,
       storage: createAppStorage(),
     }
   )

@@ -36,6 +36,8 @@ import ProjectSettingsPage from '../features/project/pages/ProjectSettingsPage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
+import OnboardingPage from '../features/auth/pages/OnboardingPage';
+import { useAuthStore } from '../features/auth/useAuthStore';
 import { ViewMode } from '../types';
 import { useResizable } from '../hooks/useResizable';
 import { useRouteContext } from '../hooks/useRouteContext';
@@ -48,10 +50,18 @@ import { useBuilderStore } from '../store/useBuilderStore';
 import { useDataStore } from '../store/useDataStore';
 
 const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-  const isAuthenticated = usePreferencesStore((s) => s.isAuthenticated);
+  const status = useAuthStore((s) => s.status);
   const location = useLocation();
 
-  if (!isAuthenticated) {
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        正在检查登录状态...
+      </div>
+    );
+  }
+
+  if (status !== 'authenticated') {
     return (
       <Navigate
         to="/login"
@@ -221,10 +231,15 @@ const App: React.FC = () => {
   const themeMode = usePreferencesStore((s) => s.themeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
   const theme = usePreferencesStore((s) => s.theme);
+  const bootstrap = useAuthStore((s) => s.bootstrap);
   const defaultPageId = useBuilderStore(
     (s) => s.pages.find((p) => p.type === 'page')?.id || 'page-1'
   );
   const defaultTableId = useDataStore((s) => s.tables[0]?.id || 'users');
+
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
 
   useEffect(() => {
     const applyThemeClass = () => {
@@ -266,6 +281,14 @@ const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route
+          path="/onboarding"
+          element={
+            <RequireAuth>
+              <OnboardingPage />
+            </RequireAuth>
+          }
+        />
 
         <Route
           element={

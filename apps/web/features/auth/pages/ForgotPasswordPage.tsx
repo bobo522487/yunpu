@@ -1,46 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AuthLayout from '../layouts/AuthLayout';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
 
 const ForgotPasswordPage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSubmitted(true);
-    }, 500);
-  };
-
   return (
     <AuthLayout
       title="重置密码"
-      subtitle="输入你的注册邮箱，我们将发送密码重置链接"
+      subtitle="当前版本暂不支持自助找回密码"
     >
-      {!isSubmitted ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">邮箱地址</Label>
-            <Input id="email" type="email" placeholder="name@example.com" required />
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? '正在发送...' : '发送重置邮件'}
-          </Button>
-        </form>
-      ) : (
-        <div className="text-center space-y-4">
-          <div className="p-4 bg-primary/10 rounded-lg text-sm text-foreground border border-primary/20">
-            重置链接已发送至你的邮箱。如果几分钟内未收到，请检查垃圾邮件箱。
-          </div>
-        </div>
-      )}
+      <div className="space-y-4 text-sm text-muted-foreground">
+        <p>
+          请联系你的组织管理员重置密码。管理员可以在账号安全设置中为你生成新的临时密码。
+        </p>
+        <p>
+          如果你还没有加入任何组织，请使用注册邮箱联系支持人员。
+        </p>
+      </div>
 
       <div className="mt-6 text-center text-sm">
         <Link to="/login" className="font-medium text-primary hover:underline inline-flex items-center">

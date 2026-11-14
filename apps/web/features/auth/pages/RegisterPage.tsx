@@ -1,51 +1,55 @@
 import React, { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { usePreferencesStore } from '../../../store/usePreferencesStore';
+import { useAuthStore } from '../useAuthStore';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const isAuthenticated = usePreferencesStore((s) => s.isAuthenticated);
-  const login = usePreferencesStore((s) => s.login);
+  const location = useLocation();
+  const status = useAuthStore((s) => s.status);
+  const error = useAuthStore((s) => s.error);
+  const signUp = useAuthStore((s) => s.signUp);
+  const clearError = useAuthStore((s) => s.clearError);
 
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteToken, setInviteToken] = useState(
+    () => new URLSearchParams(location.search).get('invite') ?? '',
+  );
   const [isLoading, setIsLoading] = useState(false);
 
-  if (isAuthenticated) {
+  if (status === 'authenticated') {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      login({ name: name || '新用户', email });
+    try {
+      await signUp(email.trim(), password, inviteToken.trim() || undefined);
       navigate('/', { replace: true });
-    }, 350);
+    } catch {
+      // The store exposes the API error message below the form.
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <AuthLayout
       title="创建账号"
-      subtitle="填写以下信息以创建你的工作区账号"
+      subtitle="使用邮箱注册，注册后会自动创建你的默认组织"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">昵称 / 姓名</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="例如：电波"
-            required
-          />
-        </div>
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">邮箱地址</Label>
           <Input
@@ -54,6 +58,7 @@ const RegisterPage: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
+            autoComplete="email"
             required
           />
         </div>
@@ -64,8 +69,21 @@ const RegisterPage: React.FC = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="至少 6 位字符"
+            placeholder="至少 8 位字符"
+            autoComplete="new-password"
+            minLength={8}
             required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="inviteToken">
+            邀请 token <span className="text-muted-foreground">（可选）</span>
+          </Label>
+          <Input
+            id="inviteToken"
+            value={inviteToken}
+            onChange={(e) => setInviteToken(e.target.value)}
+            placeholder="从邀请链接带入"
           />
         </div>
         <Button type="submit" className="w-full" disabled={isLoading}>

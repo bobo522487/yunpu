@@ -47,7 +47,7 @@ description: "Task list for the development and test environment"
 - [X] T006 Generate `pnpm-lock.yaml` with `pnpm install` from the repository root. Later installs use `pnpm install --frozen-lockfile`
 - [X] T007 Implement `apps/api/src/env.ts` so `YUNPU_ENV` accepts only `development` or `test`（没有第三种）. The database name must be `yunpu_dev` or `yunpu_test` paired with that value. Reject `yunpu_prod` and any production target. The capability token is nonempty. Parse failure prints the failing fields and exits non-zero before the process listens
 - [X] T008 [P] Create `compose.yaml` with only `postgres:18` and one `quay.io/minio/minio server /data` process. Postgres is healthy only when `pg_isready` exits 0. MinIO is healthy only when `GET /minio/health/live` returns HTTP 200. `POSTGRES_USER` is the superuser owner, not `genealogy_app`. Do not add PgBouncer, Vite, Redis, a queue, or a search service
-- [ ] T009 [P] Create `docker/postgres/init/01-role.sql` that creates `genealogy_app` with `LOGIN NOSUPERUSER NOBYPASSRLS`. The script runs only on an empty data directory
+- [X] T009 [P] Create `docker/postgres/init/01-role.sql` that creates `genealogy_app` with `LOGIN NOSUPERUSER NOBYPASSRLS`. The script runs only on an empty data directory
 - [ ] T010 Export `{ port, fetch: app.fetch }` from `apps/api/src/index.ts` and call the parser in `apps/api/src/env.ts` before listening
 - [ ] T011 Implement argument and prerequisite guards in `scripts/env.sh`: actions are `up|down|reset|ready`, names are `development|test`. Any other name, including production, exits non-zero and prints the allowed values. If `docker`, `pnpm`, or `bun` is missing, print that tool's name and exit non-zero
 

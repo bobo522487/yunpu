@@ -32,7 +32,7 @@ description: "Task list for the development and test environment"
 
 - [X] T001 Create root `package.json` with `"packageManager": "pnpm@12.18.0"` and scripts that call `scripts/env.sh` and `bun test --env-file .env.test`. Do not add `bun install`, `bun add`, or `bun.lock` in `package.json`
 - [X] T002 [P] Create `pnpm-workspace.yaml` listing only `apps/api`
-- [ ] T003 [P] Create `apps/api/package.json` with exact dependencies `hono@4.13.18`, `zod@4.6.7`, and `pg@8.23.1`
+- [X] T003 [P] Create `apps/api/package.json` with exact dependencies `hono@4.13.18`, `zod@4.6.7`, and `pg@8.23.1`
 - [ ] T004 [P] Create `.env.example` for `development` (`yunpu_dev`, ports 3000/5432/9000) and `test` (`yunpu_test`, ports 3010/5433/9010), with a separate nonempty capability token per environment
 - [ ] T005 [P] Update `.gitignore` so `.env`, `.env.test`, `.local/`, and `bun.lock` are ignored
 

@@ -224,3 +224,9 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate the story independently
 - Avoid vague tasks, same-file conflicts, and a fourth infrastructure component
+
+---
+
+## Phase 7: Convergence
+
+- [X] T030 CRITICAL: Restore the docs consistency gate to exit 0 after this feature's endpoint edit — `scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt` currently reports 3 new R7 violations in `docs/architecture/api/endpoints.md` (lines 174 and 182: `§8.9`, `§12.2` cross-file refs introduced by the 2.13 rows added in T027). Either convert those refs to valid `[..](file.md#anchor)` links or refresh the ratchet baseline with `--write-baseline`, then rerun the exact CI command and confirm exit 0 per Constitution blocking gate / SC-DOC-01 (partial)

@@ -3,3 +3,10 @@
 # SDD scratch (self-ignored too) and linked worktrees
 .superpowers/
 .worktrees/
+# local secrets, test env, runtime state, and bun's lockfile
+.env
+.env.test
+.local/
+bun.lock
+# installed dependencies
+node_modules/

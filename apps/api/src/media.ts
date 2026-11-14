@@ -55,12 +55,19 @@ media.post("/api/media", async (c) => {
   return c.json({ ok: true, key }, 201);
 });
 
-media.get("/api/media/:key", async (c) => {
+// Keys contain slashes (media/<stamp>/<hex>), so the read route must match
+// the rest of the path, not a single segment.
+media.get("/api/media/*", async (c) => {
   if (!authorized(c.req.raw)) {
     return unauthorized(c);
   }
 
-  const key = c.req.param("key");
+  const prefix = "/api/media/";
+  const path = c.req.path;
+  if (!path.startsWith(prefix) || path.length <= prefix.length) {
+    return c.json({ ok: false, reason: "object not found" }, 404);
+  }
+  const key = path.slice(prefix.length);
   const data = await getObject(key);
   if (!data) {
     return c.json({ ok: false, reason: "object not found" }, 404);

@@ -67,7 +67,7 @@ description: "Task list for the development and test environment"
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Implement `GET /api/health` in `apps/api/src/app.ts`. Return 200 with `{ "ok": true, "checks": { "process": "up", "database": "up" } }` when the database accepts a query. Return 503 with `ok` false and `database` `down` when it does not. Do not include `storage` and do not check the database generation
+- [X] T013 [US1] Implement `GET /api/health` in `apps/api/src/app.ts`. Return 200 with `{ "ok": true, "checks": { "process": "up", "database": "up" } }` when the database accepts a query. Return 503 with `ok` false and `database` `down` when it does not. Do not include `storage` and do not check the database generation
 - [ ] T014 [US1] Implement `GET /api/ready` in `apps/api/src/app.ts`. Respond within 10 seconds. Return 200 only when `process`, `database`, and `storage` are `up` and `version` contains `PostgreSQL 18`. Otherwise return 503 with `ok` false and a `reason` on the failed check. `storage: up` requires MinIO live probe HTTP 200 and bucket access with this environment's credentials
 - [ ] T015 [US1] Implement `GET /` in `apps/api/src/app.ts` for `development`. The body contains `示例工作区` and `yunpu-starter-workspace`, comes from configuration rather than a database row, and contains no real customer or family data
 - [ ] T016 [P] [US1] Create the private bucket on startup in `apps/api/src/storage.ts`. If creation fails, exit the process. Do not call `mc anonymous` and do not set `acl: "public-read"`

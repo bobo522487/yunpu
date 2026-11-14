@@ -4,9 +4,9 @@
 
 ## 0. 阅读约定
 
-- **未定义项的 Phase 0 处置**：原 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8 未给出的项由 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）统一收口；本文不推断补充、不留到实现阶段。已定值项直接引用结论，未决项见 [README.md](../../README.md) 的 Phase 0 未决项表并阻塞该批次 `/speckit-tasks`。
-- **Zod schema 名**：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） 只显式给出了少数 schema（`CreateNodeSchema`、`NodeIdParamsSchema`、`NodeResponseSchema`、`ErrorSchema`），其余端点的入参 schema 名在 plan.md 中**未定义**；按 §8.5 的规则它们应位于 `packages/shared/src/schemas`。
-- **权限名**：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） 只显式点名 `person.write`、`release.purge`（§10、§7.5 `ARCH-PERM-01`），完整矩阵在 `packages/shared/src/permissions.ts`，本文中未列出的权限名记为**未定义**。
+- **未定义项的 Phase 0 处置**：原 plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8 未给出的项由 [stack.md](../stack.md) 的九条 Phase 0 结论（C1–C9）统一收口；本文不推断补充、不留到实现阶段。九类契约项已全部定值，当前无未决项。
+- **Zod schema 名**：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） 只显式给出了少数 schema（`CreateNodeSchema`、`NodeIdParamsSchema`、`NodeResponseSchema`、`ErrorSchema`），其余端点按 C1 的 `<动词><实体>Schema` 规则置于 `packages/shared/src/schemas`。
+- **权限名**：Phase 0 结论 `C3` 已定值；完整矩阵见 §1.13。实现时以该表为唯一来源写入 `packages/shared/src/permissions.ts`，业务代码只传权限名，不比较角色名（`ARCH-PERM-01`）。
 - 路径参数一律使用**内部 UUID**；URL 不承担授权，授权由会话 + RBAC + RLS 完成（§8.9 末段）。
 
 ---
@@ -22,7 +22,7 @@
 | `cookieCache` | `enabled: false`（每次校验查库，安全优先于性能）             | §10        |
 | 认证中间件    | `authMiddleware()`；成功后 `c.set('user', user)`             | §8.2       |
 | 未认证行为    | **不立即返回 401**，把 `user` 留空，由各路由按需判定「公开端点」还是「需要登录」 | §8.2       |
-| 公开端点      | health、登录、兑换邀请（与受保护端点共用一条链，不靠路径匹配做权限判断） | §8.2       |
+| 公开端点      | `GET /api/health`、`GET /api/ready`、`POST /api/v1/auth/sign-in`、`POST /api/v1/auth/sign-up`、`GET /api/v1/auth/session`、`GET /api/docs`；邀请兑换需要登录（校验当前账号邮箱与邀请邮箱一致） | §8.2       |
 | 租户上下文    | 由当前登录用户推导，**不接受**客户端传入的 `organization_id` 作为隔离依据 | [`security.md`](../data/security.md)、[`overview.md`](../overview.md) |
 
 > 来源：[`runtime.md`](../runtime.md)、[`overview.md`](../overview.md)、[`security.md`](../data/security.md)
@@ -53,13 +53,20 @@ LIMIT $3;
 
 | 项             | 规定                                                         | 出处               |
 | -------------- | ------------------------------------------------------------ | ------------------ |
-| 游标           | 上一页最后一行的 `id`（UUIDv7，时间有序）；插入新行不重复也不漏读已翻过的页 | §8.7               |
-| 索引依据       | 复合主键 `(project_id, id)` 即现成索引，零新增               | §8.7 `ARCH-API-01` |
-| 按创建时间排序 | 用 `ORDER BY created_at, id` 复合游标，**并同步建立** `(project_id, created_at, id)` 索引 | §8.7               |
-| 树形列表       | Node 按 `path` 排序，按父路径查子节点，**不用游标分页**；谱系树同理 | §8.7               |
-| 总数           | 用单独的估算查询，不每次 `COUNT(*)`                          | §8.7               |
+| 参数名         | `cursor`（可选，不透明字符串）、`limit`（可选，整数）        | C4                 |
+| 默认值与上限   | `limit` 默认 50，最小 1，最大 200；越界返回 `400 VALIDATION` | C4                 |
+| 游标           | 服务端编码并校验的不透明值，客户端不得解析或构造；按 `id` 升序的列表游标为上一页最后一行的 `id`，按创建时间倒序的列表（审计）游标同时包含 `created_at` 与 `id` | C4                 |
+| 排序           | 内容列表默认按 `id` 升序（UUIDv7 时间有序）；审计等需要最新优先的列表按 `created_at DESC, id DESC` | §8.7、C4           |
+| 响应形状       | `{ ok: true, data: { items: [...], nextCursor: string \| null } }`；`nextCursor = null` 表示没有下一页 | C4                 |
+| 非法游标       | 返回 `400 VALIDATION`，不得静默从头开始                       | C4                 |
+| 不分页的列表   | 我的组织列表（成员关系有界）、Node 与编目树（按 `path` 排序、按父路径取子节点） | §8.7、C4           |
+| 总数           | 需要时用单独的估算查询，不在每次列表响应里执行 `COUNT(*)`     | §8.7               |
+| 索引依据       | 复合主键 `(project_id, id)` 即现成索引；按创建时间排序需 `(project_id, created_at, id)` | §8.7 `ARCH-API-01` |
 
-> 分页参数的**具体命名**（如 `cursor` / `limit` 字段名、每页上限）在 plan.md 中**未定义**。
+- 插入新行不重复也不漏读已翻过的页；删除行不会导致后续页错位。
+- 树形列表不使用游标分页；按父路径取子节点，按 `path` 排序。
+- 列表端点统一返回 `items` + `nextCursor`，不返回数组本体，避免后续加分页信息时破坏契约。
+
 > 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.7
 
 ### 1.5 乐观锁（version）
@@ -114,8 +121,11 @@ export type ErrorCode =
 | 媒体上传         | **不幂等**：同一文件重复上传产生新资产；数据库不按 checksum 去重 | §11.5、§12.1       |
 | 谱文保存         | 乐观锁：靠 `version` CAS，重复提交第二次命中 0 行 → 409      | §11.1              |
 | 其余写入         | 最后写入获胜                                                 | §11.5              |
+| 通用 `Idempotency-Key` | V1 **不启用**；不解析该请求头，不存重放结果。重复提交按上表逐端点处理 | C6 |
 
-> 一般性的 `Idempotency-Key` 请求头机制在 plan.md 中**未定义**。
+> C6 定值：V1 不引入通用幂等机制。现有写路径已经用自然键或条件更新表达幂等语义；为「创建类」端点增加通用键会新建存储、TTL 与响应重放，收益不足（Article I、Article VII）。
+>
+> 复评条件：出现离线 / 移动端自动重试或第三方集成明确要求「同一请求只执行一次」时再引入；引入时必须同时定义请求指纹、存储表、TTL 与响应重放，不得静默启用。
 
 > 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §10、§11.1–§11.5、§12.1
 
@@ -147,15 +157,117 @@ export type ErrorCode =
 | 项                                   | 规定                                             | 出处 |
 | ------------------------------------ | ------------------------------------------------ | ---- |
 | 中间件                               | `rateLimit()`，注册在认证**之后**                | §8.2 |
-| 粒度                                 | 按用户（按 IP 更差且会被未认证流量打满共享配额） | §8.2 |
-| 具体配额数值、返回状态码、限流响应体 | 未决（Phase 0 结论 `C5`，见 [stack.md](../stack.md)） | C5   |
-| `RATE_LIMITED` 错误码                | 已定值：映射为 HTTP `429`（Phase 0 结论 `C9`）  | C9   |
+| 粒度                                 | 已登录按用户；未登录按来源地址；登录失败按「规范化邮箱 + 来源地址」组合 | §8.2、C5 |
+| 全局配额（已登录）                   | 每用户 300 次 / 60 秒固定窗口                    | C5   |
+| 全局配额（未登录）                   | 每来源地址 60 次 / 60 秒固定窗口                 | C5   |
+| 登录失败窗口                         | 同一组合连续失败 5 次后，15 分钟内拒绝该组合     | C5、`002-user-auth-default-org` |
+| 注册配额                             | 每来源地址 10 次 / 小时                          | C5   |
+| 邀请兑换配额                         | 每用户 20 次 / 小时                              | C5   |
+| 计数范围                             | 只统计 `/api/*` 与认证页面 POST（`/sign-in`、`/sign-up`）；静态资源、`/api/health`、`/api/ready` 不计入 | C5   |
+| 返回状态码                           | `429`                                            | C9   |
+| 响应体                               | `{ ok: false, code: "RATE_LIMITED", message: "请求过于频繁，请稍后重试", details: { retryAfterSeconds } }`，并带 `Retry-After` 响应头 | C5、§1.6 |
+| 存储                                 | V1 为单应用进程，计数在进程内；多实例部署前必须迁移到共享存储，不得静默失效 | C5   |
 
-> 来源：plan.md（重构前基线定位符，见 git 历史 `5cbb72b`） §8.2、§8.3
+- 全局配额与登录失败窗口是两层：全局配额挡住流量洪峰，登录失败窗口挡住针对单一账号的密码尝试。
+- 命中限流时不得暴露账号是否存在、组织是否存在或请求内容。
+- 配额数值是 V1 默认值；部署容量变化时只允许通过环境配置调高，不允许在代码里分叉出第二套值。
 
 ### 1.12 依赖注入与契约生成
 
 依赖注入约定的唯一权威见 [../runtime.md](../runtime.md) §8.1.1；本文不复制纪律表。
+
+### 1.13 权限名矩阵（C3 定值）
+
+命名规则：`<域>.<动作>`，全小写。角色只有 `viewer` / `editor` / `admin`；owner 始终按 `admin` 处理，并额外拥有标注 `ownerOnly` 的权限。业务代码只传权限名，不比较角色名（`ARCH-PERM-01`）。
+
+**组织与审计**
+
+| 权限名 | 含义 | viewer | editor | admin | owner |
+| --- | --- | --- | --- | --- | --- |
+| `organization.read` | 查看组织与成员 | ✓ | ✓ | ✓ | ✓ |
+| `organization.update` | 修改组织名称 | — | — | ✓ | ✓ |
+| `organization.archive` | 归档组织 | — | — | ✓ | ✓ |
+| `organization.transfer_ownership` | 转移所有权（ownerOnly） | — | — | — | ✓ |
+| `organization.member.read` | 查看成员列表 | ✓ | ✓ | ✓ | ✓ |
+| `organization.member.write` | 修改成员角色 / 移除成员 | — | — | ✓ | ✓ |
+| `organization.invite.read` | 查看邀请 | — | — | ✓ | ✓ |
+| `organization.invite.create` | 创建邀请 | — | — | ✓ | ✓ |
+| `organization.invite.revoke` | 撤销邀请 | — | — | ✓ | ✓ |
+| `audit.read` | 查询审计日志 | — | — | ✓ | ✓ |
+
+**项目与分类**
+
+| 权限名 | 含义 | viewer | editor | admin | owner |
+| --- | --- | --- | --- | --- | --- |
+| `project.read` | 查看项目 | ✓ | ✓ | ✓ | ✓ |
+| `project.create` | 创建项目 | — | ✓ | ✓ | ✓ |
+| `project.update` | 编辑项目 | — | ✓ | ✓ | ✓ |
+| `project.delete` | 删除项目 | — | — | ✓ | ✓ |
+| `folder.read` | 查看分类 | ✓ | ✓ | ✓ | ✓ |
+| `folder.write` | 创建 / 编辑分类 | — | ✓ | ✓ | ✓ |
+| `folder.delete` | 删除分类 | — | — | ✓ | ✓ |
+
+**谱系**
+
+| 权限名 | 含义 | viewer | editor | admin | owner |
+| --- | --- | --- | --- | --- | --- |
+| `person.read` | 查看人物与姓名 | ✓ | ✓ | ✓ | ✓ |
+| `person.write` | 创建 / 编辑人物与姓名 | — | ✓ | ✓ | ✓ |
+| `person.delete` | 删除人物 | — | — | ✓ | ✓ |
+| `relation.read` | 查看关系 | ✓ | ✓ | ✓ | ✓ |
+| `relation.write` | 创建 / 编辑关系 | — | ✓ | ✓ | ✓ |
+| `relation.delete` | 删除关系 | — | — | ✓ | ✓ |
+| `event.read` | 查看事件 | ✓ | ✓ | ✓ | ✓ |
+| `event.write` | 创建 / 编辑事件 | — | ✓ | ✓ | ✓ |
+| `event.delete` | 删除事件 | — | — | ✓ | ✓ |
+| `lineage.read` | 查看谱系 | ✓ | ✓ | ✓ | ✓ |
+| `lineage.write` | 创建 / 编辑谱系 | — | ✓ | ✓ | ✓ |
+| `lineage.delete` | 删除谱系 | — | — | ✓ | ✓ |
+| `node.read` | 查看编纂位置 | ✓ | ✓ | ✓ | ✓ |
+| `node.write` | 创建 / 移动编纂位置 | — | ✓ | ✓ | ✓ |
+| `node.delete` | 删除编纂位置 | — | — | ✓ | ✓ |
+
+**资料与谱文**
+
+| 权限名 | 含义 | viewer | editor | admin | owner |
+| --- | --- | --- | --- | --- | --- |
+| `source.read` | 查看来源 | ✓ | ✓ | ✓ | ✓ |
+| `source.write` | 创建 / 编辑来源 | — | ✓ | ✓ | ✓ |
+| `source.delete` | 删除来源 | — | — | ✓ | ✓ |
+| `citation.read` | 查看考证引用 | ✓ | ✓ | ✓ | ✓ |
+| `citation.write` | 创建 / 编辑考证引用 | — | ✓ | ✓ | ✓ |
+| `citation.delete` | 删除考证引用 | — | — | ✓ | ✓ |
+| `article.read` | 查看谱文 | ✓ | ✓ | ✓ | ✓ |
+| `article.write` | 创建 / 编辑谱文与分页 | — | ✓ | ✓ | ✓ |
+| `article.delete` | 删除谱文或分页 | — | — | ✓ | ✓ |
+
+**媒体、谱书与出版**
+
+| 权限名 | 含义 | viewer | editor | admin | owner |
+| --- | --- | --- | --- | --- | --- |
+| `media.read` | 下载 / 查看媒体 | ✓ | ✓ | ✓ | ✓ |
+| `media.write` | 上传媒体、关联到人物或谱文页 | — | ✓ | ✓ | ✓ |
+| `media.delete` | 删除媒体或解除关联 | — | — | ✓ | ✓ |
+| `book.read` | 查看谱书与编目树 | ✓ | ✓ | ✓ | ✓ |
+| `book.write` | 创建 / 编辑谱书与编目树 | — | ✓ | ✓ | ✓ |
+| `book.delete` | 删除谱书或编目项 | — | — | ✓ | ✓ |
+| `release.read` | 查看出版版本 | ✓ | ✓ | ✓ | ✓ |
+| `release.create` | 生成出版版本 | — | ✓ | ✓ | ✓ |
+| `release.revoke` | 作废出版版本 | — | — | ✓ | ✓ |
+| `release.purge` | 清除已作废版本（ownerOnly） | — | — | — | ✓ |
+
+**不按组织角色授予的权限**
+
+| 权限名 | 授予条件 | 说明 |
+| --- | --- | --- |
+| `account.read` | 已登录，本人 | 读取自己的账号资料与会话 |
+| `account.write` | 已登录，本人 | 修改自己的资料 / 密码 |
+| `organization.create` | 已登录 | 任何登录用户都可以创建组织并成为 owner |
+| `invite.accept` | 已登录 + 邮箱与邀请一致 | 不接受他人邮箱的邀请 |
+
+- `person.write` 覆盖 `person` 与 `person_name`；`book.write` 覆盖 `book` 与 `book_catalog`；`media.write` 覆盖上传与关联/解除关联。
+- 同一端点涉及多个权限时，以端点的最小必要权限为准；详见 [endpoints.md](endpoints.md)。
+- 权限矩阵是唯一来源；`packages/shared/src/permissions.ts` 落地时必须逐行对应本表，并由测试断言角色到权限的映射与本文一致。
 
 ## 3. 全局约束小结
 

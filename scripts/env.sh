@@ -190,6 +190,10 @@ write_env_file() {
   cat > "$runtime_dir/.env" <<EOF
 YUNPU_ENV=$name
 DATABASE_URL=postgres://genealogy_app:example@127.0.0.1:$database_host_port/$database_name
+AUTH_DATABASE_URL=postgres://auth_runtime:example@127.0.0.1:$database_host_port/$database_name
+MIGRATE_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:$database_host_port/$database_name
+BETTER_AUTH_SECRET=example-$name-better-auth-secret-0123456789
+BETTER_AUTH_URL=http://127.0.0.1:$app_port
 PORT=$app_port
 S3_ENDPOINT=http://127.0.0.1:$storage_host_port
 S3_BUCKET=yunpu-$name
@@ -197,6 +201,28 @@ S3_ACCESS_KEY_ID=$storage_access_key
 S3_SECRET_ACCESS_KEY=$storage_secret_key
 YUNPU_CAPABILITY_TOKEN=example-$name-capability-token
 EOF
+}
+
+bootstrap_db_roles() {
+  docker compose -p "$project" -f "$compose_file" exec -T postgres \
+    psql -U postgres -d "$database_name" -v ON_ERROR_STOP=1 >/dev/null <<'SQL'
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rls_definer') THEN
+    CREATE ROLE rls_definer NOLOGIN BYPASSRLS;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'auth_runtime') THEN
+    CREATE ROLE auth_runtime LOGIN PASSWORD 'example' NOSUPERUSER NOBYPASSRLS;
+  END IF;
+END $$;
+ALTER ROLE auth_runtime WITH LOGIN PASSWORD 'example' NOSUPERUSER NOBYPASSRLS;
+SQL
+}
+
+run_migrations() {
+  (cd "$repo_root" && MIGRATE_DATABASE_URL="postgres://postgres:postgres@127.0.0.1:$database_host_port/$database_name" \
+    bun packages/db/src/migrate.ts --env "$name") || return 1
 }
 
 start_app() {
@@ -259,6 +285,8 @@ perform_up() {
 
   compose_up || return 1
   wait_containers_healthy || return 1
+  bootstrap_db_roles || return 1
+  run_migrations || return 1
   start_app || return 1
 
   if ! poll_ready; then

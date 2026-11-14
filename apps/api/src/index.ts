@@ -2,15 +2,15 @@ import { Hono } from "hono";
 import app from "./app";
 import media from "./media";
 import { initStorage } from "./storage";
-import { parseEnv } from "./env";
+import { config } from "./config";
 
-const config = parseEnv();
+const env = config();
 
 await initStorage({
-  endpoint: config.S3_ENDPOINT,
-  bucket: config.S3_BUCKET,
-  accessKeyId: config.S3_ACCESS_KEY_ID,
-  secretAccessKey: config.S3_SECRET_ACCESS_KEY,
+  endpoint: env.S3_ENDPOINT,
+  bucket: env.S3_BUCKET,
+  accessKeyId: env.S3_ACCESS_KEY_ID,
+  secretAccessKey: env.S3_SECRET_ACCESS_KEY,
 });
 
 const routes = new Hono();
@@ -18,6 +18,6 @@ routes.route("/", app);
 routes.route("/", media);
 
 export default {
-  port: config.PORT,
+  port: env.PORT,
   fetch: routes.fetch,
 };

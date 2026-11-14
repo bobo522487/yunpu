@@ -1,8 +1,19 @@
 import { Hono } from "hono";
+import { compress } from "hono/compress";
+import { HTTPException } from "hono/http-exception";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
 import { Client } from "pg";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { AppError, mapDatabaseError } from "./lib/errors";
+import { authMiddleware } from "./middleware/auth";
+import { authPages } from "./pages/auth";
+import { authRouter } from "./modules/auth/router";
+import { organizationRouter } from "./modules/organization/router";
 import { checkStorage } from "./storage";
+import type { ApiEnv } from "./types";
 
-const app = new Hono();
+const app = new Hono<ApiEnv>();
 
 function healthPayload(database: "up" | "down") {
   return {
@@ -36,6 +47,54 @@ async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
     await client?.end().catch(() => undefined);
   }
 }
+
+app.use(requestId());
+app.use(secureHeaders());
+app.use(compress());
+app.use(authMiddleware());
+
+app.onError((error, c) => {
+  if (error instanceof AppError) {
+    const retryAfter = error.details?.retryAfterSeconds;
+    if (typeof retryAfter === "number") {
+      c.header("Retry-After", String(retryAfter));
+    }
+    return c.json(
+      {
+        ok: false,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      },
+      error.status as ContentfulStatusCode,
+    );
+  }
+
+  if (error instanceof HTTPException) {
+    return c.json(
+      {
+        ok: false,
+        code: "VALIDATION",
+        message: error.message,
+      },
+      error.status as ContentfulStatusCode,
+    );
+  }
+
+  const mapped = mapDatabaseError(error);
+  return c.json(
+    {
+      ok: false,
+      code: mapped.code,
+      message: mapped.message,
+    },
+    mapped.status as ContentfulStatusCode,
+  );
+});
+
+app.notFound((c) =>
+  c.json({ ok: false, code: "NOT_FOUND", message: "接口不存在" }, 404),
+);
 
 app.get("/api/health", async (c) => {
   const database = await probeDatabase();
@@ -100,8 +159,11 @@ app.get("/", (c) => {
   if (environment === "development") {
     return c.html(starterPage());
   }
-  // test (and any other value): empty state without the starter markers.
   return c.html(emptyPage());
 });
+
+app.route("/api/v1/auth", authRouter);
+app.route("/api/v1", organizationRouter);
+app.route("/", authPages);
 
 export default app;

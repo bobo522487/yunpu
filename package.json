@@ -3,6 +3,14 @@
   "packageManager": "pnpm@12.18.0",
   "scripts": {
     "env": "scripts/env.sh",
-    "test": "bun test --env-file .env.test"
+    "test": "scripts/env.sh up development && scripts/env.sh up test && bun test --env-file .env.test tests/env && bun packages/db/src/migrate.ts --env test && bun test --env-file .env.test --max-concurrency=1 tests/auth apps/api/test",
+    "test:env": "scripts/env.sh up development && scripts/env.sh up test && bun test --env-file .env.test tests/env",
+    "test:auth": "bun packages/db/src/migrate.ts --env test && bun test --env-file .env.test --max-concurrency=1 tests/auth apps/api/test",
+    "db:generate": "pnpm --filter @yunpu/db exec drizzle-kit generate",
+    "db:migrate": "bun packages/db/src/migrate.ts"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1"
   }
 }

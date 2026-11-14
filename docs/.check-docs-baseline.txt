@@ -1,281 +1,279 @@
-R4 dangling docs/README.md:124 DM-RLS-01 referenced but never defined
-R4 dangling docs/README.md:128 ARCH-ERR-01 referenced but never defined
-R4 dangling docs/README.md:129 ARCH-MOD-01 referenced but never defined
-R4 dangling docs/README.md:147 ARCH-AR-01 referenced but never defined
-R4 dangling docs/README.md:148 ARCH-AR-02 referenced but never defined
-R4 dangling docs/README.md:149 ARCH-AR-03 referenced but never defined
-R4 dangling docs/README.md:150 ARCH-AR-04 referenced but never defined
-R4 dangling docs/README.md:156 ARCH-API-01 referenced but never defined
-R4 dangling docs/README.md:157 ARCH-AUD-01 referenced but never defined
-R4 dangling docs/README.md:159 ARCH-CC-01 referenced but never defined
-R4 dangling docs/README.md:161 ARCH-FE-05 referenced but never defined
-R4 dangling docs/README.md:163 ARCH-HONO-01 referenced but never defined
-R4 dangling docs/README.md:165 ARCH-HONO-02 referenced but never defined
-R4 dangling docs/README.md:167 ARCH-HONO-04 referenced but never defined
-R4 dangling docs/README.md:168 ARCH-HONO-05 referenced but never defined
-R4 dangling docs/README.md:169 ARCH-HONO-06 referenced but never defined
-R4 dangling docs/README.md:170 ARCH-HONO-07 referenced but never defined
-R4 dangling docs/README.md:171 ARCH-HONO-08 referenced but never defined
-R4 dangling docs/README.md:172 ARCH-HONO-09 referenced but never defined
-R4 dangling docs/README.md:173 ARCH-HONO-10 referenced but never defined
-R4 dangling docs/README.md:175 ARCH-HONO-12 referenced but never defined
-R4 dangling docs/README.md:176 ARCH-IDX-01 referenced but never defined
-R4 dangling docs/README.md:178 ARCH-OPS-01 referenced but never defined
-R4 dangling docs/README.md:179 ARCH-PERM-01 referenced but never defined
-R4 dangling docs/README.md:180 ARCH-PUB-01 referenced but never defined
-R4 dangling docs/README.md:181 ARCH-TST-03 referenced but never defined
-R4 dangling docs/README.md:182 ARCH-TST-04 referenced but never defined
-R4 dangling docs/README.md:225 DM-TEN-01 referenced but never defined
-R4 dangling docs/README.md:226 DM-SCP-01 referenced but never defined
-R4 dangling docs/README.md:227 DM-SCP-02 referenced but never defined
-R4 dangling docs/README.md:228 DM-SCP-03 referenced but never defined
-R4 dangling docs/README.md:229 DM-ORG-01 referenced but never defined
-R4 dangling docs/README.md:230 DM-ORG-02 referenced but never defined
-R4 dangling docs/README.md:231 DM-ORG-03 referenced but never defined
-R4 dangling docs/README.md:232 DM-ORG-04 referenced but never defined
-R4 dangling docs/README.md:234 DM-ORG-06 referenced but never defined
-R4 dangling docs/README.md:236 DM-PER-01 referenced but never defined
-R4 dangling docs/README.md:237 DM-NAM-01 referenced but never defined
-R4 dangling docs/README.md:238 DM-NAM-02 referenced but never defined
-R4 dangling docs/README.md:243 DM-REL-05 referenced but never defined
-R4 dangling docs/README.md:244 DM-REL-06 referenced but never defined
-R4 dangling docs/README.md:245 DM-REL-07 referenced but never defined
-R4 dangling docs/README.md:248 DM-REL-10 referenced but never defined
-R4 dangling docs/README.md:257 DM-NOD-02 referenced but never defined
-R4 dangling docs/README.md:258 DM-NOD-03 referenced but never defined
-R4 dangling docs/README.md:259 DM-NOD-04 referenced but never defined
-R4 dangling docs/README.md:260 DM-NOD-05 referenced but never defined
-R4 dangling docs/README.md:261 DM-NOD-06 referenced but never defined
-R4 dangling docs/README.md:263 DM-SRC-01 referenced but never defined
-R4 dangling docs/README.md:264 DM-ART-01 referenced but never defined
-R4 dangling docs/README.md:268 DM-MED-03 referenced but never defined
-R4 dangling docs/README.md:269 DM-MED-04 referenced but never defined
-R4 dangling docs/README.md:270 DM-INV-01 referenced but never defined
-R4 dangling docs/README.md:271 DM-INV-02 referenced but never defined
-R4 dangling docs/README.md:272 DM-INV-03 referenced but never defined
-R4 dangling docs/README.md:273 DM-INV-04 referenced but never defined
-R4 dangling docs/README.md:274 DM-INV-05 referenced but never defined
-R4 dangling docs/README.md:275 DM-BOK-01 referenced but never defined
-R4 dangling docs/README.md:276 DM-BOK-02 referenced but never defined
-R4 dangling docs/README.md:277 DM-BOK-03 referenced but never defined
-R4 dangling docs/README.md:278 DM-BOK-04 referenced but never defined
-R4 dangling docs/README.md:281 DM-AUD-02 referenced but never defined
-R4 dangling docs/README.md:283 DM-RLS-02 referenced but never defined
-R4 dangling docs/README.md:284 DM-RLS-03 referenced but never defined
-R4 dangling docs/README.md:285 DM-PERM-01 referenced but never defined
-R4 dangling docs/README.md:286 DM-POOL-01 referenced but never defined
-R4 dangling docs/README.md:287 DM-IDX-01 referenced but never defined
-R4 dangling docs/README.md:288 DM-ADR-01 referenced but never defined
-R4 dangling docs/README.md:289 DM-ADR-02 referenced but never defined
-R4 dangling docs/README.md:290 DM-ADR-03 referenced but never defined
-R4 dangling docs/README.md:291 DM-ADR-04 referenced but never defined
-R4 dangling docs/README.md:292 DM-ADR-05 referenced but never defined
-R4 dangling docs/README.md:293 DM-ADR-06 referenced but never defined
-R4 dangling docs/README.md:294 DM-ADR-07 referenced but never defined
-R4 dangling docs/README.md:295 DM-ADR-08 referenced but never defined
-R4 dangling docs/README.md:296 DM-ADR-09 referenced but never defined
-R4 dangling docs/README.md:297 DM-ADR-10 referenced but never defined
-R4 dangling docs/README.md:298 DM-ADR-11 referenced but never defined
-R4 dangling docs/README.md:299 DM-ADR-12 referenced but never defined
-R4 dangling docs/README.md:300 DM-ADR-13 referenced but never defined
-R4 dangling docs/README.md:301 DM-ADR-14 referenced but never defined
+R4 dangling docs/README.md:116 DM-RLS-01 referenced but never defined
+R4 dangling docs/README.md:120 ARCH-ERR-01 referenced but never defined
+R4 dangling docs/README.md:121 ARCH-MOD-01 referenced but never defined
+R4 dangling docs/README.md:139 ARCH-AR-01 referenced but never defined
+R4 dangling docs/README.md:140 ARCH-AR-02 referenced but never defined
+R4 dangling docs/README.md:141 ARCH-AR-03 referenced but never defined
+R4 dangling docs/README.md:142 ARCH-AR-04 referenced but never defined
+R4 dangling docs/README.md:148 ARCH-API-01 referenced but never defined
+R4 dangling docs/README.md:149 ARCH-AUD-01 referenced but never defined
+R4 dangling docs/README.md:151 ARCH-CC-01 referenced but never defined
+R4 dangling docs/README.md:153 ARCH-FE-05 referenced but never defined
+R4 dangling docs/README.md:155 ARCH-HONO-01 referenced but never defined
+R4 dangling docs/README.md:157 ARCH-HONO-02 referenced but never defined
+R4 dangling docs/README.md:159 ARCH-HONO-04 referenced but never defined
+R4 dangling docs/README.md:160 ARCH-HONO-05 referenced but never defined
+R4 dangling docs/README.md:161 ARCH-HONO-06 referenced but never defined
+R4 dangling docs/README.md:162 ARCH-HONO-07 referenced but never defined
+R4 dangling docs/README.md:163 ARCH-HONO-08 referenced but never defined
+R4 dangling docs/README.md:164 ARCH-HONO-09 referenced but never defined
+R4 dangling docs/README.md:165 ARCH-HONO-10 referenced but never defined
+R4 dangling docs/README.md:167 ARCH-HONO-12 referenced but never defined
+R4 dangling docs/README.md:168 ARCH-IDX-01 referenced but never defined
+R4 dangling docs/README.md:170 ARCH-OPS-01 referenced but never defined
+R4 dangling docs/README.md:171 ARCH-PERM-01 referenced but never defined
+R4 dangling docs/README.md:172 ARCH-PUB-01 referenced but never defined
+R4 dangling docs/README.md:173 ARCH-TST-03 referenced but never defined
+R4 dangling docs/README.md:174 ARCH-TST-04 referenced but never defined
+R4 dangling docs/README.md:217 DM-TEN-01 referenced but never defined
+R4 dangling docs/README.md:218 DM-SCP-01 referenced but never defined
+R4 dangling docs/README.md:219 DM-SCP-02 referenced but never defined
+R4 dangling docs/README.md:220 DM-SCP-03 referenced but never defined
+R4 dangling docs/README.md:221 DM-ORG-01 referenced but never defined
+R4 dangling docs/README.md:222 DM-ORG-02 referenced but never defined
+R4 dangling docs/README.md:223 DM-ORG-03 referenced but never defined
+R4 dangling docs/README.md:224 DM-ORG-04 referenced but never defined
+R4 dangling docs/README.md:226 DM-ORG-06 referenced but never defined
+R4 dangling docs/README.md:228 DM-PER-01 referenced but never defined
+R4 dangling docs/README.md:229 DM-NAM-01 referenced but never defined
+R4 dangling docs/README.md:230 DM-NAM-02 referenced but never defined
+R4 dangling docs/README.md:235 DM-REL-05 referenced but never defined
+R4 dangling docs/README.md:236 DM-REL-06 referenced but never defined
+R4 dangling docs/README.md:237 DM-REL-07 referenced but never defined
+R4 dangling docs/README.md:240 DM-REL-10 referenced but never defined
+R4 dangling docs/README.md:249 DM-NOD-02 referenced but never defined
+R4 dangling docs/README.md:250 DM-NOD-03 referenced but never defined
+R4 dangling docs/README.md:251 DM-NOD-04 referenced but never defined
+R4 dangling docs/README.md:252 DM-NOD-05 referenced but never defined
+R4 dangling docs/README.md:253 DM-NOD-06 referenced but never defined
+R4 dangling docs/README.md:255 DM-SRC-01 referenced but never defined
+R4 dangling docs/README.md:256 DM-ART-01 referenced but never defined
+R4 dangling docs/README.md:260 DM-MED-03 referenced but never defined
+R4 dangling docs/README.md:261 DM-MED-04 referenced but never defined
+R4 dangling docs/README.md:262 DM-INV-01 referenced but never defined
+R4 dangling docs/README.md:263 DM-INV-02 referenced but never defined
+R4 dangling docs/README.md:264 DM-INV-03 referenced but never defined
+R4 dangling docs/README.md:265 DM-INV-04 referenced but never defined
+R4 dangling docs/README.md:266 DM-INV-05 referenced but never defined
+R4 dangling docs/README.md:267 DM-BOK-01 referenced but never defined
+R4 dangling docs/README.md:268 DM-BOK-02 referenced but never defined
+R4 dangling docs/README.md:269 DM-BOK-03 referenced but never defined
+R4 dangling docs/README.md:270 DM-BOK-04 referenced but never defined
+R4 dangling docs/README.md:273 DM-AUD-02 referenced but never defined
+R4 dangling docs/README.md:275 DM-RLS-02 referenced but never defined
+R4 dangling docs/README.md:276 DM-RLS-03 referenced but never defined
+R4 dangling docs/README.md:277 DM-PERM-01 referenced but never defined
+R4 dangling docs/README.md:278 DM-POOL-01 referenced but never defined
+R4 dangling docs/README.md:279 DM-IDX-01 referenced but never defined
+R4 dangling docs/README.md:280 DM-ADR-01 referenced but never defined
+R4 dangling docs/README.md:281 DM-ADR-02 referenced but never defined
+R4 dangling docs/README.md:282 DM-ADR-03 referenced but never defined
+R4 dangling docs/README.md:283 DM-ADR-04 referenced but never defined
+R4 dangling docs/README.md:284 DM-ADR-05 referenced but never defined
+R4 dangling docs/README.md:285 DM-ADR-06 referenced but never defined
+R4 dangling docs/README.md:286 DM-ADR-07 referenced but never defined
+R4 dangling docs/README.md:287 DM-ADR-08 referenced but never defined
+R4 dangling docs/README.md:288 DM-ADR-09 referenced but never defined
+R4 dangling docs/README.md:289 DM-ADR-10 referenced but never defined
+R4 dangling docs/README.md:290 DM-ADR-11 referenced but never defined
+R4 dangling docs/README.md:291 DM-ADR-12 referenced but never defined
+R4 dangling docs/README.md:292 DM-ADR-13 referenced but never defined
+R4 dangling docs/README.md:293 DM-ADR-14 referenced but never defined
 R4 dangling docs/README.md:75 ARCH-GOV-01 referenced but never defined
 R5 dual docs/requirements/acceptance.md:18 SC-DOC-01 has 2 definition lines; exactly one authority required
-R7 section docs/README.md:112 §1.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:112 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:114 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:116 §1.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:126 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:127 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:131 §1.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:147 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:150 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:151 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:151 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:151 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:152 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:152 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:152 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:153 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:154 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:154 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:155 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:156 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:157 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:158 §15.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:159 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:160 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:161 §9.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:166 §10.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:169 §8.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:170 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:171 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:173 §15.1.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:177 §9.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:178 §15.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:178 §15.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:179 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:180 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:182 §14.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:204 §4.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:211 §5.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:212 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:213 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:214 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:215 §4.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:216 §4.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:217 §4.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:220 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:221 §4.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:221 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:222 §12.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:222 §4.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:223 §2.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:225 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:226 §4.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:226 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:227 §4.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:227 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:228 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:229 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:104 §1.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:104 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:106 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:108 §1.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:118 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:119 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:123 §1.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:139 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:142 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:143 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:143 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:143 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:144 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:144 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:144 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:145 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:146 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:146 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:147 §1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:148 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:149 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:150 §15.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:151 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:152 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:153 §9.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:158 §10.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:161 §8.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:162 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:163 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:165 §15.1.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:169 §9.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:170 §15.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:170 §15.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:171 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:172 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:174 §14.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:196 §4.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:203 §5.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:204 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:205 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:206 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:207 §4.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:208 §4.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:209 §4.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:212 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:213 §4.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:213 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:214 §12.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:214 §4.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:215 §2.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:217 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:218 §4.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:218 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:219 §4.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:219 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:220 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:221 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:221 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:222 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:222 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:223 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:223 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:224 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:225 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:226 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:227 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:228 §5.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:229 §5.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:229 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:230 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:230 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:231 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:231 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:232 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:233 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:234 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:235 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:236 §5.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:237 §5.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:237 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:238 §5.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:230 §5.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:231 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:232 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:233 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:233 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:234 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:234 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:235 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:235 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:236 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:237 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:238 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:238 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:239 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:239 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:240 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:240 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:241 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:241 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:242 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:242 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:243 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:243 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:243 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:244 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:245 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:246 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:244 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:244 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:245 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:245 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:246 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:246 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:247 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:247 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:248 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:248 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:249 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:247 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:248 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:249 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:249 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:250 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:250 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:250 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:251 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:251 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:251 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:252 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:252 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:252 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:253 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:253 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:253 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:254 §5.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:254 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:255 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:256 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:257 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:257 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:258 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:258 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:259 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:259 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:260 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:254 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:255 §5.13 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:256 §5.15 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:256 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:260 §5.16 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:260 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:261 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:261 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:262 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:263 §5.13 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:264 §5.15 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:262 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:262 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:263 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:263 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:264 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:264 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:268 §5.16 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:265 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:265 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:266 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:266 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:267 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:267 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:268 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:268 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:269 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:269 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:270 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:270 §5.20 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:270 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:271 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:271 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:272 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:272 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:273 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:271 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:272 §5.22 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:272 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:273 §5.22 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/README.md:273 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:274 §5.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:274 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:275 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:275 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:276 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:276 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:277 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:277 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:278 §5.20 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:278 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:279 §5.21 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:280 §5.22 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:280 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:281 §5.22 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:281 §7.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:282 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:283 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:285 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:286 §12.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:286 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:287 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/README.md:297 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:274 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:275 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:277 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:278 §12.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:278 §5.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:279 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/README.md:289 §5.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:10 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:100 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:100 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:110 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:111 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:112 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:113 §11.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:114 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:114 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:115 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:116 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:120 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:120 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:120 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:127 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:132 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:134 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:134 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:134 §15.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:140 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:141 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:143 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:143 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:149 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:150 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:154 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:154 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:158 §8.1.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:164 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:167 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:168 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:169 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:170 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:171 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:172 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:173 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:174 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:175 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:175 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:177 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:107 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:107 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:117 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:118 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:119 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:120 §11.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:121 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:121 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:122 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:123 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:130 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:130 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:130 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:137 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:142 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:144 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:144 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:144 §15.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:150 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:151 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:153 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:153 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:159 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:160 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:177 §8.1.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:23 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:24 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:25 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:276 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:279 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:280 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:281 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:282 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:283 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:284 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:285 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:286 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:287 §5.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:287 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:289 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:34 §8.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:35 §14.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:35 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
@@ -283,71 +281,44 @@ R7 section docs/architecture/api/conventions.md:38 §14.1 has no heading in the 
 R7 section docs/architecture/api/conventions.md:38 §8.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:38 §8.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:42 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:56 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:57 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:58 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:59 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:60 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:62 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/conventions.md:63 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:8 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:80 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:80 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/conventions.md:9 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:102 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:103 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:114 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:115 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:122 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:126 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:129 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:130 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:130 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:130 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:137 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:141 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:142 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:153 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:153 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:153 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:64 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:70 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:87 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/conventions.md:87 §11.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:101 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:101 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:101 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:112 §11.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:112 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:123 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:138 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:153 §11.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:153 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/endpoints.md:153 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:162 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:163 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:163 §15.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:163 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:174 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:180 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:182 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:182 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:19 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:26 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:35 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:35 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:36 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:36 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:43 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:50 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:170 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:181 §11.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:181 §7.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:181 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:181 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:196 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:196 §15.1.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:196 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:207 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:220 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:29 §1.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:51 §11.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/endpoints.md:51 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:58 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:62 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:63 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:67 §8.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/api/endpoints.md:67 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:68 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:68 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:68 §8.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:68 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:75 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:82 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:83 §12.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:83 §8.7 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:83 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:92 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:93 §11.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/api/endpoints.md:93 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:84 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:84 §8.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/api/endpoints.md:84 §8.9 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/errors.md:29 §2.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/errors.md:38 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/errors.md:44 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/errors.md:76 §2.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/errors.md:77 §2.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/invariants.md:122 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/invariants.md:80 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/migrations.md:103 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
@@ -362,18 +333,18 @@ R7 section docs/architecture/data/migrations.md:211 §8.4 has no heading in the 
 R7 section docs/architecture/data/migrations.md:211 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/migrations.md:96 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:13 §1.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:1431 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:1492 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:1432 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:1493 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:179 §12.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:190 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:284 §12.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:318 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:336 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:381 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:337 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:382 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:52 §7.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:54 §4.6 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:559 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R7 section docs/architecture/data/schema.md:658 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:560 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/data/schema.md:659 §8.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/schema.md:84 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/security.md:45 §12.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/data/security.md:45 §3.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
@@ -400,6 +371,10 @@ R7 section docs/architecture/stack.md:152 §7.6 has no heading in the same file;
 R7 section docs/architecture/stack.md:154 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/stack.md:249 §15.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/stack.md:297 §1.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/stack.md:298 §1.13 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/stack.md:299 §1.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/stack.md:300 §1.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/architecture/stack.md:301 §1.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/stack.md:304 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/stack.md:37 §8.3 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/architecture/stack.md:39 §14.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
@@ -410,89 +385,93 @@ R7 section docs/architecture/stack.md:78 §8.5 has no heading in the same file; 
 R7 section docs/architecture/stack.md:95 §12.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/decisions/0001-pg18-defects.md:12 §5.1 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/requirements/acceptance.md:17 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/requirements/functional.md:150 §1.13 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/requirements/functional.md:151 §1.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/requirements/functional.md:152 §1.11 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
+R7 section docs/requirements/functional.md:153 §1.8 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/requirements/functional.md:156 §9.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/requirements/user-stories.md:323 §8.4 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/requirements/user-stories.md:390 §8.5 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
 R7 section docs/requirements/user-stories.md:407 §11.2 has no heading in the same file; cross-file refs must link [..](file.md#anchor)
-R9 registry docs/README.md:147 ARCH-AR-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:148 ARCH-AR-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:149 ARCH-AR-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:150 ARCH-AR-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:156 ARCH-API-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:157 ARCH-AUD-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:159 ARCH-CC-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:160 ARCH-ERR-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:161 ARCH-FE-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:162 ARCH-GOV-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:163 ARCH-HONO-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:165 ARCH-HONO-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:167 ARCH-HONO-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:168 ARCH-HONO-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:169 ARCH-HONO-06 registered in README index but no definition in topic docs
-R9 registry docs/README.md:170 ARCH-HONO-07 registered in README index but no definition in topic docs
-R9 registry docs/README.md:171 ARCH-HONO-08 registered in README index but no definition in topic docs
-R9 registry docs/README.md:172 ARCH-HONO-09 registered in README index but no definition in topic docs
-R9 registry docs/README.md:173 ARCH-HONO-10 registered in README index but no definition in topic docs
-R9 registry docs/README.md:175 ARCH-HONO-12 registered in README index but no definition in topic docs
-R9 registry docs/README.md:176 ARCH-IDX-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:177 ARCH-MOD-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:178 ARCH-OPS-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:179 ARCH-PERM-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:180 ARCH-PUB-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:181 ARCH-TST-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:182 ARCH-TST-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:225 DM-TEN-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:226 DM-SCP-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:227 DM-SCP-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:228 DM-SCP-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:229 DM-ORG-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:230 DM-ORG-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:231 DM-ORG-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:232 DM-ORG-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:234 DM-ORG-06 registered in README index but no definition in topic docs
-R9 registry docs/README.md:236 DM-PER-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:237 DM-NAM-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:238 DM-NAM-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:243 DM-REL-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:244 DM-REL-06 registered in README index but no definition in topic docs
-R9 registry docs/README.md:245 DM-REL-07 registered in README index but no definition in topic docs
-R9 registry docs/README.md:248 DM-REL-10 registered in README index but no definition in topic docs
-R9 registry docs/README.md:257 DM-NOD-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:258 DM-NOD-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:259 DM-NOD-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:260 DM-NOD-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:261 DM-NOD-06 registered in README index but no definition in topic docs
-R9 registry docs/README.md:263 DM-SRC-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:264 DM-ART-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:268 DM-MED-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:269 DM-MED-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:270 DM-INV-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:271 DM-INV-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:272 DM-INV-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:273 DM-INV-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:274 DM-INV-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:275 DM-BOK-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:276 DM-BOK-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:277 DM-BOK-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:278 DM-BOK-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:281 DM-AUD-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:282 DM-RLS-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:283 DM-RLS-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:284 DM-RLS-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:285 DM-PERM-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:286 DM-POOL-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:287 DM-IDX-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:288 DM-ADR-01 registered in README index but no definition in topic docs
-R9 registry docs/README.md:289 DM-ADR-02 registered in README index but no definition in topic docs
-R9 registry docs/README.md:290 DM-ADR-03 registered in README index but no definition in topic docs
-R9 registry docs/README.md:291 DM-ADR-04 registered in README index but no definition in topic docs
-R9 registry docs/README.md:292 DM-ADR-05 registered in README index but no definition in topic docs
-R9 registry docs/README.md:293 DM-ADR-06 registered in README index but no definition in topic docs
-R9 registry docs/README.md:294 DM-ADR-07 registered in README index but no definition in topic docs
-R9 registry docs/README.md:295 DM-ADR-08 registered in README index but no definition in topic docs
-R9 registry docs/README.md:296 DM-ADR-09 registered in README index but no definition in topic docs
-R9 registry docs/README.md:297 DM-ADR-10 registered in README index but no definition in topic docs
-R9 registry docs/README.md:298 DM-ADR-11 registered in README index but no definition in topic docs
-R9 registry docs/README.md:299 DM-ADR-12 registered in README index but no definition in topic docs
-R9 registry docs/README.md:300 DM-ADR-13 registered in README index but no definition in topic docs
-R9 registry docs/README.md:301 DM-ADR-14 registered in README index but no definition in topic docs
+R9 registry docs/README.md:139 ARCH-AR-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:140 ARCH-AR-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:141 ARCH-AR-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:142 ARCH-AR-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:148 ARCH-API-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:149 ARCH-AUD-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:151 ARCH-CC-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:152 ARCH-ERR-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:153 ARCH-FE-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:154 ARCH-GOV-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:155 ARCH-HONO-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:157 ARCH-HONO-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:159 ARCH-HONO-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:160 ARCH-HONO-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:161 ARCH-HONO-06 registered in README index but no definition in topic docs
+R9 registry docs/README.md:162 ARCH-HONO-07 registered in README index but no definition in topic docs
+R9 registry docs/README.md:163 ARCH-HONO-08 registered in README index but no definition in topic docs
+R9 registry docs/README.md:164 ARCH-HONO-09 registered in README index but no definition in topic docs
+R9 registry docs/README.md:165 ARCH-HONO-10 registered in README index but no definition in topic docs
+R9 registry docs/README.md:167 ARCH-HONO-12 registered in README index but no definition in topic docs
+R9 registry docs/README.md:168 ARCH-IDX-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:169 ARCH-MOD-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:170 ARCH-OPS-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:171 ARCH-PERM-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:172 ARCH-PUB-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:173 ARCH-TST-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:174 ARCH-TST-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:217 DM-TEN-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:218 DM-SCP-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:219 DM-SCP-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:220 DM-SCP-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:221 DM-ORG-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:222 DM-ORG-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:223 DM-ORG-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:224 DM-ORG-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:226 DM-ORG-06 registered in README index but no definition in topic docs
+R9 registry docs/README.md:228 DM-PER-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:229 DM-NAM-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:230 DM-NAM-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:235 DM-REL-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:236 DM-REL-06 registered in README index but no definition in topic docs
+R9 registry docs/README.md:237 DM-REL-07 registered in README index but no definition in topic docs
+R9 registry docs/README.md:240 DM-REL-10 registered in README index but no definition in topic docs
+R9 registry docs/README.md:249 DM-NOD-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:250 DM-NOD-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:251 DM-NOD-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:252 DM-NOD-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:253 DM-NOD-06 registered in README index but no definition in topic docs
+R9 registry docs/README.md:255 DM-SRC-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:256 DM-ART-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:260 DM-MED-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:261 DM-MED-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:262 DM-INV-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:263 DM-INV-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:264 DM-INV-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:265 DM-INV-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:266 DM-INV-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:267 DM-BOK-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:268 DM-BOK-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:269 DM-BOK-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:270 DM-BOK-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:273 DM-AUD-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:274 DM-RLS-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:275 DM-RLS-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:276 DM-RLS-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:277 DM-PERM-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:278 DM-POOL-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:279 DM-IDX-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:280 DM-ADR-01 registered in README index but no definition in topic docs
+R9 registry docs/README.md:281 DM-ADR-02 registered in README index but no definition in topic docs
+R9 registry docs/README.md:282 DM-ADR-03 registered in README index but no definition in topic docs
+R9 registry docs/README.md:283 DM-ADR-04 registered in README index but no definition in topic docs
+R9 registry docs/README.md:284 DM-ADR-05 registered in README index but no definition in topic docs
+R9 registry docs/README.md:285 DM-ADR-06 registered in README index but no definition in topic docs
+R9 registry docs/README.md:286 DM-ADR-07 registered in README index but no definition in topic docs
+R9 registry docs/README.md:287 DM-ADR-08 registered in README index but no definition in topic docs
+R9 registry docs/README.md:288 DM-ADR-09 registered in README index but no definition in topic docs
+R9 registry docs/README.md:289 DM-ADR-10 registered in README index but no definition in topic docs
+R9 registry docs/README.md:290 DM-ADR-11 registered in README index but no definition in topic docs
+R9 registry docs/README.md:291 DM-ADR-12 registered in README index but no definition in topic docs
+R9 registry docs/README.md:292 DM-ADR-13 registered in README index but no definition in topic docs
+R9 registry docs/README.md:293 DM-ADR-14 registered in README index but no definition in topic docs

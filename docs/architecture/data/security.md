@@ -107,7 +107,7 @@ $$;
 | 表 | 权限 |
 |---|---|
 | `organization` | `SELECT`；`UPDATE (name, status, updated_at)`；**无** `INSERT` / `DELETE`；**无** `UPDATE (owner_user_id)` |
-| `organization_member` | `SELECT`、`INSERT`、`UPDATE (role, updated_at)`、`DELETE` |
+| `organization_member` | `SELECT`、`INSERT`、`UPDATE (role, last_used_at, updated_at)`、`DELETE` |
 | `invite` | `SELECT`、`INSERT`；**无** `UPDATE` / `DELETE`（v1.2 变更，见下） |
 | `project`、`folder` | `SELECT`、`INSERT`、`UPDATE`、`DELETE` |
 | `person`、`person_name`、`person_relation`、`event` | 全 DML |
@@ -138,13 +138,14 @@ $$;
 | | `UPDATE (owner_user_id, updated_at)` | `transfer_organization_ownership` |
 | `public.organization_member` | `SELECT` | `visible_org_array`、`create_organization`、`transfer_ownership`、`accept_invite` |
 | | `INSERT` | `create_organization`、`accept_invite` |
-| | `UPDATE (role, updated_at)` | `transfer_ownership`、`accept_invite` |
+| | `UPDATE (role, last_used_at, updated_at)` | `transfer_ownership`、`accept_invite`、默认组织切换 |
 | `public.invite` | `SELECT` | `resolve_invite_by_token`、`accept_invite`、`revoke_invite` |
 | | `UPDATE (status, accepted_at, revoked_at, updated_at)` | `accept_invite` 抢占兑换、`revoke_invite` |
 | `public.book_release` | `SELECT` | `revoke_book_release`、`purge_book_release` |
 | | `UPDATE (revoked_at, revoked_reason)` | `revoke_book_release` |
 | | `DELETE` | `purge_book_release` |
 | `public.audit_log` | `INSERT` | 全部强审计路径 |
+| `auth."user"` | `SELECT (id, email)` | `accept_invite` 邮箱一致性 |
 | `public` schema | `USAGE` | 全部函数 |
 | `app.visible_org_array()` | `EXECUTE`（函数自身） | — |
 

@@ -66,10 +66,10 @@
 | ORM    | Drizzle ORM 0.45.4（锁定）                      | 表/列/CHECK/索引/视图；复杂 DDL 走手写迁移                               |
 | 主键     | `uuidv7()`                                      | 时间有序，B-tree 局部性好；应用不生成                                     |
 | 扩展     | `ltree`、`btree_gist`                            | `ltree` 管路径；`btree_gist` 让 uuid 与 `ltree` 共处一个复合 GiST 索引   |
-| Schema | `public` 业务表 / `app` 函数与视图 / `auth` Better Auth | 业务迁移不建 `auth` 表                                            |
+| Schema | `public` 业务表 / `app` 函数与视图 / `auth` Better Auth | `auth` 表由 `0001_auth_tenant.sql` 认证段创建；业务迁移只建 `public` 表 |
 | 认证     | Better Auth                                     | `auth.user` 由认证层持有；业务表只加外键                                 |
 
-**迁移前置条件**：`auth` schema 与 `auth.user` 必须已由认证层迁移创建；`ltree` 与 `btree_gist` 扩展必须在业务迁移之前安装。
+**迁移前置条件**：`auth` schema 与 `auth.user` 由 `packages/db/migrations/0001_auth_tenant.sql` 创建；业务迁移只建 `public` 表。`ltree` 与 `btree_gist` 扩展不在本批次范围内。
 
 **不使用的特性**：`pgEnum`（改值需 DDL 锁，错误信息不友好）、`hstore`、`xml`、继承表、规则系统、软删除列、通用 `entity_type/entity_id` 业务外键。
 
@@ -226,7 +226,7 @@ erDiagram
 | 表 | `created_at` | `updated_at` |
 |---|---|---|
 | `organization` | 有 | 有 |
-| `organization_member` | 有 | 有（role 变更） |
+| `organization_member` | 有 | 有（role / last_used_at 变更） |
 | `invite` | 有 | 有（status 变更） |
 | `project` / `folder` | 有 | 有 |
 | `person` / `person_name` / `person_relation` / `event` | 有 | 有 |
@@ -327,6 +327,7 @@ ALTER TABLE organization
 | `organization_id` | `uuid` | 否 | | `fk_organization_member_org`，`ON DELETE RESTRICT` |
 | `user_id` | `uuid` | 否 | | `fk_organization_member_user` → `auth.user(id)`，`ON DELETE RESTRICT` |
 | `role` | `text` | 否 | | `admin` / `editor` / `viewer` |
+| `last_used_at` | `timestamptz` | 是 | | 最近一次进入 / 切换该组织的时间；默认组织解析依据 |
 | `created_at` | `timestamptz` | 否 | `now()` | |
 | `updated_at` | `timestamptz` | 否 | `now()` | 触发器维护 |
 

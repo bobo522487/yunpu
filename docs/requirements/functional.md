@@ -141,20 +141,20 @@
 - **与架构文档的分工**：「明确不做」的唯一权威副本见 [out-of-scope.md](out-of-scope.md)（`OOS-01`..`OOS-19`）；架构文档只引用编号，不复制表格。
 ## 4. Phase 0 结论（九类契约项）
 
-> 原 api.md（重构前基线定位符，见 git 历史 `5cbb72b`） §4 的九类契约项已在 Phase 0 一次性收口：结论正文（含逐字引文与定值）是 [stack.md](../architecture/stack.md) 的唯一权威；本文只列「类别 → 结论编号 → 状态」，不复制结论正文（Article VI「同一主题只定义一次」）。已定值项已写回对应契约文件；未决项登记在 [README.md](../README.md) 的 Phase 0 未决项表并**阻塞该批次 `/speckit-tasks`**，tasks.md 不得在这些项定值前生成。
+> 原 api.md（重构前基线定位符，见 git 历史 `5cbb72b`） §4 的九类契约项已在 Phase 0 一次性收口：结论正文（含逐字引文与定值）是 [stack.md](../architecture/stack.md) 的唯一权威；本文只列「类别 → 结论编号 → 状态」，不复制结论正文（Article VI「同一主题只定义一次」）。九类契约项已全部定值并写回对应契约文件，当前无未决项，不再阻塞 `/speckit-tasks`。
 
 | 类别 | 契约项 | 结论编号 | 状态 |
 | --- | --- | --- | --- |
 | Zod schema 名 | 除 4 个已点名 schema 外的入参命名 | C1 | 已定值：`<动词><实体>Schema`，置于 `packages/shared/src/schemas` |
 | 逐端点状态码 | 除 201/400/401/403/404/409/413/500/504 外的状态码 | C2 | 已定值：不引入新码；`RATE_LIMITED` → 429 |
-| 权限名 | 完整权限名矩阵 | C3 | 未决·阻塞 |
-| 分页参数 | 游标 / 每页大小 / 上限的参数名 | C4 | 未决·阻塞 |
-| 限流配额 | 配额数值、返回状态码、响应体 | C5 | 未决·阻塞 |
-| 幂等 | 通用 `Idempotency-Key` 机制 | C6 | 未决·阻塞 |
+| 权限名 | 完整权限名矩阵 | C3 | 已定值：见 `architecture/api/conventions.md` §1.13 |
+| 分页参数 | 游标 / 每页大小 / 上限的参数名 | C4 | 已定值：`cursor` / `limit`，默认 50、上限 200，见 `architecture/api/conventions.md` §1.4 |
+| 限流配额 | 配额数值、返回状态码、响应体 | C5 | 已定值：见 `architecture/api/conventions.md` §1.11 |
+| 幂等 | 通用 `Idempotency-Key` 机制 | C6 | 已定值：V1 不启用，按域内自然键与条件更新，见 `architecture/api/conventions.md` §1.8 |
 | 批量端点 | 批量导入 / 写入端点及上限 | C7 | 已定值：V1 无批量端点，故无上限；复评条件见 `out-of-scope.md` |
-| 端点清单 | 增删改、兑换邀请路径、审计查询端点 | C8 | 未决·阻塞 |
+| 端点清单 | 增删改、兑换邀请路径、审计查询端点 | C8 | 已定值：见 `architecture/api/endpoints.md` §2 |
 | 错误映射 | `RATE_LIMITED` 与 `ErrorCode` → HTTP 对照表 | C9 | 已定值：唯一权威 `architecture/data/errors.md` §9.4，`RATE_LIMITED` → 429 |
 
 ---
 
-> 本文的需求条目以原始规格为准；九类契约项的结论编号见本文 §4，结论正文见 [stack.md](../architecture/stack.md)，未决项见 [README.md](../README.md)。
+> 本文的需求条目以原始规格为准；九类契约项的结论编号见本文 §4，结论正文见 [stack.md](../architecture/stack.md)，当前无未决项。

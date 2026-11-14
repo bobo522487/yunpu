@@ -70,7 +70,7 @@
 | 编号 | 软约束 | 为什么 DB 不做 | 补偿手段 | 验收 |
 |---|---|---|---|---|
 | `DM-ORG-05` | 组织归档后禁止新写入 | 需要跨表查 `organization.status`，放触发器会让每次写入都多一次锁与查表；且归档是低频事件 | Use Case 层检查 | #38 |
-| `DM-ORG-07` | 成员增删改的角色授权 | 「谁能改成员」是业务规则，不是结构规则 | Service 层角色矩阵（单一来源） | #41 |
+| `DM-ORG-07` | 成员增删改的角色授权；`last_used_at` 只由当前用户自己的成员行更新 | 「谁能改成员」与「谁在切换自己的默认组织」是业务规则，不是结构规则 | Service 层角色矩阵（单一来源）+ `user_id = app.current_user_id()` 条件更新 | #41 |
 | `DM-EVT-05` | Relation 类型与 Event 类型匹配（`marriage` 只挂 `spouse`/`partner`） | 跨表语义推断 | Use Case + 测试 | #42 |
 | `DM-NOD-07` | `placement_relation_id` 的语义正确性 | 跨表语义推断 | Use Case + 测试 | #39 |
 | `DM-PURGE-01` | Person 物理清除（GDPR） | V1 不做 | 独立运维流程 + 审计 | — |

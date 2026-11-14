@@ -1,0 +1,299 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', Menlo, monospace;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+/* Core Variables (Defined globally to ensure availability) */
+:root {
+  /* Default (Vercel/Zinc) Light Theme */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 6%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 6%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 6%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 4.5% 38%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 88%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.5rem;
+
+  /* NocoDB-inspired Surface, Hairline & Micro-Shadow Tokens */
+  --surface-subtle: 240 5% 97.5%;
+  --surface-hover: 240 5% 95.5%;
+  --border-subtle: 240 5.9% 92%;
+  --border-strong: 240 5.9% 80%;
+  --shadow-control: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-card-hover: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-popover: 0 8px 24px -4px rgb(0 0 0 / 0.1), 0 2px 6px -1px rgb(0 0 0 / 0.05);
+}
+
+.dark {
+  /* Default (Vercel/Zinc) Dark Theme */
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 96%;
+  --card: 240 10% 5.2%;
+  --card-foreground: 0 0% 96%;
+  --popover: 240 10% 5.5%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 68%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 16.5%;
+  --input: 240 3.7% 18%;
+  --ring: 240 4.9% 83.9%;
+
+  --surface-subtle: 240 6% 8.5%;
+  --surface-hover: 240 4% 13.5%;
+  --border-subtle: 240 3.7% 13.5%;
+  --border-strong: 240 3.7% 25%;
+  --shadow-control: 0 1px 2px 0 rgb(0 0 0 / 0.28);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.25);
+  --shadow-popover: 0 10px 28px -4px rgb(0 0 0 / 0.55), 0 2px 8px -1px rgb(0 0 0 / 0.35);
+}
+
+/* --- Supabase Theme --- */
+.theme-supabase {
+  --primary: 154 55% 45%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 154 55% 45%;
+}
+.theme-supabase.dark {
+  --background: 240 5% 10%;
+  --card: 240 5% 12%;
+  --popover: 240 5% 11%;
+  --primary: 154 60% 53%;
+  --primary-foreground: 154 60% 5%;
+  --secondary: 240 4% 16%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 4% 62%;
+  --accent: 240 4% 16%;
+  --border: 240 4% 19%;
+  --input: 240 4% 20%;
+  --ring: 154 60% 53%;
+  --surface-subtle: 240 5% 13%;
+  --surface-hover: 240 4% 16.5%;
+  --border-subtle: 240 4% 15.5%;
+  --border-strong: 240 4% 27%;
+}
+
+/* --- Slack Theme --- */
+.theme-slack {
+  --primary: 295 50% 30%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 295 50% 30%;
+}
+.theme-slack.dark {
+  --background: 295 20% 8%;
+  --foreground: 295 10% 90%;
+  --card: 295 15% 12%;
+  --popover: 295 18% 10%;
+  --primary: 295 50% 60%;
+  --primary-foreground: 295 50% 10%;
+  --secondary: 295 15% 15%;
+  --muted: 295 15% 15%;
+  --muted-foreground: 295 10% 62%;
+  --accent: 295 15% 15%;
+  --border: 295 15% 19%;
+  --input: 295 15% 20%;
+  --ring: 295 50% 60%;
+  --surface-subtle: 295 16% 11%;
+  --surface-hover: 295 15% 16%;
+  --border-subtle: 295 15% 15%;
+  --border-strong: 295 15% 28%;
+}
+
+/* --- VS Code Theme --- */
+.theme-vscode {
+  --primary: 210 100% 40%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 210 100% 40%;
+}
+.theme-vscode.dark {
+  --background: 220 15% 10%;
+  --foreground: 220 10% 85%;
+  --card: 220 15% 13%;
+  --popover: 220 15% 11.5%;
+  --primary: 210 100% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 15% 18%;
+  --muted: 220 15% 18%;
+  --muted-foreground: 220 10% 62%;
+  --accent: 220 15% 20%;
+  --border: 220 15% 19%;
+  --input: 220 15% 21%;
+  --ring: 210 100% 45%;
+  --surface-subtle: 220 15% 12.5%;
+  --surface-hover: 220 15% 17.5%;
+  --border-subtle: 220 15% 16%;
+  --border-strong: 220 15% 28%;
+}
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+  }
+
+  svg,
+  .lucide {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+}
+
+.nc-dot-grid {
+  background-image: radial-gradient(circle, hsl(var(--border-strong) / 0.65) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* React Grid Layout Custom Styles */
+.react-grid-item.react-grid-placeholder {
+  background: hsl(var(--primary) / 0.1) !important;
+  border: 2px dashed hsl(var(--primary));
+  border-radius: var(--radius);
+  opacity: 0.5;
+}
+
+.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 50;
+}
+
+.react-grid-item:hover .react-resizable-handle {
+  opacity: 1;
+}
+
+.react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 3px solid hsl(var(--primary));
+  border-bottom: 3px solid hsl(var(--primary));
+  border-bottom-right-radius: 2px;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.container {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 2rem;
+  padding-left: 2rem;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@supports (scrollbar-color: auto) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+  }
+}

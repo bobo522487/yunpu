@@ -6,10 +6,14 @@ const pairedDatabaseName = {
 } as const;
 
 const appDatabaseUser = "genealogy_app";
+const authDatabaseUser = "auth_runtime";
 
 const envFields = [
   "YUNPU_ENV",
   "DATABASE_URL",
+  "AUTH_DATABASE_URL",
+  "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_URL",
   "PORT",
   "S3_ENDPOINT",
   "S3_BUCKET",
@@ -46,9 +50,9 @@ function databaseTarget(databaseUrl: string): { user: string; name: string } | u
   return { user, name };
 }
 
-function databaseUrlAllowed(databaseUrl: string): boolean {
+function databaseUrlAllowed(databaseUrl: string, expectedUser: string): boolean {
   const target = databaseTarget(databaseUrl);
-  if (!target || target.name === "yunpu_prod" || target.user !== appDatabaseUser) {
+  if (!target || target.name === "yunpu_prod" || target.user !== expectedUser) {
     return false;
   }
 
@@ -63,13 +67,23 @@ function databaseUrlAllowed(databaseUrl: string): boolean {
 const envSchema = z.object({
   YUNPU_ENV: z.enum(["development", "test"]),
   DATABASE_URL: z.string().min(1).superRefine((databaseUrl, ctx) => {
-    if (!databaseUrlAllowed(databaseUrl)) {
+    if (!databaseUrlAllowed(databaseUrl, appDatabaseUser)) {
       ctx.addIssue({
         code: "custom",
         message: "DATABASE_URL must use user genealogy_app and the database paired with YUNPU_ENV",
       });
     }
   }),
+  AUTH_DATABASE_URL: z.string().min(1).superRefine((databaseUrl, ctx) => {
+    if (!databaseUrlAllowed(databaseUrl, authDatabaseUser)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "AUTH_DATABASE_URL must use user auth_runtime and the database paired with YUNPU_ENV",
+      });
+    }
+  }),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.url(),
   PORT: z.coerce.number().int().min(1).max(65535),
   S3_ENDPOINT: z.string().min(1),
   S3_BUCKET: z.string().min(1),

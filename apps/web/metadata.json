@@ -1,0 +1,6 @@
+{
+  "name": "nocoapp-dev",
+  "description": "A high-fidelity CodeSandbox-inspired React IDE layout featuring a file explorer, code editor, live preview, and an integrated AI assistant sidebar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

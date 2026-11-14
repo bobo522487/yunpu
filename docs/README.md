@@ -79,17 +79,9 @@
 | `app.current_user_id()` 的 `EXCEPTION ... RETURN NULL` 容错 | 非法 GUC 上下文时返回 NULL，让 RLS 谓词 fail-closed（0 行），而不是抛错拖垮整库 | 抛异常会让所有含 RLS 的请求在配置错误时全量 500；按 Article VIII 登记为受控降级，补偿用例断言 0 行 |
 | 模块口径 9 行表 / 8 个模块 / 7 个业务域 | 宪法复杂度预算按业务域计 7 个，`auth` 与横切 `audit` 不计入；表格行数是展示粒度不是模块数 | 强行统一成单一数字会抹掉平台服务与业务能力的差别；以 `modules.md` 的 `MODULES` 常量为唯一清单 |
 
-## Phase 0 未决项表
+## Phase 0 契约项状态
 
-> 下列契约项在 Phase 0 仍**未决**，**阻塞该批次 `/speckit-tasks`**：tasks.md 不得在这些项定值前生成。结论编号与已定值项见 [stack.md](architecture/stack.md)，需求侧清单见 [functional.md](requirements/functional.md)。
-
-| 结论 | 未决契约项 | 为什么未决 | 解除条件 |
-| --- | --- | --- | --- |
-| C3 | 完整权限名矩阵 | 权限本体 `packages/shared/src/permissions.ts` 尚未落地 | 权限清单定值并回写 conventions.md |
-| C4 | 分页参数名 | 需与前端列表契约一致 | 定游标 / 每页大小 / 上限的参数名 |
-| C5 | 限流配额 | 依赖部署容量测算 | 定配额数值、返回状态码与响应体 |
-| C6 | 通用幂等机制 | 需确认重试语义与存储 | 定 `Idempotency-Key` 是否启用及存活期 |
-| C8 | 增删改 / 兑换邀请 / 审计查询端点 | 需产品确认 V1 范围 | 端点清单定值并回写 endpoints.md |
+> Phase 0 的九类契约项（C1–C9）均已定值，当前**无未决项**，不再阻塞 `/speckit-tasks`。结论见 [stack.md](architecture/stack.md)，需求侧索引见 [functional.md](requirements/functional.md)。
 
 ## 编号索引
 

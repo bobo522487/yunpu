@@ -47,6 +47,7 @@
 |---|---|---|---|---|
 | `23505` | `uq_person_name_primary` | `DUPLICATE_PRIMARY_NAME` | 409 | 该人物已有主姓名 |
 | `23505` | `uq_invite_pending_email` | `INVITE_ALREADY_PENDING` | 409 | 该邮箱已有待处理邀请 |
+| `23505` | `user_email_unique` | `EMAIL_ALREADY_REGISTERED` | 409 | 该邮箱已注册 |
 | `23505` | `uk_person_relation_kind` | `RELATION_DUPLICATE` | 409 | 这条关系已存在 |
 | `23503` | `fk_node_parent` | `NODE_PARENT_MISSING` | 409 | 父节点不存在或在同一事务中被移动 |
 | `23503` | `fk_*_project` | `PROJECT_SCOPE_VIOLATION` | 409 | 记录不属于该谱项目 |

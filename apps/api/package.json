@@ -1,9 +1,17 @@
 {
   "name": "@yunpu/api",
   "private": true,
+  "type": "module",
   "dependencies": {
+    "@yunpu/db": "workspace:*",
+    "@yunpu/shared": "workspace:*",
+    "better-auth": "1.7.23",
+    "drizzle-orm": "0.45.4",
     "hono": "4.13.18",
-    "zod": "4.6.7",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }

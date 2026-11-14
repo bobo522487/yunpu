@@ -23,6 +23,9 @@ services:
 
   minio:
     image: quay.io/minio/minio
+    # The official image runs as root; pinning user keeps the fresh data
+    # volume writable regardless of which image entrypoint provides it.
+    user: "0:0"
     command: ["server", "/data"]
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}

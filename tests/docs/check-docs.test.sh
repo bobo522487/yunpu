@@ -42,6 +42,9 @@ run us-heading           0 ''
 run p-marker             0 ''
 run cross-file-section  0 ''
 run index-vs-definition 0 ''
+run bad-anchor          1 'R1 anchor'
+run dual-same-text      1 'R5 dual'
+run registry-dangling   1 'R9 registry'
 
 echo "TESTS=$n FAILURES=$fail"
 [ "$fail" -eq 0 ]

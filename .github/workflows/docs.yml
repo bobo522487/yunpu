@@ -1,0 +1,27 @@
+name: docs-consistency
+
+# SC-DOC-01 门禁（评审 2026-11-14 P0#3）：文档一致性校验器 + 单元测试。
+# 本仓库尚无源码与构建产物，docs 即交付物，故 CI 只守护文档事实来源。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check
+        run: sh -n scripts/check-docs.sh
+
+      - name: Unit tests (fixture-driven)
+        run: sh tests/docs/check-docs.test.sh
+
+      - name: Review-path tests (R7/R8 negative cases)
+        run: sh tests/docs/check-docs-review.test.sh
+
+      - name: Docs consistency gate (--strict, ratchet vs baseline)
+        run: scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt

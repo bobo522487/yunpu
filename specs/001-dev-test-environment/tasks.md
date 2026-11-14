@@ -63,7 +63,7 @@ description: "Task list for the development and test environment"
 
 ### Tests for User Story 1
 
-- [ ] T012 [P] [US1] Write a failing `app.request` test in `tests/env/dev-surface.test.ts` for `GET /api/health` and development `GET /`. Health 200 is `{ "ok": true, "checks": { "process": "up", "database": "up" } }` and the body has no `storage` field. The page body contains `示例工作区` and `yunpu-starter-workspace`
+- [X] T012 [P] [US1] Write a failing `app.request` test in `tests/env/dev-surface.test.ts` for `GET /api/health` and development `GET /`. Health 200 is `{ "ok": true, "checks": { "process": "up", "database": "up" } }` and the body has no `storage` field. The page body contains `示例工作区` and `yunpu-starter-workspace`
 
 ### Implementation for User Story 1
 

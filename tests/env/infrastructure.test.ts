@@ -10,7 +10,7 @@ const devToken = process.env.DEV_YUNPU_CAPABILITY_TOKEN ?? "example-development-
 const testToken = process.env.YUNPU_CAPABILITY_TOKEN ?? "example-test-capability-token";
 
 test("the test database is PostgreSQL 18", async () => {
-  const { Client } = await import("pg");
+  const { Client } = await import("../../apps/api/node_modules/pg/esm/index.mjs");
   const client = new Client({
     connectionString: process.env.DATABASE_URL ?? "postgres://genealogy_app:example@127.0.0.1:5433/yunpu_test",
     connectionTimeoutMillis: 5000,
@@ -26,7 +26,12 @@ test("the test database is PostgreSQL 18", async () => {
 
 test("row security keeps genealogy_app inside its tenant", async () => {
   await withProofFixture(async (appClient) => {
-    await appClient.query("INSERT INTO proof_tenant_isolation (tenant_id, payload) VALUES ('tenant-a', 'a-row'), ('tenant-b', 'b-row')");
+    // Row security is forced, so every write must satisfy the policy's
+    // WITH CHECK: seed each tenant under its own session context.
+    await appClient.query("SET app.tenant_id = 'tenant-a'");
+    await appClient.query("INSERT INTO proof_tenant_isolation (tenant_id, payload) VALUES ('tenant-a', 'a-row')");
+    await appClient.query("SET app.tenant_id = 'tenant-b'");
+    await appClient.query("INSERT INTO proof_tenant_isolation (tenant_id, payload) VALUES ('tenant-b', 'b-row')");
     await appClient.query("SET app.tenant_id = 'tenant-a'");
 
     // No tenant filter: row security alone must limit the result.

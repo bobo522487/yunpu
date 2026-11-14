@@ -9,4 +9,7 @@ ALTER TABLE proof_tenant_isolation ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proof_tenant_isolation FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY proof_tenant_isolation_tenant ON proof_tenant_isolation
-  USING (tenant_id = current_setting('app.tenant_id', true));
+  USING (tenant_id = current_setting('app.tenant_id', true))
+  WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+
+GRANT SELECT, INSERT, DELETE ON proof_tenant_isolation TO genealogy_app;

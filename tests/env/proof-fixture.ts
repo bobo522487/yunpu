@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { Client } from "../../apps/api/node_modules/pg/esm/index.mjs";
 
 // The proof fixture lives on the real test database only for the duration of
 // one test run. The owner role (image superuser) creates it; genealogy_app,
@@ -36,7 +36,11 @@ export async function withProofFixture(
     await owner.query(`
       CREATE POLICY proof_tenant_isolation_tenant ON proof_tenant_isolation
         USING (tenant_id = current_setting('app.tenant_id', true))
+        WITH CHECK (tenant_id = current_setting('app.tenant_id', true))
     `);
+    // genealogy_app is not the owner and the table is not world-readable;
+    // row security filters rows only after privileges allow the touch.
+    await owner.query("GRANT SELECT, INSERT, DELETE ON proof_tenant_isolation TO genealogy_app");
 
     app = await connect(appUrl);
     await run(app, owner);

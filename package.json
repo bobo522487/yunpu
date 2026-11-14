@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "env": "scripts/env.sh",
+    "test": "bun test --env-file .env.test"
+  }
+}

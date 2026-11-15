@@ -5,7 +5,19 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "UNAVAILABLE"
   | "INTERNAL";
+
+export const ERROR_STATUS: Record<ErrorCode, number> = {
+  VALIDATION: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  RATE_LIMITED: 429,
+  UNAVAILABLE: 503,
+  INTERNAL: 500,
+};
 
 export class AppError extends Error {
   constructor(

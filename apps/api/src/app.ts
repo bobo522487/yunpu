@@ -5,6 +5,7 @@ import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { Client } from "pg";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { ERROR_STATUS } from "@yunpu/shared";
 import { AppError, mapDatabaseError } from "./lib/errors";
 import { authMiddleware } from "./middleware/auth";
 import { authPages } from "./pages/auth";
@@ -73,10 +74,13 @@ app.onError((error, c) => {
   }
 
   if (error instanceof HTTPException) {
+    const code =
+      Object.entries(ERROR_STATUS).find(([, status]) => status === error.status)?.[0] ??
+      "INTERNAL";
     return c.json(
       {
         ok: false,
-        code: "VALIDATION",
+        code,
         message: error.message,
       },
       error.status as ContentfulStatusCode,

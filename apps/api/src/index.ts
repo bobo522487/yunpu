@@ -1,6 +1,4 @@
-import { Hono } from "hono";
 import app from "./app";
-import media from "./media";
 import { initStorage } from "./storage";
 import { config } from "./config";
 
@@ -13,11 +11,7 @@ await initStorage({
   secretAccessKey: env.S3_SECRET_ACCESS_KEY,
 });
 
-const routes = new Hono();
-routes.route("/", app);
-routes.route("/", media);
-
 export default {
   port: env.PORT,
-  fetch: routes.fetch,
+  fetch: app.fetch,
 };

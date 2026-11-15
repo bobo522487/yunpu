@@ -1,4 +1,6 @@
 import { Hono, type Context } from "hono";
+import { AppError } from "@yunpu/shared";
+import { config } from "./config";
 import { getObject, putObject } from "./storage";
 
 const media = new Hono();
@@ -6,8 +8,15 @@ const media = new Hono();
 // 1 MB body limit. It serves this feature's proof only, not product media rules.
 const maxBodyBytes = 1024 * 1024;
 
+// randomKey() produces media/<8-digit date>T<4-digit time>/<32 hex>.
+export const MEDIA_KEY_PATTERN = /^media\/[0-9]{8}T[0-9]{4}\/[0-9a-f]{32}$/;
+
+export function isAllowedMediaKey(key: string): boolean {
+  return MEDIA_KEY_PATTERN.test(key);
+}
+
 function authorized(request: Request): boolean {
-  const expected = process.env.YUNPU_CAPABILITY_TOKEN;
+  const expected = config().YUNPU_CAPABILITY_TOKEN;
   if (!expected) {
     return false;
   }
@@ -43,6 +52,11 @@ media.post("/api/media", async (c) => {
     return unauthorized(c);
   }
 
+  const declaredLength = Number(c.req.header("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBodyBytes) {
+    return c.json({ ok: false, reason: "body exceeds 1 MB limit" }, 413);
+  }
+
   const body = await c.req.arrayBuffer();
   if (body.byteLength > maxBodyBytes) {
     return c.json({ ok: false, reason: "body exceeds 1 MB limit" }, 413);
@@ -68,6 +82,9 @@ media.get("/api/media/*", async (c) => {
     return c.json({ ok: false, reason: "object not found" }, 404);
   }
   const key = path.slice(prefix.length);
+  if (!isAllowedMediaKey(key)) {
+    throw new AppError("VALIDATION", "非法的对象键", 400);
+  }
   const data = await getObject(key);
   if (!data) {
     return c.json({ ok: false, reason: "object not found" }, 404);

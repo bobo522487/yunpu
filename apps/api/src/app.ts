@@ -17,6 +17,7 @@ import { organizationRouter } from "./modules/organization/router";
 import { projectRouter } from "./modules/project/router";
 import { accountRouter } from "./modules/account/router";
 import { checkStorage } from "./storage";
+import media from "./media";
 import type { ApiEnv } from "./types";
 
 const app = new Hono<ApiEnv>();
@@ -195,5 +196,6 @@ app.route("/api/v1", organizationRouter);
 app.route("/api/v1", projectRouter);
 app.route("/api/v1", accountRouter);
 app.route("/", authPages);
+app.route("/", media);
 
 export default app;

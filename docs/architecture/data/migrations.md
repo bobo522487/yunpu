@@ -160,20 +160,20 @@ export const PersonSelect = createSelectSchema(person);
 ### 12.5 连接配置
 
 ```ts
-export const db = drizzle(pool, {
-  schema,
-  prepare: false,     // ← 必须
-});
+// packages/db/src/client.ts：三个超时的唯一执行者，值只有一份。
+export const PG_OPTIONS =
+  "-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000";
+const pool = new Pool({ connectionString, options: PG_OPTIONS });
+export const db = drizzle(pool, { schema });
 ```
 
-- **`prepare: false` 是硬要求**：服务端 prepared statement 与 `SET LOCAL ROLE genealogy_app` / `SET LOCAL app.user_id` 组合时，语句在连接池化复用下会带着上一个会话的角色与上下文执行。这是越权风险，不是性能问题。
-- **超时由连接串下发**，不由应用 `SET`（`DM-POOL-01`，见 §5.8）：
+- **实测订正**：`drizzle-orm@0.45.4` 的 `DrizzleConfig` 只有 `logger / schema / casing / cache`，`node-postgres/driver.js` 的 `construct()` 忽略 `prepare`；`prepare: false` 不是有效配置项，旧稿「硬要求」是错的。超时由 `pg` 的 `options` 字段显式下发（`DM-POOL-01`，见 §5.8）。
+- `createDb()` 的 `new Pool`、`migrate.ts` 与 `app.ts` 的两处 `new Client` 都从 `@yunpu/db` 引用同一个 `PG_OPTIONS`。不用 `PGOPTIONS` 环境变量：`scripts/env.sh:243-244` 用 `env -i` 启动 app，外部变量不会继承，环境变量写法的执行者不存在。
 
 ```
-PGOPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'
+PG_OPTIONS='-c lock_timeout=3000 -c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'
 ```
-
-- 每个事务入口必须 `SET LOCAL ROLE genealogy_app` 并 `set_config('app.user_id', $1, true)`，随后断言 `current_user = 'genealogy_app'`（§8.2 fail-closed 纪律第 2 条）。
+- 每个事务入口必须 `SET LOCAL ROLE genealogy_app` 并 `set_config('app.user_id', $1, true)`，随后断言 `current_user = 'genealogy_app'`（§8.2 fail-closed 纪律第 2 条）；`SET LOCAL` 不跨连接泄漏由 `tests/env/connection-settings.test.ts` 固定。
 
 ---
 

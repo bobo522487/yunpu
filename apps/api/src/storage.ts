@@ -180,11 +180,7 @@ export async function putObject(key: string, body: Uint8Array): Promise<void> {
 }
 
 export async function getObject(key: string): Promise<Uint8Array | undefined> {
-  try {
-    const file = s3().file(key);
-    const buffer = await file.arrayBuffer();
-    return new Uint8Array(buffer);
-  } catch {
-    return undefined;
-  }
+  const file = s3().file(key);
+  if (!(await file.exists())) return undefined;
+  return new Uint8Array(await file.arrayBuffer());
 }

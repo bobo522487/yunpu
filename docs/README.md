@@ -9,7 +9,7 @@
 - `docs/decisions/`：为什么（ADR 与缺陷决策）
 - `docs/verification/`：实测证据与「待验证」登记
 - `docs/superpowers/`：本次评审报告与实施计划（历史快照，不参与规格校验）
-- 本仓库的完整目标架构文档位于 `docs/`；`specs/<NNN>-<feature>/` 只在后期分批实现时由 spec-kit 生成，当前不存在。批次工件引用 `docs/` 编号，不复制表格。
+- 本仓库的完整目标架构文档位于 `docs/`；`specs/<NNN>-<feature>/` 现已生成 001 / 002 / 003 三批（见 `specs/`），不再是「当前不存在」。批次工件引用 `docs/` 编号，不复制表格。
 
 ## 谁定义什么（导航表）
 
@@ -52,21 +52,21 @@
 
 > `specs/<NNN>-<feature>/` 只在后期分批实现时由 `/speckit-specify` 生成，按 spec-kit 官方 Project Structure 放置 `spec.md` / `plan.md` / `research.md` / `data-model.md` / `quickstart.md` / `contracts/` / `tasks.md`；其中 `tasks.md` 是 Phase 2 `/speckit-tasks` 的产物，不由 `/speckit-plan` 创建。每批次引用 `docs/` 编号，不复制表格。
 
-> `.specify/feature.json` 是 gitignored 的本地状态；CI 用 `SPECIFY_FEATURE_DIRECTORY` 指定批次目录。二者都属于工具状态，不属于文档树。**本次重构不创建 `specs/`，不生成 `tasks.md`/`quickstart.md`**，也不写 `.specify/feature.json`。
+> `.specify/feature.json` 是 gitignored 的本地状态；CI 用 `SPECIFY_FEATURE_DIRECTORY` 指定批次目录。二者都属于工具状态，不属于文档树。**「本次重构不创建 `specs/`」是 2026-11-14 的历史范围声明**；现 `specs/` 已有 001 / 002 / 003 三批及其 `tasks.md` / `contracts/`。
 
-## spec-kit 运行时状态（如实记录）
+## spec-kit 运行时状态（2026-11-14 历史快照）
 
-> 运行 `.specify/scripts/bash/check-prerequisites.sh --json` 的当前结果（2026-11-14 复核）：
+> 2026-11-14 复核当时运行 `.specify/scripts/bash/check-prerequisites.sh --json` 的输出（历史快照，非现状）：
 
 > `ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or run the specify command to create .specify/feature.json.`
 > `ERROR: Failed to resolve feature paths`
 > `prereq_exit=1`
 
-> 当前未开始任何实现批次，故无特性目录；这不是缺陷，也不需要为了变绿而造一个 `specs/` 或伪造 `.specify/feature.json`。该事实只作记录，不改变 `docs/` 的完整性；等第一批 `/speckit-specify` 生成特性目录后再复测。
+> 上列输出是当时的历史事实，不改变 `docs/` 的完整性；现状已生成 `specs/` 001 / 002 / 003 三批实现批次与各自 `tasks.md`，故「当前未开始任何实现批次」不再成立。特性目录缺失与 `prereq_exit=1` 只作历史证据保留。
 
 ## Constitution Check（两次门禁）
 
-> 两次门禁均已完成逐条回答：第一次 11 项自查见下方，第二次 7 行复核见其后。
+> 下方两次门禁是 2026-11-14 设计期自查的历史快照，不是 CI 门禁结果。实际门禁见 `.github/workflows/verify.yml`：`pnpm lint`、`pnpm test:all`（含真 PG 18 集成测试）与 `scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt`；该校验器不带基线实测 478 条违规，带 477 行基线时 `new=0`（只拦新增），收敛这 477 行属后续计划，不在此写成「全为 0」。
 
 ## Complexity Tracking
 
@@ -92,7 +92,7 @@
 > **GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.**
 > 两个时点，两次检查，缺一不可。
 
-**第一次（Phase 0 之前）——本计划自身的合规性自查：**
+**第一次（Phase 0 之前）——2026-11-14 计划自身的合规性自查（历史快照，非 CI 结果）：**
 
 | #    | 宪法条款                   | 本计划的落点                                      | 通过 |
 | ---- | -------------------------- | ------------------------------------------------- | ---- |
@@ -108,7 +108,7 @@
 | 10   | 复杂度预算                 | 8 域 / 22 表 / 3 基础设施组件，均在预算内（§1.3） | ✅    |
 | 11   | `OOS-01`..`OOS-19`         | 本计划未引入任何「不做」清单里的东西              | ✅    |
 
-**第二次（Phase 1 设计之后）——写 `tasks.md` 之前的复核：**逐条回答「新增了什么、它的执行者是谁、编号是否已登记」。空着不写就等于不允许。
+**第二次（Phase 1 设计之后）——写 `tasks.md` 之前的复核（历史快照，非 CI 结果）：**逐条回答「新增了什么、它的执行者是谁、编号是否已登记」。空着不写就等于不允许。
 
 | # | 新增项 | 执行者 | 编号 | 编号索引登记位置 |
 |---|---|---|---|---|

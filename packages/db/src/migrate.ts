@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "pg";
+import { PG_OPTIONS } from "./client";
 
 const migrationsDir = fileURLToPath(new URL("../migrations", import.meta.url));
 
@@ -38,7 +39,7 @@ async function main(): Promise<void> {
     throw new Error("MIGRATE_DATABASE_URL or DATABASE_URL is required for migrations");
   }
 
-  const client = new Client({ connectionString });
+  const client = new Client({ connectionString, options: PG_OPTIONS });
   await client.connect();
   try {
     await client.query(

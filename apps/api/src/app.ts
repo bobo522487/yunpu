@@ -1,11 +1,16 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { compress } from "hono/compress";
 import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { Client } from "pg";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { ERROR_STATUS } from "@yunpu/shared";
+import { PG_OPTIONS } from "@yunpu/db";
+import { config } from "./config";
 import { AppError, mapDatabaseError } from "./lib/errors";
+import { logEvent, redact } from "./lib/logger";
 import { authMiddleware } from "./middleware/auth";
 import { authPages } from "./pages/auth";
 import { authRouter } from "./modules/auth/router";
@@ -13,6 +18,7 @@ import { organizationRouter } from "./modules/organization/router";
 import { projectRouter } from "./modules/project/router";
 import { accountRouter } from "./modules/account/router";
 import { checkStorage } from "./storage";
+import media from "./media";
 import type { ApiEnv } from "./types";
 
 const app = new Hono<ApiEnv>();
@@ -27,8 +33,8 @@ function healthPayload(database: "up" | "down") {
   };
 }
 
-async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
-  const databaseUrl = process.env.DATABASE_URL;
+export async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
+  const databaseUrl = config().DATABASE_URL;
   if (!databaseUrl) {
     return { up: false };
   }
@@ -39,14 +45,26 @@ async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
       connectionString: databaseUrl,
       connectionTimeoutMillis: 5000,
       query_timeout: 5000,
+      options: PG_OPTIONS,
     });
     await client.connect();
     const result = await client.query<{ version: string }>("SELECT version()");
     return { up: true, version: result.rows[0]?.version };
-  } catch {
+  } catch (error) {
+    logEvent({
+      event: "database_probe",
+      result: "failed",
+      reason: redact(error instanceof Error ? error.message : String(error)),
+    });
     return { up: false };
   } finally {
-    await client?.end().catch(() => undefined);
+    await client?.end().catch((error: unknown) => {
+      logEvent({
+        event: "database_probe_close",
+        result: "failed",
+        reason: redact(error instanceof Error ? error.message : String(error)),
+      });
+    });
   }
 }
 
@@ -55,7 +73,7 @@ app.use(secureHeaders());
 app.use(compress());
 app.use(authMiddleware());
 
-app.onError((error, c) => {
+export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
   if (error instanceof AppError) {
     const retryAfter = error.details?.retryAfterSeconds;
     if (typeof retryAfter === "number") {
@@ -73,16 +91,25 @@ app.onError((error, c) => {
   }
 
   if (error instanceof HTTPException) {
+    const code =
+      Object.entries(ERROR_STATUS).find(([, status]) => status === error.status)?.[0] ??
+      "INTERNAL";
     return c.json(
       {
         ok: false,
-        code: "VALIDATION",
+        code,
         message: error.message,
       },
       error.status as ContentfulStatusCode,
     );
   }
 
+  logEvent({
+    event: "unhandled_error",
+    request_id: c.get("requestId"),
+    reason: redact(error instanceof Error ? error.message : String(error)),
+    stack: redact(error instanceof Error ? (error.stack ?? "") : ""),
+  });
   const mapped = mapDatabaseError(error);
   return c.json(
     {
@@ -92,7 +119,9 @@ app.onError((error, c) => {
     },
     mapped.status as ContentfulStatusCode,
   );
-});
+}
+
+app.onError(onApiError);
 
 app.notFound((c) =>
   c.json({ ok: false, code: "NOT_FOUND", message: "接口不存在" }, 404),
@@ -169,5 +198,6 @@ app.route("/api/v1", organizationRouter);
 app.route("/api/v1", projectRouter);
 app.route("/api/v1", accountRouter);
 app.route("/", authPages);
+app.route("/", media);
 
 export default app;

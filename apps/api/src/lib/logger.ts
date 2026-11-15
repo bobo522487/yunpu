@@ -8,6 +8,13 @@ export type LogFields = {
   [key: string]: unknown;
 };
 
+export function redact(text: string): string {
+  return text.replace(
+    /\b(password|token|secret|authorization)\s*[=:]\s*[^\s,;}&"']+/gi,
+    "$1=[REDACTED]",
+  );
+}
+
 export function logEvent(fields: LogFields): void {
   console.log(JSON.stringify(fields));
 }

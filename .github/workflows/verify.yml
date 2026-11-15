@@ -1,0 +1,55 @@
+name: verify
+
+# 真实的构建/测试门禁（评审 P0-1）：lint、全量 bun test、文档一致性。
+# docs.yml 只守护文档事实来源；这里才跑源码与真 PG18 集成测试。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Start development environment
+        run: scripts/env.sh up development
+
+      - name: Start test environment
+        run: scripts/env.sh up test
+
+      - name: Full test suite
+        run: pnpm test:all
+
+      - name: Docs syntax check
+        run: sh -n scripts/check-docs.sh
+
+      - name: Docs unit tests (fixture-driven)
+        run: sh tests/docs/check-docs.test.sh
+
+      - name: Docs review-path tests (R7/R8 negative cases)
+        run: sh tests/docs/check-docs-review.test.sh
+
+      - name: Docs consistency gate (--strict, ratchet vs baseline)
+        run: scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt
+
+      - name: Report baseline size (do not hide the 477 known violations)
+        run: wc -l docs/.check-docs-baseline.txt

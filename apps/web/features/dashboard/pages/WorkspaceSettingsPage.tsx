@@ -102,6 +102,8 @@ const WorkspaceSettingsPage: React.FC = () => {
         name: orgName.trim(),
       });
       setOrg((prev) => ({ ...prev, detail: result.organization }));
+      // 刷新侧栏切换器里的组织名，避免与设置页不一致。
+      await useWorkspaceStore.getState().hydrateFromApi().catch(() => {});
       setOrgMessage('组织名称已保存');
     } catch (error) {
       setOrgMessage(errorMessage(error));

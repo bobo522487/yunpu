@@ -86,6 +86,9 @@ export async function apiRequest<T>(
       headers,
       body,
       credentials: 'include',
+      // 连接挂起（后端半死、代理无响应）时也要 reject，
+      // 否则永远走不到 Mock 降级，页面会永久卡在加载态。
+      signal: AbortSignal.timeout(10_000),
     });
 
     try {

@@ -22,7 +22,7 @@ const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   if (status === 'authenticated') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

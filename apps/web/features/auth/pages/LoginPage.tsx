@@ -20,10 +20,11 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   if (status === 'authenticated') {
-    return <Navigate to={onboarding ? '/onboarding' : '/'} replace />;
+    // 已登录访问登录页 → 落地首页（FR-001）。
+    return <Navigate to={onboarding ? '/onboarding' : '/home'} replace />;
   }
 
-  const from = (location.state as { from?: string } | null)?.from || '/';
+  const from = (location.state as { from?: string } | null)?.from || '/home';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

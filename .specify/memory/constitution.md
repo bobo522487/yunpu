@@ -123,8 +123,8 @@ Violation / Why Needed / Simpler Alternative Rejected Because。空着不写就�
 - RLS 策略是租户隔离的唯一执行者（Article V）。
 - 租户谓词必须写成 `= ANY (app.visible_org_array())`。
   不得写成 `= ANY ((SELECT app.visible_org_array()))`——后者被 PostgreSQL 解析为
-  表子查询比较，实测报 `42883 operator does not exist: uuid = uuid[]`，
-  核心租户谓词直接无法执行。
+  表子查询比较，预期（待验证）报 `42883 operator does not exist: uuid = uuid[]`，
+  核心租户谓词直接无法执行。本机 `psql` / `pg_ctl` NOT FOUND，未实测；复现步骤见 docs/verification/README.md。
 - RLS 业务视图必须 `security_invoker = true`（DM-GEN-07）。
 - FORCE ROW LEVEL SECURITY 必须由手写迁移显式声明——Drizzle 的 `pgPolicy()`
   不生成它，故不能作为策略的唯一来源。

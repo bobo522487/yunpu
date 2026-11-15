@@ -1,7 +1,7 @@
 name: docs-consistency
 
 # SC-DOC-01 门禁（评审 2026-11-14 P0#3）：文档一致性校验器 + 单元测试。
-# 本仓库尚无源码与构建产物，docs 即交付物，故 CI 只守护文档事实来源。
+# 本工作流只守护文档事实来源；源码 lint、真 PG18 集成测试与构建门禁见 verify.yml。
 on:
   push:
     branches: [main]

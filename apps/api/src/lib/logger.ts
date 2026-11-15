@@ -8,13 +8,29 @@ export type LogFields = {
   [key: string]: unknown;
 };
 
+// One place that knows what a secret looks like. Callers must never be trusted
+// to redact their own fields: a raw error.message is enough to leak a password.
 export function redact(text: string): string {
-  return text.replace(
-    /\b(password|token|secret|authorization)\s*[=:]\s*[^\s,;}&"']+/gi,
-    "$1=[REDACTED]",
+  let out = text;
+  // URL userinfo: postgres://user:password@host
+  out = out.replace(
+    /\b([a-z][a-z0-9+.-]*:\/\/)([^\s/@:]+):([^\s/@]+)@/gi,
+    "$1[REDACTED]@",
   );
+  // Bearer credentials, including the trailing token after a colon.
+  out = out.replace(/\bBearer\s+[^\s,;}"']+/gi, "Bearer [REDACTED]");
+  // key =/: value, with optional quotes around either side (plain, JSON, CSV).
+  out = out.replace(
+    /("?\b(?:password|token|secret|authorization)\b"?\s*[=:]\s*)("[^"]*"|'[^']*'|[^\s,;}&"']+)/gi,
+    "$1[REDACTED]",
+  );
+  return out;
 }
 
 export function logEvent(fields: LogFields): void {
-  console.log(JSON.stringify(fields));
+  const safe: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    safe[key] = typeof value === "string" ? redact(value) : value;
+  }
+  console.log(JSON.stringify(safe));
 }

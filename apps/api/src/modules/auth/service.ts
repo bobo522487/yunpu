@@ -145,9 +145,22 @@ export async function signIn(
       body: { email: input.email, password: input.password },
       returnHeaders: true,
     })) as unknown as { headers: Headers; response: { user: BetterAuthUser } };
-  } catch {
-    logEvent({ event: "auth.signed_in", request_id: requestId, result: "failed" });
-    throw new AppError("UNAUTHORIZED", "邮箱或密码错误", 401);
+  } catch (error) {
+    logEvent({
+      event: "auth.signed_in",
+      request_id: requestId,
+      result: "failed",
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+    const record =
+      typeof error === "object" && error !== null
+        ? (error as { statusCode?: unknown; status?: unknown })
+        : undefined;
+    const status = Number(record?.statusCode ?? record?.status);
+    if (status === 400 || status === 401 || status === 422) {
+      throw new AppError("UNAUTHORIZED", "邮箱或密码错误", 401);
+    }
+    throw error;
   }
 
   const user = result.response?.user;

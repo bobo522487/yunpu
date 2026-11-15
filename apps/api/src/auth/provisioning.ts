@@ -34,12 +34,16 @@ export async function provisionWithInvite(
     return { organization, accepted: true };
   } catch (error) {
     if (!(error instanceof AppError)) throw error;
+    const sqlstate = String(error.details?.sqlstate ?? "");
     const reason =
-      error.code === "FORBIDDEN"
+      sqlstate === "GX009"
         ? "email_mismatch"
-        : error.code === "CONFLICT"
+        : sqlstate === "GX010"
           ? "already_used"
-          : "expired";
+          : sqlstate === "GX005"
+            ? "expired"
+            : undefined;
+    if (!reason) throw error;
     const organization = await provisionDefaultOrganization(userId, email);
     return { organization, accepted: false, reason };
   }

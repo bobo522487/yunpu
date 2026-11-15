@@ -7,6 +7,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { Client } from "pg";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { ERROR_STATUS } from "@yunpu/shared";
+import { PG_OPTIONS } from "@yunpu/db";
 import { config } from "./config";
 import { AppError, mapDatabaseError } from "./lib/errors";
 import { logEvent, redact } from "./lib/logger";
@@ -44,6 +45,7 @@ export async function probeDatabase(): Promise<{ up: boolean; version?: string }
       connectionString: databaseUrl,
       connectionTimeoutMillis: 5000,
       query_timeout: 5000,
+      options: PG_OPTIONS,
     });
     await client.connect();
     const result = await client.query<{ version: string }>("SELECT version()");

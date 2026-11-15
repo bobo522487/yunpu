@@ -10,7 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { ORGANIZATION_STATUSES, INVITE_STATUSES, MEMBER_ROLES } from "@yunpu/shared";
+import { ORGANIZATION_STATUSES, INVITE_STATUSES, MEMBER_ROLES, PROJECT_STATUSES } from "@yunpu/shared";
 import { authUser } from "./auth";
 
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({
@@ -82,6 +82,28 @@ export const invite = pgTable(
       .where(sql`status = 'pending'`),
     index("idx_invite_org_status").on(table.organizationId, table.status),
     index("idx_invite_invited_by").on(table.invitedBy),
+  ],
+);
+
+export const project = pgTable(
+  "project",
+  {
+    id: uuid("id").primaryKey().default(sql`uuidv7()`),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    status: text("status", { enum: PROJECT_STATUSES }).notNull().default("planning"),
+    surname: text("surname"),
+    hallName: text("hall_name"),
+    originText: text("origin_text"),
+    description: text("description"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("uq_project_org_id").on(table.organizationId, table.id),
+    index("idx_project_org_status").on(table.organizationId, table.status),
   ],
 );
 

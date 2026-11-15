@@ -118,6 +118,7 @@ $$;
 | `book`、`book_catalog` | 全 DML |
 | `book_release` | `SELECT`、`INSERT`；**无** `UPDATE` / `DELETE` |
 | `audit_log` | `SELECT`、`INSERT`；**无** `UPDATE` / `DELETE` |
+| `auth."user"`（列级） | `SELECT (id, email, name)`；schema `USAGE`——成员列表展示姓名与邮箱（`0008` / `0009` 迁移） |
 
 - 业务角色没有 `CREATE` on schema；没有 `TRUNCATE`；没有 `BYPASSRLS`。
 - 列级 `UPDATE` 授权必须包含 `updated_at`，否则 `app.touch_updated_at()` 触发器会因列权限失败；本表已显式列出。

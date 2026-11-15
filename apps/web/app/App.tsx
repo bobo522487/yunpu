@@ -6,6 +6,7 @@ import {
   Navigate,
   Outlet,
   useLocation,
+  useParams,
 } from 'react-router-dom';
 import {
   DndContext,
@@ -38,6 +39,7 @@ import RegisterPage from '../features/auth/pages/RegisterPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import OnboardingPage from '../features/auth/pages/OnboardingPage';
 import { useAuthStore } from '../features/auth/useAuthStore';
+import MockModeIndicator from '../components/MockModeIndicator';
 import { ViewMode } from '../types';
 import { useResizable } from '../hooks/useResizable';
 import { useRouteContext } from '../hooks/useRouteContext';
@@ -74,6 +76,24 @@ const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) =
   return children;
 };
 
+/** 引导状态（无可用组织）时不渲染四页，整体重定向到 /onboarding（spec FR-002）。 */
+const ConsoleGate: React.FC = () => {
+  const onboarding = useAuthStore((s) => s.onboarding);
+  if (onboarding) return <Navigate to="/onboarding" replace />;
+  return <MainLayout />;
+};
+
+/** 邀请链接入口：`/#/invite/:token` → 引导页并预填令牌（spec FR-005 / contracts §4）。 */
+const InviteRedirect: React.FC = () => {
+  const { token } = useParams();
+  return (
+    <Navigate
+      to={`/onboarding?invite=${encodeURIComponent(token ?? '')}`}
+      replace
+    />
+  );
+};
+
 const MainLayout: React.FC = () => {
   const { activeView, activeProjectId, isWorkspaceShell } = useRouteContext();
   const isProjectSidebarCollapsed = usePreferencesStore(
@@ -93,6 +113,12 @@ const MainLayout: React.FC = () => {
       setActiveProjectId(activeProjectId);
     }
   }, [isWorkspaceShell, activeProjectId, storedProjectId, setActiveProjectId]);
+
+  useEffect(() => {
+    if (!isWorkspaceShell) return;
+    // 组织列表以 API 为唯一事实源；失败时 store 已清空模板假组织，页面各自展示错误态。
+    void useWorkspaceStore.getState().hydrateFromApi().catch(() => {});
+  }, [isWorkspaceShell]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -241,6 +267,13 @@ const App: React.FC = () => {
     void bootstrap();
   }, [bootstrap]);
 
+  // 会话失效（任意请求 401）→ 清会话，RequireAuth 跳转登录（SC-009）。
+  useEffect(() => {
+    const onUnauthorized = () => useAuthStore.getState().markUnauthorized();
+    window.addEventListener('yunpu:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('yunpu:unauthorized', onUnauthorized);
+  }, []);
+
   useEffect(() => {
     const applyThemeClass = () => {
       const root = document.documentElement;
@@ -289,11 +322,12 @@ const App: React.FC = () => {
             </RequireAuth>
           }
         />
+        <Route path="/invite/:token" element={<InviteRedirect />} />
 
         <Route
           element={
             <RequireAuth>
-              <MainLayout />
+              <ConsoleGate />
             </RequireAuth>
           }
         >
@@ -366,9 +400,10 @@ const App: React.FC = () => {
 
           <Route path="/files" element={<Editor />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Route>
       </Routes>
+      <MockModeIndicator />
     </HashRouter>
   );
 };

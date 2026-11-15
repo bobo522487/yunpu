@@ -56,6 +56,8 @@ interface AuthState {
     inviteToken?: string,
   ) => Promise<SignUpPayload>;
   signOut: () => Promise<void>;
+  /** 任意请求返回 401（会话失效）时调用：清会话，RequireAuth 随即跳转登录。 */
+  markUnauthorized: () => void;
   clearError: () => void;
 }
 
@@ -159,6 +161,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       });
       clearProfile();
     }
+  },
+
+  markUnauthorized: () => {
+    set({
+      status: 'anonymous',
+      user: null,
+      defaultOrganization: null,
+      onboarding: false,
+      error: null,
+    });
+    clearProfile();
   },
 
   clearError: () => set({ error: null }),

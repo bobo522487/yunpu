@@ -31,7 +31,7 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
     try {
       await signUp(email.trim(), password, inviteToken.trim() || undefined);
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch {
       // The store exposes the API error message below the form.
     } finally {

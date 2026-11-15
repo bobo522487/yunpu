@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -18,13 +18,20 @@ const OnboardingPage: React.FC = () => {
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // 邀请链接 /#/invite/:token 跳转至此并预填令牌。
+  useEffect(() => {
+    const invite = searchParams.get('invite');
+    if (invite) setToken(invite);
+  }, [searchParams]);
 
   if (status === 'anonymous') {
     return <Navigate to="/login" replace />;
   }
 
   if (status === 'authenticated' && defaultOrganization) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const run = async (action: () => Promise<unknown>) => {
@@ -33,7 +40,7 @@ const OnboardingPage: React.FC = () => {
     try {
       await action();
       await refreshSession();
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {

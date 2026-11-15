@@ -27,7 +27,7 @@ export function mapDatabaseError(error: unknown): AppError {
 
   switch (dbError.code) {
     case "23505":
-      if (dbError.constraint?.includes("email")) {
+      if (dbError.constraint === "user_email_unique") {
         return new AppError("CONFLICT", "该邮箱已注册", 409);
       }
       return new AppError("CONFLICT", "记录已存在", 409);

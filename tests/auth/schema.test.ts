@@ -15,11 +15,12 @@ describe("database foundation", () => {
       "invite",
       "organization",
       "organization_member",
+      "project",
       "schema_migrations",
     ]);
   });
 
-  test("four tenant tables have enabled and forced RLS", async () => {
+  test("five tenant tables have enabled and forced RLS", async () => {
     const rows = await withAdminDb(async (client) => {
       const result = await client.query<{
         relname: string;
@@ -40,6 +41,7 @@ describe("database foundation", () => {
       "invite",
       "organization",
       "organization_member",
+      "project",
     ]);
     for (const row of rows) {
       expect(row.relrowsecurity).toBe(true);

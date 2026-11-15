@@ -1,237 +1,523 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Plus, Trash2, UserPlus, X } from 'lucide-react';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
-import { WorkspaceMember } from '../../../types';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Crown, Trash2, UserPlus, X } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { errorMessage } from '../../../lib/api';
+import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
+import {
+  createInviteRequest,
+  fetchInvites,
+  fetchMembers,
+  fetchOrganization,
+  removeMemberRequest,
+  revokeInviteRequest,
+  transferOwnerRequest,
+  updateMemberRoleRequest,
+  type InviteRecord,
+  type MemberRecord,
+  type OrgDetail,
+} from '../api';
+import PageSkeleton from '../components/PageSkeleton';
+import PageError from '../components/PageError';
+import ConfirmDialog from '../components/ConfirmDialog';
+import InviteLinkDialog from '../components/InviteLinkDialog';
 
-const MembersPage: React.FC = () => {
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const members = useWorkspaceStore((s) => s.members);
-  const searchQuery = useWorkspaceStore((s) => s.searchQuery);
-  const inviteMember = useWorkspaceStore((s) => s.inviteMember);
-  const updateMemberRole = useWorkspaceStore((s) => s.updateMemberRole);
-  const removeMember = useWorkspaceStore((s) => s.removeMember);
+const ROLE_LABELS: Record<MemberRecord['role'], string> = {
+  admin: '管理员',
+  editor: '编辑者',
+  viewer: '查看者',
+};
 
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<WorkspaceMember['role']>('编辑者');
+const INVITE_STATUS_LABELS: Record<InviteRecord['status'], string> = {
+  pending: '待处理',
+  accepted: '已接受',
+  revoked: '已撤销',
+};
 
-  const activeWorkspace =
-    workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+type MemberState = {
+  loading: boolean;
+  error: string | null;
+  items: MemberRecord[];
+  nextCursor: string | null;
+};
 
-  const q = searchQuery.trim().toLowerCase();
-  const wsMembers = members.filter(
-    (m) =>
-      m.workspaceId === activeWorkspaceId &&
-      (!q ||
-        m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q))
-  );
+type InviteState = {
+  loading: boolean;
+  error: string | null;
+  items: InviteRecord[];
+};
 
-  const handleInviteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteName.trim() || !inviteEmail.trim()) return;
-    inviteMember({
-      name: inviteName,
-      email: inviteEmail,
-      role: inviteRole,
-    });
-    setInviteName('');
-    setInviteEmail('');
-    setInviteRole('编辑者');
-    setIsInviteOpen(false);
+const EMPTY_MEMBERS: MemberState = {
+  loading: true,
+  error: null,
+  items: [],
+  nextCursor: null,
+};
+
+const EMPTY_INVITES: InviteState = { loading: false, error: null, items: [] };
+
+function InviteFormDialog(props: {
+  organizationId: string;
+  onClose: () => void;
+  onCreated: (inviteUrl: string) => void;
+}) {
+  const { organizationId, onClose, onCreated } = props;
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<MemberRecord['role']>('editor');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await createInviteRequest(organizationId, {
+        email: email.trim(),
+        role,
+      });
+      onCreated(result.inviteUrl);
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const roles: WorkspaceMember['role'][] = ['所有者', '管理员', '编辑者', '查看者'];
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="邀请成员"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-foreground">邀请成员</h2>
+          <button type="button" onClick={onClose} aria-label="关闭">
+            <X size={16} className="text-muted-foreground" />
+          </button>
+        </div>
+        <div className="mt-4 space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-email">邮箱</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="teammate@example.com"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-role">角色</Label>
+            <select
+              id="invite-role"
+              value={role}
+              onChange={(event) => setRole(event.target.value as MemberRecord['role'])}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              {(Object.keys(ROLE_LABELS) as MemberRecord['role'][]).map((value) => (
+                <option key={value} value={value}>
+                  {ROLE_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            取消
+          </Button>
+          <Button size="sm" onClick={() => void submit()} disabled={saving || !email.trim()}>
+            {saving ? '创建中…' : '创建邀请'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const MembersPage: React.FC = () => {
+  const [detail, setDetail] = useState<OrgDetail | null>(null);
+  const [members, setMembers] = useState<MemberState>(EMPTY_MEMBERS);
+  const [invites, setInvites] = useState<InviteState>(EMPTY_INVITES);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [inviteFormOpen, setInviteFormOpen] = useState(false);
+  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<MemberRecord | null>(null);
+  const [transferTarget, setTransferTarget] = useState<MemberRecord | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<InviteRecord | null>(null);
+
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+
+  const loadDetail = useCallback(async () => {
+    if (!activeWorkspaceId) return;
+    try {
+      const result = await fetchOrganization(activeWorkspaceId);
+      setDetail(result.organization);
+    } catch (error) {
+      setActionError(errorMessage(error));
+    }
+  }, [activeWorkspaceId]);
+
+  const loadMembers = useCallback(async () => {
+    if (!activeWorkspaceId) return;
+    setMembers((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const page = await fetchMembers(activeWorkspaceId, { limit: 50 });
+      setMembers({ loading: false, error: null, items: page.items, nextCursor: page.nextCursor });
+    } catch (error) {
+      setMembers((prev) => ({ ...prev, loading: false, error: errorMessage(error) }));
+    }
+  }, [activeWorkspaceId]);
+
+  const loadInvites = useCallback(async () => {
+    if (!activeWorkspaceId) return;
+    setInvites((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const page = await fetchInvites(activeWorkspaceId, { limit: 50 });
+      setInvites({ loading: false, error: null, items: page.items });
+    } catch (error) {
+      setInvites((prev) => ({ ...prev, loading: false, error: errorMessage(error) }));
+    }
+  }, [activeWorkspaceId]);
+
+  useEffect(() => {
+    void loadDetail();
+    void loadMembers();
+  }, [loadDetail, loadMembers]);
+
+  useEffect(() => {
+    if (detail?.myRole === 'admin') void loadInvites();
+  }, [detail?.myRole, loadInvites]);
+
+  const isAdmin = detail?.myRole === 'admin';
+  const isOwner = detail?.isOwner ?? false;
+
+  const runAction = async (action: () => Promise<void>) => {
+    setActionError(null);
+    try {
+      await action();
+    } catch (error) {
+      setActionError(errorMessage(error));
+    }
+  };
+
+  const handleChangeRole = (member: MemberRecord, role: MemberRecord['role']) =>
+    void runAction(async () => {
+      await updateMemberRoleRequest(activeWorkspaceId, member.userId, role);
+      setMembers((prev) => ({
+        ...prev,
+        items: prev.items.map((item) =>
+          item.userId === member.userId ? { ...item, role } : item,
+        ),
+      }));
+    });
+
+  const handleRemove = async () => {
+    if (!removeTarget) return;
+    await runAction(async () => {
+      await removeMemberRequest(activeWorkspaceId, removeTarget.userId);
+      setMembers((prev) => ({
+        ...prev,
+        items: prev.items.filter((item) => item.userId !== removeTarget.userId),
+      }));
+    });
+    setRemoveTarget(null);
+  };
+
+  const handleTransfer = async () => {
+    if (!transferTarget) return;
+    await runAction(async () => {
+      await transferOwnerRequest(activeWorkspaceId, transferTarget.userId);
+      await loadDetail();
+      await loadMembers();
+    });
+    setTransferTarget(null);
+  };
+
+  const handleRevoke = async () => {
+    if (!revokeTarget) return;
+    await runAction(async () => {
+      await revokeInviteRequest(activeWorkspaceId, revokeTarget.id);
+      setInvites((prev) => ({
+        ...prev,
+        items: prev.items.map((item) =>
+          item.id === revokeTarget.id ? { ...item, status: 'revoked' as const } : item,
+        ),
+      }));
+    });
+    setRevokeTarget(null);
+  };
+
+  const loadMoreMembers = async () => {
+    if (!members.nextCursor) return;
+    try {
+      const page = await fetchMembers(activeWorkspaceId, {
+        cursor: members.nextCursor,
+        limit: 50,
+      });
+      setMembers((prev) => ({
+        ...prev,
+        items: [...prev.items, ...page.items],
+        nextCursor: page.nextCursor,
+      }));
+    } catch (error) {
+      setMembers((prev) => ({ ...prev, error: errorMessage(error) }));
+    }
+  };
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-background">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-5">
-        <div className="flex items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-7 space-y-8">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">成员和团队</h1>
-            <p className="text-[13px] text-muted-foreground mt-0.5">
-              管理「{activeWorkspace?.name}」的成员访问权限与协作角色（共{' '}
-              <span className="tabular-nums font-medium">{wsMembers.length}</span> 人）
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">成员</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {detail?.name ?? '当前组织'} · 共 {members.items.length} 名成员
             </p>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setIsInviteOpen(true)}
-            className="h-8 text-[13px] gap-1.5 whitespace-nowrap"
-          >
-            <UserPlus size={14} /> 邀请成员
-          </Button>
+          {isAdmin && (
+            <Button size="sm" onClick={() => setInviteFormOpen(true)}>
+              <UserPlus size={15} className="mr-1.5" />
+              邀请成员
+            </Button>
+          )}
         </div>
 
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/30 text-[13px] font-semibold text-foreground/80">
-                  <th className="py-2.5 px-4">成员</th>
-                  <th className="py-2.5 px-4">邮箱</th>
-                  <th className="py-2.5 px-4">角色</th>
-                  <th className="py-2.5 px-4">加入日期</th>
-                  <th className="py-2.5 px-4 text-right">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border text-[13px]">
-                {wsMembers.map((member) => (
-                  <tr
-                    key={member.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0"
-                          style={{ backgroundColor: member.avatarColor }}
-                        >
-                          {member.name.slice(0, 1).toUpperCase()}
-                        </div>
-                        <span className="font-semibold text-foreground">
-                          {member.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">
-                      {member.email}
-                    </td>
-                    <td className="py-3 px-4">
-                      <select
-                        value={member.role}
-                        disabled={member.role === '所有者'}
-                        onChange={(e) =>
-                          updateMemberRole(
-                            member.id,
-                            e.target.value as WorkspaceMember['role']
-                          )
-                        }
-                        className="h-7 px-2 rounded-md border border-border bg-background text-[13px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-65"
-                      >
-                        {roles.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-3 px-4 text-[13px] text-muted-foreground tabular-nums">
-                      {member.joinedAt}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {member.role !== '所有者' && (
-                        <button
-                          type="button"
-                          onClick={() => removeMember(member.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="移除成员"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {wsMembers.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-10 text-center text-xs text-muted-foreground"
-                    >
-                      暂无匹配的成员记录
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {actionError && (
+          <div
+            role="alert"
+            className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2.5 text-[13px] text-destructive"
+          >
+            <span>{actionError}</span>
+            <button type="button" onClick={() => setActionError(null)} aria-label="关闭">
+              <X size={14} />
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* 成员名单 */}
+        <section className="space-y-3">
+          <h2 className="text-[14px] font-semibold text-foreground">成员名单</h2>
+          {members.loading ? (
+            <PageSkeleton variant="rows" />
+          ) : members.error ? (
+            <PageError message={members.error} onRetry={() => void loadMembers()} />
+          ) : (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-[12px] text-muted-foreground">
+                    <th className="px-4 py-2.5 font-medium">成员</th>
+                    <th className="px-4 py-2.5 font-medium">角色</th>
+                    <th className="px-4 py-2.5 font-medium">加入时间</th>
+                    {isAdmin && <th className="px-4 py-2.5 font-medium">操作</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.items.map((member) => (
+                    <tr key={member.userId} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">
+                            {member.name || member.email}
+                          </span>
+                          {member.isOwner && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                              <Crown size={11} />
+                              所有者
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[12px] text-muted-foreground">
+                          {member.email}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {isAdmin && !member.isOwner ? (
+                          <select
+                            value={member.role}
+                            onChange={(event) =>
+                              handleChangeRole(
+                                member,
+                                event.target.value as MemberRecord['role'],
+                              )
+                            }
+                            className="h-8 rounded-md border border-input bg-background px-2 text-[13px] text-foreground"
+                            aria-label={`${member.name} 的角色`}
+                          >
+                            {(Object.keys(ROLE_LABELS) as MemberRecord['role'][]).map(
+                              (value) => (
+                                <option key={value} value={value}>
+                                  {ROLE_LABELS[value]}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        ) : (
+                          <span className="text-[13px] text-foreground">
+                            {ROLE_LABELS[member.role]}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-muted-foreground tabular-nums">
+                        {new Date(member.joinedAt).toLocaleDateString()}
+                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {isOwner && !member.isOwner && (
+                              <button
+                                type="button"
+                                className="text-[13px] text-primary hover:underline"
+                                onClick={() => setTransferTarget(member)}
+                              >
+                                设为所有者
+                              </button>
+                            )}
+                            {!member.isOwner && (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 text-[13px] text-destructive hover:underline"
+                                onClick={() => setRemoveTarget(member)}
+                              >
+                                <Trash2 size={13} />
+                                移除
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {members.nextCursor && (
+                <div className="flex justify-center border-t border-border py-2">
+                  <Button variant="ghost" size="sm" onClick={() => void loadMoreMembers()}>
+                    加载更多
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* 邀请列表（仅管理员可见，与 C3 权限矩阵一致） */}
+        {isAdmin && (
+          <section className="space-y-3">
+            <h2 className="text-[14px] font-semibold text-foreground">邀请</h2>
+            {invites.loading ? (
+              <PageSkeleton variant="rows" />
+            ) : invites.error ? (
+              <PageError message={invites.error} onRetry={() => void loadInvites()} />
+            ) : invites.items.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-card px-6 py-8 text-center text-[13px] text-muted-foreground">
+                暂无待处理邀请
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-[12px] text-muted-foreground">
+                      <th className="px-4 py-2.5 font-medium">邮箱</th>
+                      <th className="px-4 py-2.5 font-medium">角色</th>
+                      <th className="px-4 py-2.5 font-medium">状态</th>
+                      <th className="px-4 py-2.5 font-medium">创建时间</th>
+                      <th className="px-4 py-2.5 font-medium">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invites.items.map((invite) => (
+                      <tr
+                        key={invite.id}
+                        className="border-b border-border last:border-0"
+                      >
+                        <td className="px-4 py-3 text-foreground">{invite.email}</td>
+                        <td className="px-4 py-3 text-[13px] text-muted-foreground">
+                          {ROLE_LABELS[invite.role]}
+                        </td>
+                        <td className="px-4 py-3 text-[13px] text-muted-foreground">
+                          {INVITE_STATUS_LABELS[invite.status]}
+                        </td>
+                        <td className="px-4 py-3 text-[13px] text-muted-foreground tabular-nums">
+                          {new Date(invite.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          {invite.status === 'pending' && (
+                            <button
+                              type="button"
+                              className="text-[13px] text-destructive hover:underline"
+                              onClick={() => setRevokeTarget(invite)}
+                            >
+                              撤销
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
-      {isInviteOpen &&
-        createPortal(
-          <div className="fixed inset-0 z-[95] flex items-center justify-center p-4">
-            <div
-              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
-              onClick={() => setIsInviteOpen(false)}
-            />
-            <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-                <h3 className="text-sm font-semibold text-foreground">
-                  邀请新成员加入工作区
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
-                  onClick={() => setIsInviteOpen(false)}
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-              <form onSubmit={handleInviteSubmit} className="p-5 space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="invite-name">成员姓名</Label>
-                  <Input
-                    id="invite-name"
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="例如：张敏"
-                    autoFocus
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="invite-email">邮箱地址</Label>
-                  <Input
-                    id="invite-email"
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="member@company.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="invite-role">分配角色</Label>
-                  <select
-                    id="invite-role"
-                    value={inviteRole}
-                    onChange={(e) =>
-                      setInviteRole(e.target.value as WorkspaceMember['role'])
-                    }
-                    className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="管理员">管理员</option>
-                    <option value="编辑者">编辑者</option>
-                    <option value="查看者">查看者</option>
-                  </select>
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsInviteOpen(false)}
-                  >
-                    取消
-                  </Button>
-                  <Button type="submit" size="sm" className="gap-1">
-                    <Plus size={14} /> 发送邀请
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body
-        )}
+      {inviteFormOpen && (
+        <InviteFormDialog
+          organizationId={activeWorkspaceId}
+          onClose={() => setInviteFormOpen(false)}
+          onCreated={(url) => setCreatedInviteUrl(url)}
+        />
+      )}
+
+      {createdInviteUrl && (
+        <InviteLinkDialog
+          inviteUrl={createdInviteUrl}
+          onClose={() => {
+            setCreatedInviteUrl(null);
+            void loadInvites();
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={removeTarget !== null}
+        title="移除成员"
+        description={`移除「${(removeTarget?.name || removeTarget?.email) ?? ''}」后，该成员将无法再访问本组织的任何数据。`}
+        confirmLabel="移除"
+        onConfirm={() => void handleRemove()}
+        onCancel={() => setRemoveTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={transferTarget !== null}
+        title="转移所有权"
+        description={`把所有者转移给「${(transferTarget?.name || transferTarget?.email) ?? ''}」后，你将不再是本组织的所有者，此操作不可撤销。`}
+        confirmLabel="转移"
+        onConfirm={() => void handleTransfer()}
+        onCancel={() => setTransferTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={revokeTarget !== null}
+        title="撤销邀请"
+        description={`撤销发给「${revokeTarget?.email ?? ''}」的邀请后，该链接立即失效，受邀者将无法再通过它加入。`}
+        confirmLabel="撤销"
+        onConfirm={() => void handleRevoke()}
+        onCancel={() => setRevokeTarget(null)}
+      />
     </div>
   );
 };

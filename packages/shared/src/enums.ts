@@ -7,10 +7,14 @@ export type OrganizationStatus = (typeof ORGANIZATION_STATUSES)[number];
 export const INVITE_STATUSES = ["pending", "accepted", "revoked"] as const;
 export type InviteStatus = (typeof INVITE_STATUSES)[number];
 
+export const PROJECT_STATUSES = ["planning", "in_progress", "completed"] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
 export const TABLE_NAMES = [
   "organization",
   "organization_member",
   "invite",
   "audit_log",
+  "project",
 ] as const;
 export type TableName = (typeof TABLE_NAMES)[number];

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -28,6 +28,12 @@ import { ProjectLayersOutlineIcon, WorkspaceLogoIcon } from '../common/NocoIcons
 import { useRouteContext } from '../../hooks/useRouteContext';
 import { useEditorStore } from '../../store/useEditorStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useAuthStore } from '../../features/auth/useAuthStore';
+import { errorMessage } from '../../lib/api';
+import {
+  createOrganizationRequest,
+  fetchOrganization,
+} from '../../features/dashboard/api';
 
 interface FileTreeProps {
   node: FileSystemNode;
@@ -106,10 +112,11 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const switchWorkspace = useWorkspaceStore((s) => s.switchWorkspace);
-  const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
-  const projects = useWorkspaceStore((s) => s.projects);
-  const members = useWorkspaceStore((s) => s.members);
+  const user = useAuthStore((s) => s.user);
+
+  // 侧栏计数以组织详情 API 为准（SC-001 数字一致性），不读模板种子数据。
+  const [orgCounts, setOrgCounts] = useState({ projects: 0, members: 0 });
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const files = useEditorStore((s) => s.files);
   const toggleFolder = useEditorStore((s) => s.toggleFolder);
@@ -139,12 +146,56 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
 
   const activeWorkspace =
     workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
-  const workspaceProjectsCount = projects.filter(
-    (p) => p.workspaceId === activeWorkspace?.id
-  ).length;
-  const workspaceMembersCount = members.filter(
-    (m) => m.workspaceId === activeWorkspace?.id
-  ).length;
+
+  useEffect(() => {
+    if (!isWorkspaceShell || !activeWorkspaceId) return;
+    let cancelled = false;
+    fetchOrganization(activeWorkspaceId)
+      .then((result) => {
+        if (cancelled) return;
+        setOrgCounts({
+          projects: result.organization.projectCount,
+          members: result.organization.memberCount,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setOrgCounts({ projects: 0, members: 0 });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isWorkspaceShell, activeWorkspaceId]);
+
+  const orgNameSuggestions = useMemo(() => {
+    const list: string[] = [];
+    if (user?.name) list.push(`${user.name}的工作室`);
+    const prefix = user?.email?.split('@')[0];
+    if (prefix) list.push(`${prefix}的谱牒空间`);
+    return list.slice(0, 2);
+  }, [user]);
+
+  /** 切换即记住（spec FR-007）：调 activate 后刷新当前上下文。 */
+  const handleSwitchOrganization = async (workspaceId: string) => {
+    setSwitchError(null);
+    try {
+      await useWorkspaceStore.getState().setCurrentOrganization(workspaceId);
+      setIsWsDropdownOpen(false);
+    } catch (error) {
+      setSwitchError(errorMessage(error));
+    }
+  };
+
+  /** 创建组织（spec FR-016）：API 创建 → 刷新列表 → 自动成为当前组织。 */
+  const handleCreateOrganization = async (name: string) => {
+    const created = await createOrganizationRequest(name);
+    const store = useWorkspaceStore.getState();
+    await store.hydrateFromApi();
+    await useWorkspaceStore
+      .getState()
+      .setCurrentOrganization(created.organization.id);
+    setIsWsDropdownOpen(false);
+    navigate('/home');
+  };
 
   const filteredWorkspaces = workspaces.filter((w) =>
     w.name.toLowerCase().includes(wsSearch.toLowerCase())
@@ -170,14 +221,14 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
         label: '项目',
         path: '/',
         icon: <ProjectLayersOutlineIcon className="w-4 h-4" />,
-        count: workspaceProjectsCount,
+        count: orgCounts.projects,
       },
       {
         id: ViewMode.MEMBERS,
         label: '成员和团队',
         path: '/members',
         icon: <Users size={16} strokeWidth={1.5} />,
-        count: workspaceMembersCount,
+        count: orgCounts.members,
       },
       {
         id: ViewMode.WORKSPACE_SETTINGS,
@@ -240,8 +291,7 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
                         key={ws.id}
                         type="button"
                         onClick={() => {
-                          switchWorkspace(ws.id);
-                          setIsWsDropdownOpen(false);
+                          void handleSwitchOrganization(ws.id);
                         }}
                         className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left text-[13px] transition-colors ${
                           isSelected
@@ -266,17 +316,23 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
                     );
                   })}
                 </div>
+                {switchError && (
+                  <p className="px-2 py-1.5 text-[12px] text-destructive">
+                    {switchError}
+                  </p>
+                )}
                 <div className="border-t border-border mt-1.5 pt-1.5">
                   <button
                     type="button"
                     onClick={() => {
                       setIsWsDropdownOpen(false);
+                      setSwitchError(null);
                       setIsCreateWsOpen(true);
                     }}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-foreground hover:bg-muted transition-colors"
                   >
                     <Plus size={14} className="text-muted-foreground" />
-                    <span>新建工作区</span>
+                    <span>新建组织</span>
                   </button>
                 </div>
               </div>
@@ -329,7 +385,8 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
         <CreateWorkspaceDialog
           isOpen={isCreateWsOpen}
           onClose={() => setIsCreateWsOpen(false)}
-          onCreate={(name) => createWorkspace(name)}
+          onCreate={handleCreateOrganization}
+          suggestions={orgNameSuggestions}
         />
       </>
     );

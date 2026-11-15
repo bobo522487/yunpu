@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { INVITE_STATUSES, MEMBER_ROLES, ORGANIZATION_STATUSES } from "./enums";
+import {
+  INVITE_STATUSES,
+  MEMBER_ROLES,
+  ORGANIZATION_STATUSES,
+  PROJECT_STATUSES,
+} from "./enums";
 
 const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -44,3 +49,65 @@ export const OrganizationIdParamsSchema = z.object({
 
 export const RoleSchema = z.enum(MEMBER_ROLES);
 export const InviteStatusSchema = z.enum(INVITE_STATUSES);
+
+export const UpdateAccountSchema = z.object({
+  name: z.string().trim().min(1, "显示名不能为空").max(100),
+});
+export type UpdateAccountInput = z.infer<typeof UpdateAccountSchema>;
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "请输入当前密码").max(128),
+  newPassword: password,
+});
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
+
+export const CreateInviteSchema = z.object({
+  email: normalizedEmail,
+  role: RoleSchema,
+});
+export type CreateInviteInput = z.infer<typeof CreateInviteSchema>;
+
+export const UpdateMemberRoleSchema = z.object({
+  role: RoleSchema,
+});
+export type UpdateMemberRoleInput = z.infer<typeof UpdateMemberRoleSchema>;
+
+export const TransferOwnerSchema = z.object({
+  newOwnerUserId: z.uuid(),
+});
+export type TransferOwnerInput = z.infer<typeof TransferOwnerSchema>;
+
+const optionalNonBlank = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .refine((value) => value.length > 0, { message: "不能为空白" })
+    .optional();
+
+export const CreateProjectSchema = z.object({
+  name: z.string().trim().min(1, "项目名不能为空").max(120),
+  status: z.enum(PROJECT_STATUSES).optional(),
+  surname: optionalNonBlank(50),
+  hallName: optionalNonBlank(50),
+  originText: z.string().trim().max(200).optional(),
+  description: z.string().trim().max(2000).optional(),
+});
+export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
+
+export const UpdateProjectSchema = z
+  .object({
+    name: z.string().trim().min(1, "项目名不能为空").max(120).optional(),
+    status: z.enum(PROJECT_STATUSES).optional(),
+    surname: optionalNonBlank(50).nullable().optional(),
+    hallName: optionalNonBlank(50).nullable().optional(),
+    originText: z.string().trim().max(200).nullable().optional(),
+    description: z.string().trim().max(2000).nullable().optional(),
+    expectedUpdatedAt: z.iso.datetime(),
+  })
+  .refine(
+    (value) =>
+      Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
+    { message: "至少提供一个要修改的字段" },
+  );
+export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;

@@ -10,3 +10,6 @@
 bun.lock
 # installed dependencies
 node_modules/
+# build output & logs
+dist/
+*.log

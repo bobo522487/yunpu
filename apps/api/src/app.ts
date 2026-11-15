@@ -10,6 +10,8 @@ import { authMiddleware } from "./middleware/auth";
 import { authPages } from "./pages/auth";
 import { authRouter } from "./modules/auth/router";
 import { organizationRouter } from "./modules/organization/router";
+import { projectRouter } from "./modules/project/router";
+import { accountRouter } from "./modules/account/router";
 import { checkStorage } from "./storage";
 import type { ApiEnv } from "./types";
 
@@ -164,6 +166,8 @@ app.get("/", (c) => {
 
 app.route("/api/v1/auth", authRouter);
 app.route("/api/v1", organizationRouter);
+app.route("/api/v1", projectRouter);
+app.route("/api/v1", accountRouter);
 app.route("/", authPages);
 
 export default app;

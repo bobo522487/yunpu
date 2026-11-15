@@ -1,30 +1,87 @@
-import React from 'react';
-import { ArrowRight, Database, LayoutGrid, FolderPlus } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, FolderPlus, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreferencesStore } from '../../../store/usePreferencesStore';
+import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
+import { ProjectColoredIcon } from '../../../components/common/NocoIcons';
+import { errorMessage } from '../../../lib/api';
 import {
-  ASSET_COLOR_PALETTES,
-  useWorkspaceStore,
-} from '../../../store/useWorkspaceStore';
-import {
-  AppColoredIcon,
-  ProjectColoredIcon,
-} from '../../../components/common/NocoIcons';
+  fetchOrganization,
+  fetchProjects,
+  type OrgDetail,
+  type ProjectRecord,
+} from '../api';
+import PageSkeleton from '../components/PageSkeleton';
+import PageError from '../components/PageError';
+
+type HomeState = {
+  loading: boolean;
+  error: string | null;
+  detail: OrgDetail | null;
+  projects: ProjectRecord[];
+};
+
+const EMPTY: HomeState = { loading: true, error: null, detail: null, projects: [] };
 
 const WorkspaceHomePage: React.FC = () => {
   const navigate = useNavigate();
   const user = usePreferencesStore((s) => s.user);
-  const isDarkMode = usePreferencesStore((s) => s.isDarkMode);
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const projects = useWorkspaceStore((s) => s.projects);
-  const apps = useWorkspaceStore((s) => s.apps);
-  const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
+  const syncProject = useWorkspaceStore((s) => s.syncProject);
+  const [state, setState] = useState<HomeState>(EMPTY);
 
-  const activeWorkspace =
-    workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
-  const wsProjects = projects.filter((p) => p.workspaceId === activeWorkspaceId);
-  const wsApps = apps.filter((a) => a.workspaceId === activeWorkspaceId);
+  const load = useCallback(async () => {
+    if (!activeWorkspaceId) {
+      setState({ loading: false, error: null, detail: null, projects: [] });
+      return;
+    }
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const [detailResult, projectsResult] = await Promise.all([
+        fetchOrganization(activeWorkspaceId),
+        fetchProjects(activeWorkspaceId, { limit: 5, sort: 'recent' }),
+      ]);
+      setState({
+        loading: false,
+        error: null,
+        detail: detailResult.organization,
+        projects: projectsResult.items,
+      });
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: errorMessage(error),
+      }));
+    }
+  }, [activeWorkspaceId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (state.loading) {
+    return (
+      <div className="flex-1 h-full overflow-y-auto bg-background">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-7">
+          <PageSkeleton variant="cards" />
+        </div>
+      </div>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <div className="flex-1 h-full overflow-y-auto bg-background">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-7">
+          <PageError message={state.error} onRetry={() => void load()} />
+        </div>
+      </div>
+    );
+  }
+
+  const detail = state.detail;
+  const recentProjects = state.projects.slice(0, 5);
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-background">
@@ -34,12 +91,36 @@ const WorkspaceHomePage: React.FC = () => {
             你好，{user.name}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            欢迎来到「{activeWorkspace?.name}」，快速访问你的项目、数据模型与可视化应用。
+            欢迎来到「{detail?.name ?? '当前组织'}」，管理你的谱项目与协作成员。
           </p>
         </div>
 
-        {/* Quick Actions */}
+        {/* 组织概览 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div className="p-4 rounded-xl border border-border bg-card">
+            <div className="text-[12px] font-medium text-muted-foreground">项目</div>
+            <div className="text-2xl font-semibold text-foreground tabular-nums mt-1">
+              {detail?.projectCount ?? 0}
+            </div>
+          </div>
+          <div className="p-4 rounded-xl border border-border bg-card">
+            <div className="text-[12px] font-medium text-muted-foreground">成员</div>
+            <div className="text-2xl font-semibold text-foreground tabular-nums mt-1">
+              {detail?.memberCount ?? 0}
+            </div>
+          </div>
+          <div className="p-4 rounded-xl border border-border bg-card">
+            <div className="text-[12px] font-medium text-muted-foreground">
+              待处理邀请
+            </div>
+            <div className="text-2xl font-semibold text-foreground tabular-nums mt-1">
+              {detail?.pendingInviteCount ?? 0}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -49,11 +130,9 @@ const WorkspaceHomePage: React.FC = () => {
               <FolderPlus size={18} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-foreground">
-                管理工作区项目
-              </div>
+              <div className="text-[14px] font-semibold text-foreground">新建项目</div>
               <div className="text-[12px] font-medium text-muted-foreground mt-0.5 tabular-nums">
-                共 {wsProjects.length} 个项目
+                创建一份新的谱
               </div>
             </div>
             <ArrowRight
@@ -64,47 +143,19 @@ const WorkspaceHomePage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => {
-              const firstApp = wsApps[0] || apps[0];
-              navigate(
-                `/apps/${firstApp?.id || 'app-order-mgmt'}/pages/${
-                  firstApp?.defaultPageId || 'page-1'
-                }`
-              );
-            }}
+            onClick={() => navigate('/members')}
             className="flex items-center gap-3.5 p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-xs transition-all text-left group"
           >
             <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-              <LayoutGrid size={18} />
+              <UserPlus size={18} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-foreground">
-                打开应用构建器
-              </div>
+              <div className="text-[14px] font-semibold text-foreground">邀请成员</div>
               <div className="text-[12px] font-medium text-muted-foreground mt-0.5 tabular-nums">
-                共 {wsApps.length} 个可视化应用
-              </div>
-            </div>
-            <ArrowRight
-              size={15}
-              className="text-muted-foreground group-hover:translate-x-0.5 transition-transform"
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/datasources')}
-            className="flex items-center gap-3.5 p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-xs transition-all text-left group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <Database size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-foreground">
-                连接外部数据源
-              </div>
-              <div className="text-[12px] font-medium text-muted-foreground mt-0.5">
-                PostgreSQL · MySQL · API
+                当前 {detail?.memberCount ?? 0} 名成员
+                {detail && detail.pendingInviteCount > 0
+                  ? ` · ${detail.pendingInviteCount} 个待处理邀请`
+                  : ''}
               </div>
             </div>
             <ArrowRight
@@ -114,90 +165,57 @@ const WorkspaceHomePage: React.FC = () => {
           </button>
         </div>
 
-        {/* Recent Projects & Apps */}
+        {/* Recent Projects */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[14px] font-semibold text-foreground">最近访问</h2>
+            <h2 className="text-[14px] font-semibold text-foreground">最近项目</h2>
             <button
               type="button"
               onClick={() => navigate('/')}
               className="text-[13px] font-medium text-primary hover:underline"
             >
-              查看全部项目
+              查看全部
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {wsProjects.map((proj) => {
-              const p =
-                ASSET_COLOR_PALETTES[proj.colorTheme] || ASSET_COLOR_PALETTES.sky;
-              return (
+          {recentProjects.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
+              <p className="text-sm text-muted-foreground">尚无项目</p>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:underline"
+              >
+                <FolderPlus size={14} />
+                新建项目
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {recentProjects.map((project) => (
                 <div
-                  key={proj.id}
+                  key={project.id}
                   onClick={() => {
-                    setActiveProjectId(proj.id);
-                    navigate(`/projects/${proj.id}`);
+                    syncProject(project);
+                    navigate(`/projects/${project.id}`);
                   }}
                   className="flex items-center gap-3 rounded-xl border border-border bg-card hover:border-muted-foreground/40 hover:shadow-xs transition-all cursor-pointer h-16 overflow-hidden"
                 >
-                  <div
-                    className="self-stretch w-16 flex items-center justify-center shrink-0"
-                    style={{
-                      backgroundColor: isDarkMode ? p.darkTileBg : p.tileBg,
-                    }}
-                  >
-                    <ProjectColoredIcon
-                      colorTheme={proj.colorTheme}
-                      className="w-6 h-6"
-                    />
+                  <div className="self-stretch w-16 flex items-center justify-center shrink-0 bg-sky-50 dark:bg-sky-500/10">
+                    <ProjectColoredIcon colorTheme="sky" className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0 pr-3">
                     <div className="text-[14px] font-semibold text-foreground truncate">
-                      {proj.name}
+                      {project.name}
                     </div>
                     <div className="text-[12px] font-medium text-muted-foreground tabular-nums">
-                      项目 · {proj.updatedAt}
+                      项目 · {new Date(project.updatedAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-              );
-            })}
-
-            {wsApps.map((app) => {
-              const p =
-                ASSET_COLOR_PALETTES[app.colorTheme] ||
-                ASSET_COLOR_PALETTES.indigo;
-              return (
-                <div
-                  key={app.id}
-                  onClick={() =>
-                    navigate(`/apps/${app.id}/pages/${app.defaultPageId}`)
-                  }
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card hover:border-muted-foreground/40 hover:shadow-xs transition-all cursor-pointer h-16 overflow-hidden"
-                >
-                  <div
-                    className="self-stretch w-16 flex items-center justify-center shrink-0"
-                    style={{
-                      backgroundColor: isDarkMode ? p.darkTileBg : p.tileBg,
-                    }}
-                  >
-                    <AppColoredIcon
-                      colorTheme={app.colorTheme}
-                      className="w-6 h-6"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 pr-3">
-                    <div className="text-[14px] font-semibold text-foreground truncate">
-                      {app.name}
-                    </div>
-                    <div className="text-[12px] font-medium text-muted-foreground tabular-nums">
-                      应用 · {app.updatedAt}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

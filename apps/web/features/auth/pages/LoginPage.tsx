@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await signIn(email.trim(), password);
-      navigate(result.onboarding ? '/onboarding' : from, { replace: true });
+      navigate(result.onboarding ? '/onboarding' : from || '/home', { replace: true });
     } catch {
       // The store exposes the API error message below the form.
     } finally {

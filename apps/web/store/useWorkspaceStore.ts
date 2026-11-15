@@ -8,6 +8,10 @@ import {
   WorkspaceMember,
   WorkspaceNotification,
 } from '../types';
+import {
+  activateOrganizationRequest,
+  fetchOrganizations,
+} from '../features/dashboard/api';
 import { createAppStorage } from './storageAdapter';
 
 export const ASSET_COLOR_PALETTES: Record<
@@ -218,6 +222,12 @@ interface WorkspaceState {
 
   setSearchQuery: (query: string) => void;
   switchWorkspace: (workspaceId: string) => void;
+  /** 从后端拉取我的组织列表并灌入 workspaces（API 为唯一事实源）。 */
+  hydrateFromApi: () => Promise<void>;
+  /** 切换当前组织：调 activate（切换即记住，spec FR-007）并清空跨组织的活动项目指针。 */
+  setCurrentOrganization: (workspaceId: string) => Promise<void>;
+  /** 归档后的去向：返回下一个可用组织，没有则 null（引导状态，spec FR-013）。 */
+  resolveNextAvailableOrganization: () => Workspace | null;
   setActiveProjectId: (projectId: string) => void;
   createWorkspace: (name: string) => Workspace;
   updateWorkspace: (workspaceId: string, updates: Partial<Workspace>) => void;
@@ -228,6 +238,16 @@ interface WorkspaceState {
     colorTheme: AssetColorTheme;
     defaultTableId?: string;
   }) => ProjectItem;
+  /** 把后端项目投影进 store，供模板项目壳（ProjectHomePage）展示名称等基本信息。 */
+  syncProject: (project: {
+    id: string;
+    organizationId: string;
+    name: string;
+    description?: string | null;
+    updatedAt: string;
+  }) => void;
+  /** 项目被删除后从 store 移除，避免项目壳展示已删除项目。 */
+  dropProject: (projectId: string) => void;
   updateProject: (id: string, updates: Partial<ProjectItem>) => void;
   renameProject: (id: string, name: string) => void;
   duplicateProject: (id: string) => ProjectItem | null;
@@ -256,6 +276,8 @@ interface WorkspaceState {
 }
 
 const AVATAR_COLORS = ['#4B177B', '#1E40AF', '#047857', '#B45309', '#9D174D'];
+
+const ORG_COLORS = ['#3B5BDB', '#0CA678', '#F76707', '#7048E8', '#E64980'];
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   persist(
@@ -286,6 +308,64 @@ export const useWorkspaceStore = create<WorkspaceState>()(
               : wsProjects[0]?.id || state.activeProjectId,
           };
         }),
+
+      hydrateFromApi: async () => {
+        try {
+          const payload = await fetchOrganizations();
+          const workspaces: Workspace[] = payload.organizations.map(
+            (org, index) => ({
+              id: org.id,
+              name: org.name,
+              kind: 'team',
+              color: ORG_COLORS[index % ORG_COLORS.length],
+              plan: '组织',
+              createdAt: (org.lastUsedAt ?? '').slice(0, 10) || '—',
+            }),
+          );
+          set((state) => {
+            const activeExists = workspaces.some(
+              (w) => w.id === state.activeWorkspaceId
+            );
+            const fallbackExists =
+              payload.defaultOrganizationId !== null &&
+              workspaces.some((w) => w.id === payload.defaultOrganizationId);
+            return {
+              workspaces,
+              activeWorkspaceId: activeExists
+                ? state.activeWorkspaceId
+                : fallbackExists
+                  ? (payload.defaultOrganizationId as string)
+                  : (workspaces[0]?.id ?? state.activeWorkspaceId),
+            };
+          });
+        } catch (error) {
+          // 拉取失败时不留模板假组织，页面各自展示错误态（FR-015：不虚构数据）。
+          set({ workspaces: [] });
+          throw error;
+        }
+      },
+
+      setCurrentOrganization: async (workspaceId) => {
+        await activateOrganizationRequest(workspaceId);
+        set((state) => {
+          const wsProjects = state.projects.filter(
+            (p) => p.workspaceId === workspaceId
+          );
+          return {
+            activeWorkspaceId: workspaceId,
+            activeProjectId: wsProjects.some((p) => p.id === state.activeProjectId)
+              ? state.activeProjectId
+              : (wsProjects[0]?.id ?? ''),
+          };
+        });
+      },
+
+      resolveNextAvailableOrganization: () => {
+        const state = get();
+        return (
+          state.workspaces.find((w) => w.id !== state.activeWorkspaceId) ?? null
+        );
+      },
 
       setActiveProjectId: (activeProjectId) =>
         set((state) => {
@@ -337,6 +417,33 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         }));
         return newProj;
       },
+
+      syncProject: (project) =>
+        set((state) => {
+          const existing = state.projects.find((p) => p.id === project.id);
+          const item: ProjectItem = {
+            id: project.id,
+            workspaceId: project.organizationId,
+            name: project.name,
+            description: project.description ?? existing?.description,
+            colorTheme: existing?.colorTheme ?? 'sky',
+            ownerType: existing?.ownerType ?? 'owned',
+            defaultTableId: existing?.defaultTableId ?? '',
+            updatedAt: new Date(project.updatedAt).toLocaleDateString(),
+          };
+          return {
+            projects: existing
+              ? state.projects.map((p) => (p.id === project.id ? item : p))
+              : [...state.projects, item],
+          };
+        }),
+
+      dropProject: (projectId) =>
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== projectId),
+          activeProjectId:
+            state.activeProjectId === projectId ? '' : state.activeProjectId,
+        })),
 
       updateProject: (id, updates) =>
         set((state) => ({

@@ -21,7 +21,7 @@ scripts/env.sh up test
 bun packages/db/src/migrate.ts                # 开发库
 bun packages/db/src/migrate.ts --env test     # 测试库
 
-# 3. 起 API（3000）与前端（5173，/api 代理到 3000）
+# 3. 起 API（3001）与前端（3000，/api 代理到 3001；vite 端口与 AI Studio 环境一致）
 bun apps/api/src/index.ts &
 pnpm --filter nocoapp-dev dev
 ```

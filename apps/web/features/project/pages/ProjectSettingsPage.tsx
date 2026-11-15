@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Copy, Trash2 } from 'lucide-react';
+import { Check, Copy, Star, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AssetColorTheme } from '../../../types';
 import { ProjectColoredIcon } from '../../../components/common/NocoIcons';
@@ -7,12 +7,13 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
+import { RegionCascader } from '../../dashboard/components/RegionCascader';
+import { DEFAULT_REGION_PATH } from '../../dashboard/data/regions';
 import { useRouteContext } from '../../../hooks/useRouteContext';
 import {
   ASSET_COLOR_PALETTES,
   useWorkspaceStore,
 } from '../../../store/useWorkspaceStore';
-import { useDataStore } from '../../../store/useDataStore';
 
 const ProjectSettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,21 +23,33 @@ const ProjectSettingsPage: React.FC = () => {
   const updateProject = useWorkspaceStore((s) => s.updateProject);
   const duplicateProject = useWorkspaceStore((s) => s.duplicateProject);
   const deleteProject = useWorkspaceStore((s) => s.deleteProject);
-  const tables = useDataStore((s) => s.tables);
 
-  const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
-  const projectTables = tables.filter(
-    (t) => !t.projectId || t.projectId === activeProjectId
-  );
+  const activeProject =
+    projects.find((p) => p.id === activeProjectId) || projects[0];
 
   const [name, setName] = useState(activeProject?.name || '');
-  const [description, setDescription] = useState(activeProject?.description || '');
+  const [primarySurname, setPrimarySurname] = useState(
+    activeProject?.primarySurname || ''
+  );
+  const [primaryName, setPrimaryName] = useState(
+    activeProject?.primaryName || ''
+  );
+  const [region, setRegion] = useState(
+    activeProject?.region || DEFAULT_REGION_PATH
+  );
+  const [projectState, setProjectState] = useState<'0' | '1'>(
+    activeProject?.projectState || '0'
+  );
+  const [projectLevel, setProjectLevel] = useState<number>(
+    activeProject?.projectLevel || 1
+  );
+  const [description, setDescription] = useState(
+    activeProject?.description || ''
+  );
   const [colorTheme, setColorTheme] = useState<AssetColorTheme>(
     activeProject?.colorTheme || 'sky'
   );
-  const [defaultTableId, setDefaultTableId] = useState(
-    activeProject?.defaultTableId || ''
-  );
+
   const [savedToast, setSavedToast] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -44,9 +57,13 @@ const ProjectSettingsPage: React.FC = () => {
   useEffect(() => {
     if (activeProject) {
       setName(activeProject.name);
+      setPrimarySurname(activeProject.primarySurname || '');
+      setPrimaryName(activeProject.primaryName || '');
+      setRegion(activeProject.region || DEFAULT_REGION_PATH);
+      setProjectState(activeProject.projectState || '0');
+      setProjectLevel(activeProject.projectLevel || 1);
       setDescription(activeProject.description || '');
       setColorTheme(activeProject.colorTheme);
-      setDefaultTableId(activeProject.defaultTableId || '');
       setConfirmDelete(false);
     }
   }, [activeProject]);
@@ -56,9 +73,13 @@ const ProjectSettingsPage: React.FC = () => {
     if (!activeProject || !name.trim()) return;
     updateProject(activeProject.id, {
       name: name.trim(),
+      primarySurname: primarySurname.trim() || undefined,
+      primaryName: primaryName.trim() || undefined,
+      region: region.trim() || undefined,
+      projectState,
+      projectLevel,
       description: description.trim(),
       colorTheme,
-      defaultTableId,
     });
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 1800);
@@ -78,7 +99,7 @@ const ProjectSettingsPage: React.FC = () => {
         <div>
           <h1 className="text-[18px] font-semibold text-foreground">项目设置</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            管理「{activeProject?.name || '项目'}」的基础信息、图标配色与默认数据表。
+            管理「{activeProject?.name || '云谱项目'}」的谱牒档案信息、所属地区与封面配色。
           </p>
         </div>
 
@@ -87,28 +108,111 @@ const ProjectSettingsPage: React.FC = () => {
           <h2 className="text-[14px] font-semibold text-foreground">基本信息</h2>
           <form onSubmit={handleSave} className="space-y-4 max-w-lg">
             <div className="space-y-1.5">
-              <Label htmlFor="project-name-input">项目名称</Label>
+              <Label htmlFor="project-name-input">项目名</Label>
               <Input
                 id="project-name-input"
                 value={name}
+                maxLength={24}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-1.5">
+                <Label htmlFor="project-settings-surname">姓氏</Label>
+                <Input
+                  id="project-settings-surname"
+                  value={primarySurname}
+                  maxLength={24}
+                  onChange={(e) => setPrimarySurname(e.target.value)}
+                  placeholder="如：陳"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="project-settings-primary-name">主题名</Label>
+                <Input
+                  id="project-settings-primary-name"
+                  value={primaryName}
+                  maxLength={10}
+                  onChange={(e) => setPrimaryName(e.target.value)}
+                  placeholder="如：義門陳氏宗谱"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="project-desc-input">项目描述</Label>
+              <Label htmlFor="project-settings-region">地区</Label>
+              <RegionCascader
+                id="project-settings-region"
+                value={region}
+                onChange={setRegion}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="space-y-1.5">
+                <Label>状态</Label>
+                <div className="grid grid-cols-2 p-1 rounded-lg bg-[hsl(var(--surface-subtle))] border border-border h-9">
+                  {[
+                    { value: '0' as const, label: '进行中' },
+                    { value: '1' as const, label: '已完成' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setProjectState(opt.value)}
+                      className={`rounded-md text-[13px] transition-colors cursor-pointer ${
+                        projectState === opt.value
+                          ? 'bg-card text-foreground font-semibold shadow-xs border border-border/60'
+                          : 'text-muted-foreground font-medium hover:text-foreground'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>重要等级</Label>
+                <div className="h-9 px-3 rounded-md border border-input bg-background flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setProjectLevel(star)}
+                      className="p-0.5 cursor-pointer"
+                      aria-label={`设为 ${star} 星`}
+                    >
+                      <Star
+                        size={16}
+                        className={
+                          star <= projectLevel
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-muted-foreground/35'
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="project-desc-input">备注</Label>
               <Textarea
                 id="project-desc-input"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                placeholder="简要说明项目用途..."
+                placeholder="请输入项目备注"
+                className="resize-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>图标配色</Label>
+              <Label>封面与图标配色</Label>
               <div className="flex flex-wrap items-center gap-2 pt-0.5">
                 {colorKeys.map((key) => {
                   const p = ASSET_COLOR_PALETTES[key];
@@ -131,23 +235,6 @@ const ProjectSettingsPage: React.FC = () => {
                   );
                 })}
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="project-default-table">默认关联数据表</Label>
-              <select
-                id="project-default-table"
-                value={defaultTableId}
-                onChange={(e) => setDefaultTableId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
-              >
-                <option value="">未指定（打开首页概览）</option>
-                {projectTables.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} ({t.code})
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="space-y-1.5">
@@ -193,10 +280,10 @@ const ProjectSettingsPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 py-1">
             <div>
               <div className="text-[13px] font-medium text-foreground">
-                复制项目结构
+                复制云谱项目
               </div>
               <div className="text-[12px] text-muted-foreground">
-                创建一个包含相同配置的副本项目。
+                创建一个包含相同基础档案的副本项目。
               </div>
             </div>
             <Button

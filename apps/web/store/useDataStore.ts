@@ -6,17 +6,13 @@ import { INITIAL_RECORDS, INITIAL_SCHEMAS } from './mockData';
 import { createAppStorage } from './storageAdapter';
 
 const DEFAULT_TABLE_PROJECT_MAP: Record<string, string> = {
-  users: 'proj-getting-started',
-  orders: 'proj-sales-crm',
-  products: 'proj-inventory',
-  inventory_logs: 'proj-supply-chain',
+  clan_members: 'proj-chen-yimen',
+  branch_records: 'proj-peng-ancestors',
 };
 
 const INITIAL_TABLES: DbTable[] = [
-  { id: 'users', projectId: 'proj-getting-started', name: 'Users', code: 'users', kind: 'table', description: 'System users' },
-  { id: 'orders', projectId: 'proj-sales-crm', name: 'Orders', code: 'orders', kind: 'table', description: 'Customer orders' },
-  { id: 'products', projectId: 'proj-inventory', name: 'Products', code: 'products', kind: 'table', description: 'Product catalog' },
-  { id: 'inventory_logs', projectId: 'proj-supply-chain', name: 'Inventory Logs', code: 'inventory_logs', kind: 'table', description: 'Stock changes' },
+  { id: 'clan_members', projectId: 'proj-chen-yimen', name: '族人名录', code: 'clan_members', kind: 'table', description: '宗谱世系族人基础档案' },
+  { id: 'branch_records', projectId: 'proj-peng-ancestors', name: '房支源流', code: 'branch_records', kind: 'table', description: '各房迁徙聚居记录' },
 ];
 
 const INITIAL_VIEWS: DbView[] = INITIAL_TABLES.map((table) => ({
@@ -339,11 +335,31 @@ export const useDataStore = create<DataState>()(
     }),
     {
       name: 'nocoapp:data',
-      version: 2,
+      version: 3,
       storage: createAppStorage(),
-      migrate: (persistedState: any) => {
+      migrate: (persistedState: any, version: number) => {
         if (!persistedState || !Array.isArray(persistedState.tables)) {
           return persistedState;
+        }
+        if (version < 3) {
+          const legacyIds = new Set(['users', 'orders', 'products', 'inventory_logs']);
+          const customTables = persistedState.tables.filter(
+            (t: DbTable) => !legacyIds.has(t.id)
+          );
+          if (customTables.length === 0) {
+            return {
+              ...persistedState,
+              tables: INITIAL_TABLES,
+              schemas: INITIAL_SCHEMAS,
+              records: INITIAL_RECORDS,
+              views: INITIAL_VIEWS,
+              activeViewId: INITIAL_VIEWS[0]?.id || null,
+            };
+          }
+          return {
+            ...persistedState,
+            tables: customTables,
+          };
         }
         return {
           ...persistedState,
@@ -352,7 +368,7 @@ export const useDataStore = create<DataState>()(
             projectId:
               t.projectId ||
               DEFAULT_TABLE_PROJECT_MAP[t.id] ||
-              'proj-getting-started',
+              'proj-chen-yimen',
           })),
         };
       },

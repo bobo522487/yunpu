@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { FileText, LayoutGrid, Search as SearchIcon, Table } from 'lucide-react';
-import { AppColoredIcon, ProjectColoredIcon } from '../common/NocoIcons';
+import { FileText, Search as SearchIcon } from 'lucide-react';
+import { ProjectColoredIcon } from '../common/NocoIcons';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
-import { useDataStore } from '../../store/useDataStore';
-import { useBuilderStore } from '../../store/useBuilderStore';
 import { useRouteContext } from '../../hooks/useRouteContext';
 
 interface CommandPaletteContextValue {
@@ -83,25 +81,38 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
   const projects = useWorkspaceStore((s) => s.projects);
-  const apps = useWorkspaceStore((s) => s.apps);
-  const tables = useDataStore((s) => s.tables);
-  const pages = useBuilderStore((s) => s.pages);
 
   const workspaceProjects = projects.filter(
     (p) => p.workspaceId === activeWorkspaceId
   );
-  const workspaceApps = apps.filter((a) => a.workspaceId === activeWorkspaceId);
 
   const q = query.trim().toLowerCase();
   const matchedProjects = workspaceProjects.filter((p) =>
     p.name.toLowerCase().includes(q)
   );
-  const matchedApps = workspaceApps.filter((a) =>
-    a.name.toLowerCase().includes(q)
-  );
-  const matchedTables = tables.filter((t) => t.name.toLowerCase().includes(q));
-  const matchedPages = pages.filter(
-    (p) => p.type === 'page' && p.name.toLowerCase().includes(q)
+
+  const workbenchModules = [
+    {
+      id: 'lineage',
+      name: '谱系',
+      desc: '世系图谱与房支结构',
+      path: `/projects/${activeProjectId}/lineage`,
+    },
+    {
+      id: 'articles',
+      name: '谱文',
+      desc: '谱序、凡例与人物传记',
+      path: `/projects/${activeProjectId}/articles`,
+    },
+    {
+      id: 'books',
+      name: '谱书',
+      desc: '分卷目录与线装成书',
+      path: `/projects/${activeProjectId}/books`,
+    },
+  ].filter(
+    (m) =>
+      m.name.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q)
   );
 
   return createPortal(
@@ -117,7 +128,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             type="text"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="搜索项目、应用、数据表或页面..."
+            placeholder="搜索云谱项目、谱系、谱文或谱书..."
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             autoFocus
           />
@@ -134,7 +145,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           {matchedProjects.length > 0 && (
             <div>
               <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
-                项目
+                云谱项目
               </div>
               <div className="space-y-0.5">
                 {matchedProjects.map((proj) => (
@@ -162,101 +173,28 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             </div>
           )}
 
-          {matchedTables.length > 0 && (
+          {workbenchModules.length > 0 && (
             <div>
               <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
-                数据表
+                项目工作台模块
               </div>
               <div className="space-y-0.5">
-                {matchedTables.map((t) => {
-                  const targetProjectId = t.projectId || activeProjectId;
-                  const projName = projects.find((p) => p.id === targetProjectId)?.name;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        if (targetProjectId) {
-                          setActiveProjectId(targetProjectId);
-                        }
-                        navigate(`/projects/${targetProjectId}/data/${t.id}`);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted text-left transition-colors"
-                    >
-                      <Table size={14} className="text-muted-foreground shrink-0" />
-                      <span className="text-[13px] font-medium text-foreground flex-1 truncate">
-                        {t.name}
-                      </span>
-                      <span className="text-[12px] text-muted-foreground truncate max-w-[140px]">
-                        {projName || '数据表'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {matchedApps.length > 0 && (
-            <div>
-              <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
-                应用
-              </div>
-              <div className="space-y-0.5">
-                {matchedApps.map((app) => (
+                {workbenchModules.map((mod) => (
                   <button
-                    key={app.id}
+                    key={mod.id}
                     type="button"
                     onClick={() => {
                       onClose();
-                      navigate(
-                        `/projects/${activeProjectId}/apps/${app.id}/pages/${app.defaultPageId}`
-                      );
-                    }}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted text-left transition-colors"
-                  >
-                    <AppColoredIcon
-                      colorTheme={app.colorTheme}
-                      className="w-4 h-4 shrink-0"
-                    />
-                    <span className="text-[13px] font-medium text-foreground flex-1 truncate">
-                      {app.name}
-                    </span>
-                    <span className="text-[12px] text-muted-foreground">应用</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {matchedPages.length > 0 && (
-            <div>
-              <div className="px-2 py-1 text-[12px] font-semibold text-muted-foreground">
-                应用页面
-              </div>
-              <div className="space-y-0.5">
-                {matchedPages.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      const firstApp = workspaceApps[0] || apps[0];
-                      navigate(
-                        `/projects/${activeProjectId}/apps/${
-                          firstApp?.id || 'app-order-mgmt'
-                        }/pages/${p.id}`
-                      );
+                      navigate(mod.path);
                     }}
                     className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted text-left transition-colors"
                   >
                     <FileText size={14} className="text-muted-foreground shrink-0" />
                     <span className="text-[13px] font-medium text-foreground flex-1 truncate">
-                      {p.name}
+                      {mod.name}
                     </span>
-                    <span className="text-[12px] text-muted-foreground inline-flex items-center gap-1">
-                      <LayoutGrid size={11} /> 页面
+                    <span className="text-[12px] text-muted-foreground truncate">
+                      {mod.desc}
                     </span>
                   </button>
                 ))}
@@ -264,14 +202,11 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             </div>
           )}
 
-          {matchedProjects.length === 0 &&
-            matchedApps.length === 0 &&
-            matchedTables.length === 0 &&
-            matchedPages.length === 0 && (
-              <div className="py-8 text-center text-xs text-muted-foreground">
-                未找到与 “{query}” 匹配的内容
-              </div>
-            )}
+          {matchedProjects.length === 0 && workbenchModules.length === 0 && (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              未找到与 “{query}” 匹配的内容
+            </div>
+          )}
         </div>
       </div>
     </div>,

@@ -1,28 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowRight,
-  Database,
-  Filter,
-  LayoutGrid,
-  Plus,
-  Search,
+  BookOpen,
+  GitFork,
+  Pencil,
+  ScrollText,
   Settings,
-  Table,
-  Columns,
+  Star,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectColoredIcon } from '../../../components/common/NocoIcons';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { CreateTableDrawer } from '../../data-modeler/components/CreateTableDrawer';
-import { SchemaField } from '../../../types';
+import {
+  AssetEditorModal,
+  AssetEditorSubmitValues,
+} from '../../dashboard/components/AssetEditorModal';
 import { useRouteContext } from '../../../hooks/useRouteContext';
 import { usePreferencesStore } from '../../../store/usePreferencesStore';
 import {
   ASSET_COLOR_PALETTES,
   useWorkspaceStore,
 } from '../../../store/useWorkspaceStore';
-import { useDataStore } from '../../../store/useDataStore';
 
 const ProjectHomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,18 +29,9 @@ const ProjectHomePage: React.FC = () => {
   const isDarkMode = usePreferencesStore((s) => s.isDarkMode);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const projects = useWorkspaceStore((s) => s.projects);
-  const apps = useWorkspaceStore((s) => s.apps);
+  const updateProject = useWorkspaceStore((s) => s.updateProject);
 
-  const tables = useDataStore((s) => s.tables);
-  const views = useDataStore((s) => s.views);
-  const schemas = useDataStore((s) => s.schemas);
-  const records = useDataStore((s) => s.records);
-  const addTable = useDataStore((s) => s.addTable);
-  const setDataViewMode = useDataStore((s) => s.setDataViewMode);
-  const setActiveViewId = useDataStore((s) => s.setActiveViewId);
-
-  const [tableSearch, setTableSearch] = useState('');
-  const [isCreateTableOpen, setIsCreateTableOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const activeProject =
     projects.find((p) => p.id === activeProjectId) ||
@@ -53,70 +42,51 @@ const ProjectHomePage: React.FC = () => {
     ASSET_COLOR_PALETTES[activeProject?.colorTheme || 'sky'] ||
     ASSET_COLOR_PALETTES.sky;
 
-  const projectTables = useMemo(
-    () =>
-      tables.filter(
-        (t) => !t.projectId || t.projectId === activeProjectId
-      ),
-    [tables, activeProjectId]
-  );
+  const projectStateLabel =
+    activeProject?.projectState === '1' ? '已完成' : '进行中';
+  const projectLevel = activeProject?.projectLevel || 1;
 
-  const filteredTables = useMemo(() => {
-    const q = tableSearch.trim().toLowerCase();
-    if (!q) return projectTables;
-    return projectTables.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.code.toLowerCase().includes(q) ||
-        (t.description || '').toLowerCase().includes(q)
-    );
-  }, [projectTables, tableSearch]);
+  const workbenchModules = [
+    {
+      id: 'lineage',
+      title: '谱系',
+      desc: '维护家族世代脉络、支派分房与成员关系图谱。',
+      status: '已启用',
+      path: `/projects/${activeProjectId}/lineage`,
+      icon: GitFork,
+    },
+    {
+      id: 'articles',
+      title: '谱文',
+      desc: '编修谱序、凡例、姓氏源流、家训与先贤传记。',
+      status: '占位模块',
+      path: `/projects/${activeProjectId}/articles`,
+      icon: ScrollText,
+    },
+    {
+      id: 'books',
+      title: '谱书',
+      desc: '组织分卷目录、题签封面与线装成书版式预览。',
+      status: '占位模块',
+      path: `/projects/${activeProjectId}/books`,
+      icon: BookOpen,
+    },
+  ];
 
-  const workspaceApps = apps.filter(
-    (a) => a.workspaceId === (activeProject?.workspaceId || activeWorkspaceId)
-  );
-
-  const stats = useMemo(() => {
-    const tableIds = new Set(projectTables.map((t) => t.id));
-    const totalViews = views.filter((v) => tableIds.has(v.tableId)).length;
-    const totalRecords = projectTables.reduce(
-      (sum, t) => sum + (records[t.id]?.length || 0),
-      0
-    );
-    return {
-      tablesCount: projectTables.length,
-      viewsCount: totalViews,
-      recordsCount: totalRecords,
-      appsCount: workspaceApps.length,
-    };
-  }, [projectTables, views, records, workspaceApps.length]);
-
-  const handleOpenTable = (tableId: string, mode: 'DATA' | 'MODEL' = 'DATA') => {
-    const defaultView =
-      views.find((v) => v.tableId === tableId && v.isDefault) ||
-      views.find((v) => v.tableId === tableId);
-    setActiveViewId(defaultView?.id || null);
-    setDataViewMode(mode);
-    navigate(`/projects/${activeProjectId}/data/${tableId}`);
+  const handleSaveProject = (values: AssetEditorSubmitValues) => {
+    if (!activeProject) return;
+    updateProject(activeProject.id, {
+      name: values.name,
+      description: values.description,
+      colorTheme: values.colorTheme,
+      primarySurname: values.primarySurname,
+      region: values.region,
+      primaryName: values.primaryName,
+      projectState: values.projectState,
+      projectLevel: values.projectLevel,
+    });
+    setIsEditOpen(false);
   };
-
-  const handleConfirmCreateTable = (tableName: string, columns: SchemaField[]) => {
-    const newId = `table_${Date.now()}`;
-    addTable(
-      {
-        id: newId,
-        projectId: activeProjectId,
-        name: tableName,
-        code: tableName.toLowerCase().replace(/\s+/g, '_'),
-        kind: 'table',
-      },
-      columns,
-      []
-    );
-    navigate(`/projects/${activeProjectId}/data/${newId}`);
-  };
-
-  const firstApp = workspaceApps[0] || apps[0];
 
   return (
     <>
@@ -139,17 +109,22 @@ const ProjectHomePage: React.FC = () => {
                 />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <h1 className="text-[20px] font-semibold text-foreground truncate tracking-tight">
-                    {activeProject?.name || '项目概览'}
+                    {activeProject?.name || '云谱项目工作台'}
                   </h1>
+                  {activeProject?.primaryName && (
+                    <span className="text-[13px] font-medium text-muted-foreground whitespace-nowrap">
+                      · {activeProject.primaryName}
+                    </span>
+                  )}
                   <span className="text-[12px] font-medium text-muted-foreground tabular-nums whitespace-nowrap">
-                    更新于 {activeProject?.updatedAt || '刚刚'}
+                    · 更新于 {activeProject?.updatedAt || '刚刚'}
                   </span>
                 </div>
                 <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
                   {activeProject?.description ||
-                    '管理当前项目的数据表结构、视图筛选与业务模型。'}
+                    '围绕谱系梳理、谱文编修与谱书排版开展家族谱牒协作。'}
                 </p>
               </div>
             </div>
@@ -158,290 +133,159 @@ const ProjectHomePage: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  navigate(`/projects/${activeProjectId}/datasources`)
-                }
+                onClick={() => setIsEditOpen(true)}
                 className="h-8 gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0"
               >
-                <Database size={14} /> 管理数据源
+                <Pencil size={13} /> 编辑云谱信息
               </Button>
               <Button
+                variant="ghost"
                 size="sm"
-                onClick={() => setIsCreateTableOpen(true)}
-                className="h-8 gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0"
-              >
-                <Plus size={14} /> 新建数据表
-              </Button>
-            </div>
-          </div>
-
-          {/* 4-Column Flat Metrics Grid (Single-Elevation, Tabular Numerals) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 border border-border rounded-xl bg-card divide-y lg:divide-y-0 lg:divide-x divide-border overflow-hidden">
-            <div className="p-4 flex flex-col gap-1">
-              <span className="text-[12px] font-medium text-muted-foreground">
-                数据表
-              </span>
-              <span className="text-[22px] font-semibold text-foreground tabular-nums leading-tight">
-                {stats.tablesCount}
-              </span>
-            </div>
-            <div className="p-4 flex flex-col gap-1">
-              <span className="text-[12px] font-medium text-muted-foreground">
-                视图总数
-              </span>
-              <span className="text-[22px] font-semibold text-foreground tabular-nums leading-tight">
-                {stats.viewsCount}
-              </span>
-            </div>
-            <div className="p-4 flex flex-col gap-1">
-              <span className="text-[12px] font-medium text-muted-foreground">
-                数据记录
-              </span>
-              <span className="text-[22px] font-semibold text-foreground tabular-nums leading-tight">
-                {stats.recordsCount}
-              </span>
-            </div>
-            <div className="p-4 flex flex-col gap-1">
-              <span className="text-[12px] font-medium text-muted-foreground">
-                工作区应用
-              </span>
-              <span className="text-[22px] font-semibold text-foreground tabular-nums leading-tight">
-                {stats.appsCount}
-              </span>
-            </div>
-          </div>
-
-          {/* Data Tables Directory */}
-          <section className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[15px] font-semibold text-foreground">
-                  项目数据表
-                </h2>
-                <span className="text-[12px] font-medium text-muted-foreground tabular-nums">
-                  ({filteredTables.length})
-                </span>
-              </div>
-
-              {projectTables.length > 0 && (
-                <div className="relative w-full sm:w-64">
-                  <Search
-                    size={14}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                  />
-                  <Input
-                    value={tableSearch}
-                    onChange={(e) => setTableSearch(e.target.value)}
-                    placeholder="筛选数据表..."
-                    className="h-8 pl-8 text-[13px]"
-                  />
-                </div>
-              )}
-            </div>
-
-            {filteredTables.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-card/50 py-12 px-6 text-center space-y-3">
-                <div className="w-10 h-10 rounded-lg bg-muted mx-auto flex items-center justify-center text-muted-foreground">
-                  <Table size={18} />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-[14px] font-semibold text-foreground">
-                    {tableSearch ? '未找到匹配的数据表' : '当前项目还没有数据表'}
-                  </div>
-                  <p className="text-[13px] text-muted-foreground max-w-md mx-auto">
-                    {tableSearch
-                      ? '尝试调整筛选关键字，或清空搜索条件。'
-                      : '创建首张数据表后，即可在网格中录入记录、配置视图筛选或建立外键关联。'}
-                  </p>
-                </div>
-                {!tableSearch && (
-                  <Button
-                    size="sm"
-                    onClick={() => setIsCreateTableOpen(true)}
-                    className="h-8 gap-1.5 text-[13px] whitespace-nowrap"
-                  >
-                    <Plus size={14} /> 新建首张数据表
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-                {filteredTables.map((table) => {
-                  const colCount = (schemas[table.id] || []).length;
-                  const rowCount = (records[table.id] || []).length;
-                  const viewCount = views.filter(
-                    (v) => v.tableId === table.id
-                  ).length;
-
-                  return (
-                    <div
-                      key={table.id}
-                      onClick={() => handleOpenTable(table.id, 'DATA')}
-                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 hover:bg-[hsl(var(--surface-hover))] transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg border border-border bg-background flex items-center justify-center text-primary shrink-0">
-                          <Table size={15} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[14px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                              {table.name}
-                            </span>
-                            <span className="text-[12px] font-mono text-muted-foreground truncate">
-                              {table.code}
-                            </span>
-                          </div>
-                          {table.description && (
-                            <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-                              {table.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 sm:gap-5 shrink-0 justify-between sm:justify-end">
-                        <div className="flex items-center gap-4 text-[12px] font-medium text-muted-foreground tabular-nums">
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Columns size={12} /> {colCount} 字段
-                          </span>
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                            <Filter size={12} /> {viewCount} 视图
-                          </span>
-                          <span className="whitespace-nowrap">
-                            {rowCount} 行
-                          </span>
-                        </div>
-
-                        <div
-                          className="flex items-center gap-1.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenTable(table.id, 'MODEL')}
-                            className="h-7 px-2.5 text-[12px] font-medium whitespace-nowrap"
-                          >
-                            模型
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleOpenTable(table.id, 'DATA')}
-                            className="h-7 px-2.5 text-[12px] font-medium gap-1 whitespace-nowrap"
-                          >
-                            打开 <ArrowRight size={12} />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Quick Jump Row */}
-          <section className="space-y-3">
-            <h2 className="text-[15px] font-semibold text-foreground">
-              快捷入口
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(`/projects/${activeProjectId}/datasources`)
-                }
-                className="flex items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card hover:border-[hsl(var(--border-strong))] transition-colors text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-[hsl(var(--surface-subtle))] border border-border flex items-center justify-center text-foreground shrink-0">
-                    <Database size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-foreground truncate">
-                      配置外部数据源
-                    </div>
-                    <div className="text-[12px] text-muted-foreground truncate">
-                      PostgreSQL · MySQL · REST API
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight
-                  size={14}
-                  className="text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0"
-                />
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(
-                    `/projects/${activeProjectId}/apps/${
-                      firstApp?.id || 'app-order-mgmt'
-                    }/pages/${firstApp?.defaultPageId || 'page-1'}`
-                  )
-                }
-                className="flex items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card hover:border-[hsl(var(--border-strong))] transition-colors text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-[hsl(var(--surface-subtle))] border border-border flex items-center justify-center text-foreground shrink-0">
-                    <LayoutGrid size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-foreground truncate">
-                      应用可视化构建
-                    </div>
-                    <div className="text-[12px] text-muted-foreground truncate">
-                      拖拽组件搭建业务门户页面
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight
-                  size={14}
-                  className="text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0"
-                />
-              </button>
-
-              <button
-                type="button"
                 onClick={() =>
                   navigate(`/projects/${activeProjectId}/settings`)
                 }
-                className="flex items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card hover:border-[hsl(var(--border-strong))] transition-colors text-left cursor-pointer group"
+                className="h-8 gap-1.5 text-[13px] font-medium whitespace-nowrap shrink-0"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-[hsl(var(--surface-subtle))] border border-border flex items-center justify-center text-foreground shrink-0">
-                    <Settings size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-foreground truncate">
-                      项目设置与代码文件
+                <Settings size={14} /> 项目设置
+              </Button>
+            </div>
+          </div>
+
+          {/* 3-Column Cloud Genealogy Core Modules: 谱系 / 谱文 / 谱书 */}
+          <section className="space-y-3">
+            <h2 className="text-[15px] font-semibold text-foreground">
+              云谱编修工作区
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {workbenchModules.map((mod) => {
+                const Icon = mod.icon;
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    onClick={() => navigate(mod.path)}
+                    className="flex flex-col justify-between gap-4 p-5 rounded-xl border border-border bg-card hover:border-[hsl(var(--border-strong))] hover:shadow-[var(--shadow-card-hover)] transition-all duration-150 text-left cursor-pointer group"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="w-10 h-10 rounded-lg bg-[hsl(var(--surface-subtle))] border border-border flex items-center justify-center text-primary shrink-0">
+                          <Icon size={18} />
+                        </div>
+                        <span className="text-[12px] font-medium text-muted-foreground">
+                          {mod.status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {mod.title}
+                        </div>
+                        <p className="text-[13px] text-muted-foreground leading-relaxed">
+                          {mod.desc}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-[12px] text-muted-foreground truncate">
-                      调整名称、图标配色与默认视图
+
+                    <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary pt-2 border-t border-border/60">
+                      <span>进入{mod.title}</span>
+                      <ArrowRight
+                        size={13}
+                        className="group-hover:translate-x-0.5 transition-transform"
+                      />
                     </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Project Profile Summary */}
+          <section className="space-y-3">
+            <h2 className="text-[15px] font-semibold text-foreground">
+              云谱档案摘要
+            </h2>
+            <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">主姓氏</div>
+                  <div className="text-[14px] font-semibold text-foreground">
+                    {activeProject?.primarySurname || '未填写'}
                   </div>
                 </div>
-                <ArrowRight
-                  size={14}
-                  className="text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0"
-                />
-              </button>
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">主题名</div>
+                  <div className="text-[14px] font-semibold text-foreground">
+                    {activeProject?.primaryName || '未填写'}
+                  </div>
+                </div>
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">所属地区</div>
+                  <div className="text-[14px] font-semibold text-foreground">
+                    {activeProject?.region
+                      ? activeProject.region.split('/').join(' / ')
+                      : '未填写'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">编修状态</div>
+                  <div className="text-[14px] font-semibold text-foreground">
+                    {projectStateLabel}
+                  </div>
+                </div>
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">重要等级</div>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={14}
+                        className={
+                          star <= projectLevel
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-muted-foreground/30'
+                        }
+                      />
+                    ))}
+                    <span className="text-[12px] text-muted-foreground ml-1.5 tabular-nums">
+                      {projectLevel} 星
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 space-y-1">
+                  <div className="text-[12px] text-muted-foreground">备注说明</div>
+                  <div className="text-[13px] text-foreground truncate">
+                    {activeProject?.description || '暂无备注'}
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </div>
       </div>
 
-      <CreateTableDrawer
-        isOpen={isCreateTableOpen}
-        onClose={() => setIsCreateTableOpen(false)}
-        onCreate={handleConfirmCreateTable}
-        tables={tables}
-        getTargetColumns={(tId) =>
-          (schemas[tId] || []).map((f) => ({ id: f.id, name: f.name }))
+      <AssetEditorModal
+        open={isEditOpen}
+        mode="edit"
+        kind="project"
+        initialValue={
+          activeProject
+            ? {
+                name: activeProject.name,
+                description: activeProject.description,
+                colorTheme: activeProject.colorTheme,
+                primarySurname: activeProject.primarySurname,
+                region: activeProject.region,
+                primaryName: activeProject.primaryName,
+                projectState: activeProject.projectState,
+                projectLevel: activeProject.projectLevel,
+              }
+            : undefined
         }
+        onClose={() => setIsEditOpen(false)}
+        onSubmit={handleSaveProject}
       />
     </>
   );

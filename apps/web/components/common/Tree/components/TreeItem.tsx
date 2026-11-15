@@ -213,7 +213,9 @@ export const TreeItem = forwardRef<HTMLLIElement, TreeItemProps>(
                         onPointerDown={(e) => e.stopPropagation()} // Prevent drag on input
                     />
                 ) : (
-                    <span>{item.data?.name || item.id}</span>
+                    <span title={item.data?.name || String(item.id)}>
+                      {item.data?.name || item.id}
+                    </span>
                 )}
             </div>
 

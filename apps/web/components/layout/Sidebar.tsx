@@ -218,7 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
       },
       {
         id: ViewMode.PROJECTS,
-        label: '项目',
+        label: '云谱项目',
         path: '/',
         icon: <ProjectLayersOutlineIcon className="w-4 h-4" />,
         count: orgCounts.projects,

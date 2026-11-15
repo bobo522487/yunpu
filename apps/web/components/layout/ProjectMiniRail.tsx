@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   Bell,
+  BookOpen,
   CheckCheck,
-  Database,
+  GitFork,
   Home,
-  LayoutGrid,
+  ScrollText,
   Settings,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -14,22 +15,18 @@ import { WorkspaceLogoIcon } from '../common/NocoIcons';
 import UserAvatarMenu from './UserAvatarMenu';
 import { useRouteContext } from '../../hooks/useRouteContext';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
-import { useBuilderStore } from '../../store/useBuilderStore';
-import { useDataStore } from '../../store/useDataStore';
 
 const ProjectMiniRail: React.FC = () => {
   const navigate = useNavigate();
-  const { activeView, activeProjectId, activeTableId } = useRouteContext();
+  const { activeView, activeProjectId } = useRouteContext();
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const projects = useWorkspaceStore((s) => s.projects);
-  const apps = useWorkspaceStore((s) => s.apps);
   const notifications = useWorkspaceStore((s) => s.notifications);
   const markNotificationRead = useWorkspaceStore((s) => s.markNotificationRead);
-  const markAllNotificationsRead = useWorkspaceStore((s) => s.markAllNotificationsRead);
-  const pages = useBuilderStore((s) => s.pages);
-  const tables = useDataStore((s) => s.tables);
+  const markAllNotificationsRead = useWorkspaceStore(
+    (s) => s.markAllNotificationsRead
+  );
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifContainerRef = useRef<HTMLDivElement>(null);
@@ -59,64 +56,20 @@ const ProjectMiniRail: React.FC = () => {
   }, []);
 
   const isHomeActive = activeView === ViewMode.PROJECT_HOME;
-  const isDataActive = activeView === ViewMode.DATA;
-  const isAppsActive = activeView === ViewMode.APPS;
+  const isLineageActive = activeView === ViewMode.LINEAGE;
+  const isArticlesActive = activeView === ViewMode.ARTICLES;
+  const isBooksActive = activeView === ViewMode.BOOKS;
   const isSettingsActive =
     activeView === ViewMode.PROJECT_SETTINGS ||
-    activeView === ViewMode.DATASOURCE ||
     activeView === ViewMode.SETTINGS;
-
-  const handleOpenHome = () => {
-    navigate(`/projects/${activeProjectId}`);
-  };
-
-  const handleOpenData = () => {
-    const projectTables = tables.filter(
-      (t) => !t.projectId || t.projectId === activeProjectId
-    );
-    const activeProject = projects.find((p) => p.id === activeProjectId);
-    const targetTableId =
-      (activeTableId && projectTables.some((t) => t.id === activeTableId)
-        ? activeTableId
-        : undefined) ||
-      (activeProject?.defaultTableId &&
-      projectTables.some((t) => t.id === activeProject.defaultTableId)
-        ? activeProject.defaultTableId
-        : undefined) ||
-      projectTables[0]?.id;
-
-    if (targetTableId) {
-      navigate(`/projects/${activeProjectId}/data/${targetTableId}`);
-    } else {
-      navigate(`/projects/${activeProjectId}`);
-    }
-  };
-
-  const handleOpenApps = () => {
-    const wsApps = apps.filter((a) => a.workspaceId === activeWorkspaceId);
-    const targetApp = wsApps[0] || apps[0];
-    const targetPageId =
-      targetApp?.defaultPageId ||
-      pages.find((p) => p.type === 'page')?.id ||
-      'page-1';
-    navigate(
-      `/projects/${activeProjectId}/apps/${
-        targetApp?.id || 'app-order-mgmt'
-      }/pages/${targetPageId}`
-    );
-  };
-
-  const handleOpenSettings = () => {
-    navigate(`/projects/${activeProjectId}/settings`);
-  };
 
   return (
     <nav
-      aria-label="项目功能导航"
+      aria-label="云谱项目工作台导航"
       data-testid="nc-mini-sidebar-v2"
       className="w-12 h-full shrink-0 border-r border-border bg-[hsl(var(--surface-subtle))] flex flex-col items-center justify-between py-1.5 select-none z-40 relative"
     >
-      {/* Top: Back to Workspace Logo + Main Modules */}
+      {/* Top: Back to Workspace Logo + Main Cloud Genealogy Modules */}
       <div className="flex flex-col items-center w-full gap-1">
         <button
           type="button"
@@ -135,11 +88,12 @@ const ProjectMiniRail: React.FC = () => {
 
         <div className="w-6 h-px bg-border my-1" />
 
-        {/* Project Home Overview Rail Item */}
+        {/* 首页概览 */}
         <button
           type="button"
-          onClick={handleOpenHome}
+          onClick={() => navigate(`/projects/${activeProjectId}`)}
           title="首页概览"
+          aria-label="首页概览"
           data-panel="home"
           data-testid="nc-rail-home-btn"
           aria-current={isHomeActive ? 'page' : undefined}
@@ -152,45 +106,65 @@ const ProjectMiniRail: React.FC = () => {
           <Home size={17} strokeWidth={1.75} />
         </button>
 
-        {/* Data Rail Item */}
+        {/* 谱系 */}
         <button
           type="button"
-          onClick={handleOpenData}
-          title="数据"
-          data-panel="data"
-          aria-current={isDataActive ? 'page' : undefined}
+          onClick={() => navigate(`/projects/${activeProjectId}/lineage`)}
+          title="谱系"
+          aria-label="谱系"
+          data-panel="lineage"
+          aria-current={isLineageActive ? 'page' : undefined}
           className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isDataActive
+            isLineageActive
               ? 'bg-primary/[0.12] text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]'
               : 'text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--surface-hover))]'
           }`}
         >
-          <Database size={17} strokeWidth={1.75} />
+          <GitFork size={17} strokeWidth={1.75} />
         </button>
 
-        {/* Apps Rail Item */}
+        {/* 谱文 */}
         <button
           type="button"
-          onClick={handleOpenApps}
-          title="应用"
-          data-panel="apps"
-          aria-current={isAppsActive ? 'page' : undefined}
+          onClick={() => navigate(`/projects/${activeProjectId}/articles`)}
+          title="谱文"
+          aria-label="谱文"
+          data-panel="articles"
+          aria-current={isArticlesActive ? 'page' : undefined}
           className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center transition-colors cursor-pointer ${
-            isAppsActive
+            isArticlesActive
               ? 'bg-primary/[0.12] text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]'
               : 'text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--surface-hover))]'
           }`}
         >
-          <LayoutGrid size={17} strokeWidth={1.75} />
+          <ScrollText size={17} strokeWidth={1.75} />
+        </button>
+
+        {/* 谱书 */}
+        <button
+          type="button"
+          onClick={() => navigate(`/projects/${activeProjectId}/books`)}
+          title="谱书"
+          aria-label="谱书"
+          data-panel="books"
+          aria-current={isBooksActive ? 'page' : undefined}
+          className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center transition-colors cursor-pointer ${
+            isBooksActive
+              ? 'bg-primary/[0.12] text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.2)]'
+              : 'text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--surface-hover))]'
+          }`}
+        >
+          <BookOpen size={17} strokeWidth={1.75} />
         </button>
 
         <div className="w-6 h-px bg-border my-1" />
 
-        {/* Project Settings Rail Item */}
+        {/* 项目设置 */}
         <button
           type="button"
-          onClick={handleOpenSettings}
+          onClick={() => navigate(`/projects/${activeProjectId}/settings`)}
           title="设置"
+          aria-label="设置"
           data-panel="settings"
           aria-current={isSettingsActive ? 'page' : undefined}
           className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center transition-colors cursor-pointer ${
@@ -207,7 +181,10 @@ const ProjectMiniRail: React.FC = () => {
       <div className="flex flex-col items-center w-full gap-1">
         <div className="w-6 h-px bg-border my-1" />
 
-        <div ref={notifContainerRef} className="relative flex items-center justify-center">
+        <div
+          ref={notifContainerRef}
+          className="relative flex items-center justify-center"
+        >
           <button
             type="button"
             onClick={() => setIsNotifOpen((v) => !v)}

@@ -16,6 +16,9 @@ export interface RouteContext {
 export const useRouteContext = (): RouteContext => {
   const { pathname } = useLocation();
   const projectHomeMatch = useMatch('/projects/:projectId');
+  const projectLineageMatch = useMatch('/projects/:projectId/lineage');
+  const projectArticlesMatch = useMatch('/projects/:projectId/articles');
+  const projectBooksMatch = useMatch('/projects/:projectId/books');
   const projectDataMatch = useMatch('/projects/:projectId/data/:tableId');
   const projectDatasourcesMatch = useMatch('/projects/:projectId/datasources');
   const projectPgNewMatch = useMatch('/projects/:projectId/datasources/postgresql');
@@ -43,6 +46,9 @@ export const useRouteContext = (): RouteContext => {
 
   const matchedProjectId =
     projectHomeMatch?.params.projectId ||
+    projectLineageMatch?.params.projectId ||
+    projectArticlesMatch?.params.projectId ||
+    projectBooksMatch?.params.projectId ||
     projectDataMatch?.params.projectId ||
     projectDatasourcesMatch?.params.projectId ||
     projectPgNewMatch?.params.projectId ||
@@ -63,6 +69,15 @@ export const useRouteContext = (): RouteContext => {
     activeView = ViewMode.WORKSPACE_SETTINGS;
   } else if (projectSettingsMatch) {
     activeView = ViewMode.PROJECT_SETTINGS;
+    isWorkspaceShell = false;
+  } else if (projectLineageMatch) {
+    activeView = ViewMode.LINEAGE;
+    isWorkspaceShell = false;
+  } else if (projectArticlesMatch) {
+    activeView = ViewMode.ARTICLES;
+    isWorkspaceShell = false;
+  } else if (projectBooksMatch) {
+    activeView = ViewMode.BOOKS;
     isWorkspaceShell = false;
   } else if (projectFilesMatch || pathname.startsWith('/files')) {
     activeView = ViewMode.SETTINGS;
@@ -97,7 +112,7 @@ export const useRouteContext = (): RouteContext => {
   const fallbackWorkspaceProjectId =
     projects.find((p) => p.workspaceId === activeWorkspaceId)?.id ||
     projects[0]?.id ||
-    'proj-getting-started';
+    'proj-chen-yimen';
 
   const resolvedProjectId =
     matchedProjectId ||
@@ -114,7 +129,7 @@ export const useRouteContext = (): RouteContext => {
       projectAppMatch?.params.appId ||
       appPageMatch?.params.appId ||
       appMatch?.params.appId ||
-      'app-order-mgmt',
+      '',
     activePageId:
       projectAppPageMatch?.params.pageId || appPageMatch?.params.pageId || '',
     activeTableId: matchedTableId,

@@ -73,7 +73,7 @@ const INITIAL_WORKSPACES: Workspace[] = [
   },
   {
     id: 'ws-team',
-    name: '研发协同空间',
+    name: '宗亲修谱空间',
     kind: 'team',
     color: '#0CA678',
     plan: '团队版',
@@ -81,71 +81,64 @@ const INITIAL_WORKSPACES: Workspace[] = [
   },
 ];
 
+const LEGACY_MOCK_PROJECT_IDS = new Set([
+  'proj-getting-started',
+  'proj-sales-crm',
+  'proj-inventory',
+  'proj-supply-chain',
+]);
+
+const LEGACY_MOCK_APP_IDS = new Set(['app-order-mgmt', 'app-analytics-hub']);
+
 const INITIAL_PROJECTS: ProjectItem[] = [
   {
-    id: 'proj-getting-started',
+    id: 'proj-chen-yimen',
     workspaceId: 'ws-personal',
-    name: 'Getting Started',
-    description: '快速上手数据表管理与视图筛选的示例项目',
+    name: '义门陈氏宗谱',
+    description: '梳理义门陈氏历代迁徙源流、分庄支派及世系行传。',
     colorTheme: 'sky',
     ownerType: 'owned',
-    defaultTableId: 'users',
+    defaultTableId: 'clan_members',
     updatedAt: '2 小时前',
+    primarySurname: '陈',
+    primaryName: '义门陈氏宗谱',
+    region: '江西省/九江市/德安县',
+    projectState: '0',
+    projectLevel: 5,
   },
   {
-    id: 'proj-sales-crm',
+    id: 'proj-han-royal',
     workspaceId: 'ws-personal',
-    name: '客户与订单项目',
-    description: '统一管理客户资料、订单流水及售后工单',
-    colorTheme: 'pink',
+    name: '两汉刘氏天潢谱',
+    description: '收录西汉、东汉及蜀汉宗室世系图谱与帝王行传参考。',
+    colorTheme: 'indigo',
     ownerType: 'owned',
-    defaultTableId: 'orders',
+    defaultTableId: 'clan_members',
     updatedAt: '1 天前',
+    primarySurname: '刘',
+    primaryName: '丰沛刘氏天潢',
+    region: '江苏省/徐州市/丰县',
+    projectState: '1',
+    projectLevel: 4,
   },
   {
-    id: 'proj-inventory',
-    workspaceId: 'ws-personal',
-    name: '进销存项目',
-    description: '商品目录、库存变动日志与采购审批数据中心',
-    colorTheme: 'orange',
-    ownerType: 'owned',
-    defaultTableId: 'products',
-    updatedAt: '3 天前',
-  },
-  {
-    id: 'proj-supply-chain',
+    id: 'proj-peng-ancestors',
     workspaceId: 'ws-team',
-    name: '供应链协同项目',
-    description: '跨部门供应商对账与仓储物流调度数据',
+    name: '彭城远祖合修谱',
+    description: '宗亲协同校勘各房世派字辈、墓茔坐向与行状传记。',
     colorTheme: 'emerald',
     ownerType: 'shared',
-    defaultTableId: 'inventory_logs',
+    defaultTableId: 'branch_records',
     updatedAt: '5 小时前',
+    primarySurname: '彭',
+    primaryName: '彭城彭氏合谱',
+    region: '贵州省/遵义市/桐梓县',
+    projectState: '0',
+    projectLevel: 4,
   },
 ];
 
-const INITIAL_APPS: AppItem[] = [
-  {
-    id: 'app-order-mgmt',
-    workspaceId: 'ws-personal',
-    name: '订单管理门户',
-    description: '面向运营团队的订单审核与状态流转应用',
-    colorTheme: 'indigo',
-    ownerType: 'owned',
-    defaultPageId: 'page-1',
-    updatedAt: '4 小时前',
-  },
-  {
-    id: 'app-analytics-hub',
-    workspaceId: 'ws-team',
-    name: '经营数据看板',
-    description: '核心营收指标与库存预警可视化应用',
-    colorTheme: 'violet',
-    ownerType: 'shared',
-    defaultPageId: 'page-2',
-    updatedAt: '2 天前',
-  },
-];
+const INITIAL_APPS: AppItem[] = [];
 
 const INITIAL_MEMBERS: WorkspaceMember[] = [
   {
@@ -161,7 +154,7 @@ const INITIAL_MEMBERS: WorkspaceMember[] = [
     id: 'mem-2',
     workspaceId: 'ws-personal',
     name: '林晓',
-    email: 'linxiao@nocoapp.dev',
+    email: 'linxiao@yunpu.cn',
     role: '编辑者',
     joinedAt: '2026-02-18',
     avatarColor: '#1E40AF',
@@ -179,7 +172,7 @@ const INITIAL_MEMBERS: WorkspaceMember[] = [
     id: 'mem-4',
     workspaceId: 'ws-team',
     name: '陈默',
-    email: 'chenmo@nocoapp.dev',
+    email: 'chenmo@yunpu.cn',
     role: '管理员',
     joinedAt: '2026-03-10',
     avatarColor: '#047857',
@@ -188,25 +181,18 @@ const INITIAL_MEMBERS: WorkspaceMember[] = [
 
 const INITIAL_NOTIFICATIONS: WorkspaceNotification[] = [
   {
-    id: 'notif-1',
-    title: '项目结构已同步',
-    description: '进销存项目中的「Products」表新增了 3 条记录。',
+    id: 'notif-genealogy-1',
+    title: '世系图谱已更新',
+    description: '「义门陈氏宗谱」中的西汉天潢图系已收录 14 位族人节点。',
     time: '10 分钟前',
     read: false,
   },
   {
-    id: 'notif-2',
-    title: '成员加入工作区',
+    id: 'notif-genealogy-2',
+    title: '宗亲加入修谱空间',
     description: '林晓 已接受邀请加入「个人空间」。',
     time: '2 小时前',
     read: false,
-  },
-  {
-    id: 'notif-3',
-    title: '应用发布成功',
-    description: '订单管理门户 v1.2 已更新页面布局。',
-    time: '昨天',
-    read: true,
   },
 ];
 
@@ -237,6 +223,11 @@ interface WorkspaceState {
     description?: string;
     colorTheme: AssetColorTheme;
     defaultTableId?: string;
+    primarySurname?: string;
+    region?: string;
+    primaryName?: string;
+    projectState?: '0' | '1';
+    projectLevel?: number;
   }) => ProjectItem;
   /** 把后端项目投影进 store，供模板项目壳（ProjectHomePage）展示名称等基本信息。 */
   syncProject: (project: {
@@ -259,6 +250,7 @@ interface WorkspaceState {
     colorTheme: AssetColorTheme;
     defaultPageId?: string;
   }) => AppItem;
+  updateApp: (id: string, updates: Partial<AppItem>) => void;
   renameApp: (id: string, name: string) => void;
   duplicateApp: (id: string) => AppItem | null;
   deleteApp: (id: string) => void;
@@ -400,16 +392,31 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           ),
         })),
 
-      createProject: ({ name, description, colorTheme, defaultTableId }) => {
+      createProject: ({
+        name,
+        description,
+        colorTheme,
+        defaultTableId,
+        primarySurname,
+        region,
+        primaryName,
+        projectState,
+        projectLevel,
+      }) => {
         const newProj: ProjectItem = {
           id: `proj-${Date.now()}`,
           workspaceId: get().activeWorkspaceId,
           name: name.trim(),
-          description: description?.trim() || '新建数据与业务协同项目',
+          description: description?.trim() || '',
           colorTheme,
           ownerType: 'owned',
           defaultTableId: defaultTableId || '',
           updatedAt: '刚刚',
+          primarySurname: primarySurname?.trim() || undefined,
+          region: region?.trim() || undefined,
+          primaryName: primaryName?.trim() || undefined,
+          projectState: projectState || '0',
+          projectLevel: projectLevel ?? 1,
         };
         set((state) => ({
           projects: [...state.projects, newProj],
@@ -506,6 +513,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         return newApp;
       },
 
+      updateApp: (id, updates) =>
+        set((state) => ({
+          apps: state.apps.map((a) =>
+            a.id === id ? { ...a, ...updates, updatedAt: '刚刚' } : a
+          ),
+        })),
+
       renameApp: (id, name) =>
         set((state) => ({
           apps: state.apps.map((a) =>
@@ -572,8 +586,55 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: 'nocoapp:workspace',
-      version: 1,
+      version: 2,
       storage: createAppStorage(),
+      migrate: (persistedState: any, version: number) => {
+        if (!persistedState || version >= 2) return persistedState;
+
+        const prevProjects: ProjectItem[] = Array.isArray(persistedState.projects)
+          ? persistedState.projects.filter(
+              (p: ProjectItem) => !LEGACY_MOCK_PROJECT_IDS.has(p.id)
+            )
+          : [];
+
+        const mergedProjects = [...INITIAL_PROJECTS];
+        for (const proj of prevProjects) {
+          if (!mergedProjects.some((p) => p.id === proj.id)) {
+            mergedProjects.push(proj);
+          }
+        }
+
+        const prevApps: AppItem[] = Array.isArray(persistedState.apps)
+          ? persistedState.apps.filter(
+              (a: AppItem) => !LEGACY_MOCK_APP_IDS.has(a.id)
+            )
+          : [];
+
+        const nextWorkspaces: Workspace[] = Array.isArray(persistedState.workspaces)
+          ? persistedState.workspaces.map((ws: Workspace) =>
+              ws.id === 'ws-team' && ws.name === '研发协同空间'
+                ? { ...ws, name: '宗亲修谱空间' }
+                : ws
+            )
+          : INITIAL_WORKSPACES;
+
+        const prevActiveProj = persistedState.activeProjectId;
+        const nextActiveProj =
+          prevActiveProj &&
+          !LEGACY_MOCK_PROJECT_IDS.has(prevActiveProj) &&
+          mergedProjects.some((p) => p.id === prevActiveProj)
+            ? prevActiveProj
+            : mergedProjects[0]?.id || 'proj-chen-yimen';
+
+        return {
+          ...persistedState,
+          workspaces: nextWorkspaces,
+          projects: mergedProjects,
+          apps: prevApps,
+          activeProjectId: nextActiveProj,
+          notifications: INITIAL_NOTIFICATIONS,
+        };
+      },
     }
   )
 );

@@ -24,7 +24,7 @@ const Header: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索多个项目"
+            placeholder="搜索云谱项目"
             className="flex-1 bg-transparent text-[13px] font-medium text-foreground placeholder:text-muted-foreground placeholder:font-normal focus:outline-none min-w-0"
             data-testid="nc-ws-home-topbar-search"
           />

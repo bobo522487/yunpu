@@ -1,0 +1,460 @@
+<div class="ne-body">
+    <!-- 左侧区域 -->
+    <div class="ne-main">
+    <!-- 左侧上部：左列 + 中列并排 -->
+    <div class="ne-main-fields">
+        <!-- 左列：照片、性别、状态与左侧字段 -->
+        <div class="ne-left">
+            <div class="ne-photo-box" data-ne-order="1">
+                <div class="ne-photo-placeholder"><span class="ne-photo-icon bpIconfont" aria-hidden="true"></span></div>
+                <span class="ne-photo-badge" title="删除照片" style="display: none;">✕</span>
+                <div class="ne-photo-change">点击更换</div>
+            </div>
+            <div class="layui-form-item ne-sex-item" data-ne-order="2">
+                <label class="layui-form-label"><span class="ne-label-text">性别</span></label>
+                <div class="layui-input-block">
+                    <input type="radio" name="neSex" value="0" checked="" title="男" lay-filter="nodeSex" class="ne-bridge-radio"><div class="layui-unselect layui-form-radio layui-form-radioed"><i class="layui-anim layui-icon"></i><span>男</span></div>
+                    <input type="radio" name="neSex" value="1" title="女" lay-filter="nodeSex" class="ne-bridge-radio"><div class="layui-unselect layui-form-radio"><i class="layui-anim layui-icon"></i><span>女</span></div>
+                </div>
+            </div>
+            <div class="layui-form-item ne-life-item" data-ne-order="3">
+                <label class="layui-form-label"><span class="ne-label-text">是否健在</span></label>
+                <div class="layui-input-block">
+                    <input type="radio" name="neLifeFlag" value="0" title="健在" lay-filter="nodeLifeFlag" class="ne-bridge-radio"><div class="layui-unselect layui-form-radio"><i class="layui-anim layui-icon"></i><span>健在</span></div>
+                    <input type="radio" name="neLifeFlag" value="1" checked="" title="已故" lay-filter="nodeLifeFlag" class="ne-bridge-radio"><div class="layui-unselect layui-form-radio layui-form-radioed"><i class="layui-anim layui-icon"></i><span>已故</span></div>
+                </div>
+            </div>
+            <div class="layui-form-item ne-narrow-collapsible" data-ne-order="9">
+                <label class="layui-form-label"><span class="ne-label-text">行第</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neHang" placeholder="如：行十八" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-parent-field ne-narrow-collapsible" data-ne-order="10">
+                <label class="layui-form-label"><span class="ne-label-text">世系备注</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neRemarksDx" maxlength="5" placeholder="如：迁江西" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-first-field ne-node-hidden" data-ne-order="11">
+                <label class="layui-form-label"><span class="ne-label-text">关系称谓</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neCallUser" maxlength="22" placeholder="如：始迁祖" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-first-field ne-relation-remarks ne-node-hidden">
+                <label class="layui-form-label"><span class="ne-label-text">关系备注</span></label>
+                <div class="layui-input-block">
+                    <textarea name="neCallSystemDesc" placeholder="请输入" class="layui-textarea ne-textarea-sm ne-bridge-text"></textarea>
+                </div>
+            </div><div class="ne-narrow-fold-bar ne-only-narrow">
+                <span class="ne-narrow-fold-btn ne-narrow-fold-expand-btn" title="展开附加信息" aria-label="展开附加信息">
+                    <i class="mfbIconfont ne-fold-icon" aria-hidden="true"></i><span>展开</span>
+                </span>
+                <span class="ne-narrow-fold-btn ne-narrow-fold-collapse-btn" title="收起附加信息" aria-label="收起附加信息">
+                    <i class="mfbIconfont ne-fold-icon" aria-hidden="true"></i><span>收起</span>
+                </span>
+            </div>
+            <div class="layui-form-item ne-edit-item ne-more-item ne-narrow-always" data-ne-order="19">
+                <label class="layui-form-label"><span class="ne-label-text">1之子</span></label>
+                <div class="layui-input-block">
+                    <span class="ne-pen-box ne-relation-edit mfbIconfont" title="编辑关系称谓"></span>
+                </div>
+            </div>
+            <div class="layui-form-item ne-first-field ne-first-sequence ne-more-item ne-narrow-always ne-node-hidden" data-ne-order="20">
+                <label class="layui-form-label"><span class="ne-label-text">主世序</span></label>
+                <div class="layui-input-block ne-inline-flex">
+                    <input type="text" name="neNumberDesc" maxlength="5" placeholder="始祖名讳" autocomplete="off" class="layui-input ne-input-main ne-bridge-text">
+                    <input type="number" name="neNumber" autocomplete="off" class="layui-input ne-input-num ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-first-field ne-first-sequence ne-more-item ne-narrow-always ne-node-hidden" data-ne-order="21">
+                <label class="layui-form-label"><span class="ne-label-text">子世序</span></label>
+                <div class="layui-input-block ne-inline-flex">
+                    <input type="text" name="neNumberUnifyDesc" maxlength="5" placeholder="始祖名讳" autocomplete="off" class="layui-input ne-input-main ne-bridge-text">
+                    <input type="number" name="neNumberUnify" value="1" autocomplete="off" class="layui-input ne-input-num ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-more-item ne-narrow-always ne-res-page-field" data-ne-order="22">
+                <label class="layui-form-label"><span class="ne-label-text">原谱页码</span></label>
+                <div class="layui-input-block ne-inline-flex">
+                    <input type="number" name="neResBookPage" value="" disabled="" autocomplete="off" class="layui-input ne-input-page">
+                    <button type="button" class="layui-btn ne-relate-btn">关联</button>
+                </div>
+            </div>
+            <div class="ne-addparents ne-first-field ne-first-sequence ne-more-item ne-narrow-always ne-node-hidden" data-ne-order="28">
+                <button type="button" class="layui-btn layui-btn-primary ne-addparents-btn">+ 添加父母</button>
+            </div>
+            <!-- 显隐开关：带 ne-collapse-hide —— 简化 / 至简模式处于收起状态时整块隐藏，
+                 只有完整模式或点题行下方 ⌄ 展开后才显示。
+                 它不带 ne-wide-collapse-target：属于操作类行、不是字段，
+                 不受至简模式「隐藏出生 / 生平 / 卒葬」那条规则影响。
+                 注：窄面板（半开快速编辑）里这三个 .ne-switch-item 仍带 ne-more-item，
+                  半开状态由末尾备注下方的展开/收起入口控制。 -->
+            
+
+            <!-- 分房、题行：同显隐开关，带 ne-collapse-hide ——
+                 简化 / 至简模式收起时隐藏，完整模式或点 ⌄ 展开后显示；
+                 不带 ne-wide-collapse-target（操作类行，不是字段）。 -->
+            <div class="ne-line-rows ne-collapse-hide ne-narrow-expanded-only">
+                <div class="ne-line-row ne-more-item ne-narrow-always" data-ne-order="26">
+                    <span class="ne-line-label">分房</span>
+                    <span class="ne-line-value"></span>
+                    <span class="ne-pen-box ne-branch-edit mfbIconfont" title="修改分房信息"></span>
+                </div>
+                <div class="ne-line-row ne-more-item ne-narrow-always" data-ne-order="27">
+                    <span class="ne-line-label">题行</span>
+                    <span class="ne-line-value"></span>
+                    <span class="ne-pen-box ne-title-edit mfbIconfont" title="编辑"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中列：人物信息字段 -->
+        <div class="ne-center">
+            <div class="ne-grid-3 ne-grid-name">
+                <div class="layui-form-item ne-cell ne-name-surname" data-ne-order="5">
+                    <label class="layui-form-label"><span class="ne-label-text">姓氏</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neSurname" placeholder="姓氏" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell ne-name-pedigree" data-ne-order="6">
+                    <label class="layui-form-label"><span class="ne-label-text">谱名</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neName" placeholder="谱名" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell ne-name-legal" data-ne-order="7">
+                    <label class="layui-form-label"><span class="ne-label-text">常用名</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neLegalName" placeholder="身份证姓名" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+            </div>
+            <!-- ne-new-label：新版相对旧版「新增字段」的标题标注记号（评审用），
+                 给标题单元格加一圈蓝色虚线框，样式见 newEdition.css 的 .ne-new-label 规则段。
+                 评审结束后，最后一处「文化程度」的标注已按需求取消（去掉 label 上的 ne-new-label），
+                 当前全页无标注；原本的「学校」已按评审意见取消标注，
+                 .ne-grid-alias 末尾那格「别名」随该行整块注释掉，见下方。
+                 不标的有：上面 .ne-unbound-alias 那一行的「别名」——
+                 它映射旧版同名字段 nodeNameDesc，不是新增字段；学历 —— 旧版「文化程度」下拉就是学历；
+                 学校 / 就读专业 —— 都是拼进文化程度一起存的附属项，不单独标注。
+                 需要恢复标注时，给对应 label 加回 ne-new-label 类即可。 -->
+            <!-- 别名属于「姓名」组：半开收起态不显示，展开后按 data-ne-order=8 排在
+                 常用名（7）之后、行第（9）之前；否则无 order 会跑到照片之前。 -->
+            <div class="layui-form-item ne-unbound-alias" data-ne-order="8">
+                <label class="layui-form-label"><span class="ne-label-text">别名</span></label>
+                <div class="layui-input-block">
+                    <!-- 与 .ne-grid-alias 末尾那格「别名」对调：本行才是旧版「别名」（nodeNameDesc），
+                         值回填与保存都走这一行；下面那格改为未绑定的纯输入框 -->
+                    <input type="text" name="neNameDesc" placeholder="字、号、讳、谥号、小名、曾用名等，默认加粗显示" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <!-- 「字」「号」「别名」这一行整块注释掉（暂不需要这三个输入框）。
+                 行内三个字段都不再渲染：neZi / neHao（分别映射 nodeCourtesyName / nodeArtName）、
+                 neAlias（未绑定的纯输入框）。
+                 注：newEdition.js 的 BRIDGE_MAP_1031 / FIELD_MAP_1031 对不存在的元素会自动跳过，
+                 注释后不影响其余字段的保存与回填。需要恢复时去掉本段注释即可。
+            <div class="ne-grid-3 ne-grid-alias">
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">字</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neZi" placeholder="字" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">号</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neHao" placeholder="号" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell" data-ne-order="8">
+                    <label class="layui-form-label ne-new-label"><span class="ne-label-text">别名</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neAlias" placeholder="小名/曾用名等" autocomplete="off"
+                                class="layui-input">
+                    </div>
+                </div>
+            </div>
+            -->
+            <div class="ne-grid-parents">
+                <div class="layui-form-item ne-cell ne-normal-field">
+                    <label class="layui-form-label"><span class="ne-label-text">父母</span></label>
+                    <div class="layui-input-block">
+                        <select name="neParent" lay-filter="neParentSelect_1031" lay-search=""><option value="">请选择父母</option><option value="2c9e8072a1cf56b301a1dcec65be7f72" selected="">空节点-配偶</option></select><div class="layui-form-select"><div class="layui-select-title"><input type="text" placeholder="请选择父母" value="空节点-配偶" class="layui-input"><i class="layui-edge"></i></div><dl class="layui-anim layui-anim-upbit"><dd lay-value="" class="layui-select-tips">请选择父母</dd><dd lay-value="2c9e8072a1cf56b301a1dcec65be7f72" class="layui-this">空节点-配偶</dd></dl></div>
+                    </div>
+                </div>
+                <!-- 关系：与父母下拉连成一组，改动后把新的完整称谓写入「关系称谓」nodeCallUser -->
+                <div class="layui-form-item ne-cell ne-cell-relation ne-normal-field">
+                    <label class="layui-form-label" aria-hidden="true"><span class="ne-label-text"></span></label>
+                    <div class="layui-input-block">
+                        <select name="neCallSystem" lay-filter="neCallSystemSelect_1031" lay-search="" class="ne-bridge-select"><option value="">请选择</option><option value="生子" selected="">生子</option><option value="嗣子">嗣子</option><option value="继子">继子</option><option value="祧子">祧子</option><option value="养子">养子</option><option value="义子">义子</option><option value="抚子">抚子</option><option value="螟蛉子">螟蛉子</option><option value="随母子">随母子</option><option value="赘子">赘子</option><option value="契子">契子</option><option value="假子">假子</option><option value="外子">外子</option><option value="异姓子">异姓子</option><option value="抱子">抱子</option><option value="拾子">拾子</option><option value="寄子">寄子</option></select><div class="layui-form-select"><div class="layui-select-title"><input type="text" placeholder="请选择" value="生子" class="layui-input"><i class="layui-edge"></i></div><dl class="layui-anim layui-anim-upbit"><dd lay-value="" class="layui-select-tips">请选择</dd><dd lay-value="生子" class="layui-this">生子</dd><dd lay-value="嗣子" class="">嗣子</dd><dd lay-value="继子" class="">继子</dd><dd lay-value="祧子" class="">祧子</dd><dd lay-value="养子" class="">养子</dd><dd lay-value="义子" class="">义子</dd><dd lay-value="抚子" class="">抚子</dd><dd lay-value="螟蛉子" class="">螟蛉子</dd><dd lay-value="随母子" class="">随母子</dd><dd lay-value="赘子" class="">赘子</dd><dd lay-value="契子" class="">契子</dd><dd lay-value="假子" class="">假子</dd><dd lay-value="外子" class="">外子</dd><dd lay-value="异姓子" class="">异姓子</dd><dd lay-value="抱子" class="">抱子</dd><dd lay-value="拾子" class="">拾子</dd><dd lay-value="寄子" class="">寄子</dd></dl></div>
+                    </div>
+                </div>
+                <!-- 排行：由谱系图排序（nodeParentSort / RELATION_SORT）维护，这里只读展示，形如「1-长子」。
+                     ne-normal-field 与同一格的父母/关系同规则（newEdition.js 的 toggleFieldsByNodeType：
+                     hasParent && !isFirst 才显示），即首节点与配偶节点（nodeChildOr=0）不显示这一栏，
+                     避免首节点出现没有意义的排行。 -->
+                <div class="layui-form-item ne-cell ne-cell-order ne-normal-field">
+                    <label class="layui-form-label"><span class="ne-label-text">排行</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neRankDisplay" readonly="" autocomplete="off" class="layui-input ne-readonly-input">
+                    </div>
+                </div>
+            </div>
+            <!-- 简化模式收起 ne-wide-collapse-target 所标记的出生、生平、卒葬字段；
+                 默认模式只收起其中带 ne-pref-default-hide 的字段。 -->
+            <div class="layui-form-item ne-pref-birth-date ne-wide-collapse-target" data-ne-order="12">
+                <label class="layui-form-label"><span class="ne-label-text">出生日期</span></label>
+                <div class="layui-input-block ne-date-input-wrap">
+                    <!-- readonly：日期只能点开日期选择器取，不能手输（与旧版一致） -->
+                    <input type="text" name="neBirthday" placeholder="请输入出生时间" autocomplete="off" readonly="" class="layui-input ne-bridge-date">
+                    <button type="button" class="mfbIconfont ne-date-clear-btn" data-date-name="neBirthday" title="清空出生日期" aria-label="清空出生日期"></button>
+                </div>
+            </div>
+            <div class="layui-form-item ne-hide-narrow ne-pref-birth-detail ne-pref-default-hide ne-wide-collapse-target ne-narrow-collapsible">
+                <label class="layui-form-label"><span class="ne-label-text">出生地</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neBirthplace" placeholder="请输入出生地" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-hide-narrow ne-pref-birth-desc ne-pref-default-hide ne-wide-collapse-target ne-pref-desc ne-narrow-collapsible">
+                <label class="layui-form-label"><span class="ne-label-text">出生描述</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neBirthDesc" placeholder="请输入出生描述" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <!-- 文化程度可直接编辑；右侧图标打开与出生日期同形态的锚定浮层。 -->
+            <div class="layui-form-item ne-pref-life-detail ne-wide-collapse-target ne-narrow-collapsible" data-ne-order="13">
+                <label class="layui-form-label"><span class="ne-label-text">文化程度</span></label>
+                <div class="layui-input-block ne-edu-input-wrap">
+                    <input type="text" name="neEducationDesc" placeholder="就读学校名称 就读专业 学历 文化程度等" autocomplete="off" class="layui-input ne-edu-input">
+                    <button type="button" class="mfbIconfont ne-edu-clear-btn" title="清空文化程度" aria-label="清空文化程度"></button>
+                    <button type="button" class="familyIcon ne-edu-open-btn" title="编辑文化程度" aria-label="编辑文化程度"></button>
+                </div>
+            </div>
+            <!-- 隐藏桥接字段保留原有文化程度拼接和清空链路。 -->
+            <div class="ne-grid-school ne-pref-life-detail ne-pref-default-hide ne-wide-collapse-target ne-edu-detail ne-narrow-collapsible">
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">学校</span></label>
+                    <div class="layui-input-block ne-school-inputs">
+                        <input type="text" name="neSchool" placeholder="就读学校名称" autocomplete="off" class="layui-input ne-edu-school">
+                        <input type="text" name="neMajor" placeholder="就读专业" autocomplete="off" class="layui-input ne-edu-major">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">学历</span></label>
+                    <div class="layui-input-block">
+                        <select name="neEducation" lay-filter="neEducationSelect_1031" lay-search="" class="ne-bridge-select">
+                            <option value="">请选择</option>
+                            <option value="小学">小学</option>
+                            <option value="初中">初中</option>
+                            <option value="高中">高中</option>
+                            <option value="技工">技工</option>
+                            <option value="中技">中技</option>
+                            <option value="中专">中专</option>
+                            <option value="专科">专科</option>
+                            <option value="大学专科">大学专科</option>
+                            <option value="大学本科">大学本科</option>
+                            <option value="研究生">研究生</option>
+                            <option value="博士">博士</option>
+                        </select><div class="layui-form-select"><div class="layui-select-title"><input type="text" placeholder="请选择" value="" class="layui-input"><i class="layui-edge"></i></div><dl class="layui-anim layui-anim-upbit"><dd lay-value="" class="layui-select-tips">请选择</dd><dd lay-value="小学" class="">小学</dd><dd lay-value="初中" class="">初中</dd><dd lay-value="高中" class="">高中</dd><dd lay-value="技工" class="">技工</dd><dd lay-value="中技" class="">中技</dd><dd lay-value="中专" class="">中专</dd><dd lay-value="专科" class="">专科</dd><dd lay-value="大学专科" class="">大学专科</dd><dd lay-value="大学本科" class="">大学本科</dd><dd lay-value="研究生" class="">研究生</dd><dd lay-value="博士" class="">博士</dd></dl></div>
+                        <select name="neGraduationStatus" class="ne-bridge-select">
+                            <option value="">请选择</option>
+                            <option value="毕业">毕业</option>
+                            <option value="在读">在读</option>
+                            <option value="肄业">肄业</option>
+                        </select><div class="layui-unselect layui-form-select"><div class="layui-select-title"><input type="text" placeholder="请选择" value="" readonly="" class="layui-input layui-unselect"><i class="layui-edge"></i></div><dl class="layui-anim layui-anim-upbit"><dd lay-value="" class="layui-select-tips">请选择</dd><dd lay-value="毕业" class="">毕业</dd><dd lay-value="在读" class="">在读</dd><dd lay-value="肄业" class="">肄业</dd></dl></div>
+                    </div>
+                </div>
+            </div>
+            <div class="ne-grid-school ne-grid-title ne-pref-life-detail ne-wide-collapse-target ne-narrow-collapsible">
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">职务</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neProfession" placeholder="公司/单位名称+职务" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+                <div class="layui-form-item ne-cell">
+                    <label class="layui-form-label"><span class="ne-label-text">头衔</span></label>
+                    <div class="layui-input-block">
+                        <input type="text" name="neProfessionTitle" placeholder="荣誉称号、职称、头衔" autocomplete="off" class="layui-input ne-bridge-text">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item ne-hide-narrow ne-pref-life-detail ne-pref-default-hide ne-wide-collapse-target ne-narrow-collapsible">
+                <label class="layui-form-label"><span class="ne-label-text">履历</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neOrgAndTitle" placeholder="请输入履历" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-hide-narrow ne-pref-life-desc ne-wide-collapse-target ne-pref-desc ne-narrow-collapsible">
+                <label class="layui-form-label"><span class="ne-label-text">生平记述</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neCareerDesc" placeholder="请输入生平记述" autocomplete="off" class="layui-input ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-pref-death-date ne-wide-collapse-target" data-ne-order="14">
+                <label class="layui-form-label"><span class="ne-label-text">去世时间</span></label>
+                <div class="layui-input-block ne-date-input-wrap">
+                    <!-- readonly：日期只能点开日期选择器取，不能手输（与旧版一致） -->
+                    <input type="text" name="neDeathday" placeholder="请输入去世时间" autocomplete="off" readonly="" class="layui-input ne-death-field ne-bridge-date">
+                    <button type="button" class="mfbIconfont ne-date-clear-btn" data-date-name="neDeathday" title="清空去世时间" aria-label="清空去世时间"></button>
+                </div>
+            </div>
+            <div class="layui-form-item ne-pref-death-detail ne-wide-collapse-target ne-narrow-collapsible" data-ne-order="15">
+                <label class="layui-form-label"><span class="ne-label-text">卒葬地</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neDeathplace" placeholder="卒葬地+墓址坐向" autocomplete="off" class="layui-input ne-death-field ne-bridge-text">
+                </div>
+            </div>
+            <div class="layui-form-item ne-hide-narrow ne-pref-death-desc ne-pref-default-hide ne-wide-collapse-target ne-pref-desc ne-narrow-collapsible">
+                <label class="layui-form-label"><span class="ne-label-text">卒葬描述</span></label>
+                <div class="layui-input-block">
+                    <input type="text" name="neDeathDesc" placeholder="请输入卒葬描述" autocomplete="off" class="layui-input ne-death-field ne-bridge-text">
+                </div>
+            </div>
+            <!-- 传记简介、末尾备注在三种模式下始终显示。 -->
+            <div class="layui-form-item ne-more-item" data-ne-order="16">
+                <label class="layui-form-label"><span class="ne-label-text ne-label-text-2l"><span>传记</span><span>简介</span></span></label>
+                <div class="layui-input-block">
+                    <textarea name="neBiography" placeholder="请输入人物传记简介" class="layui-textarea ne-textarea-lg ne-bridge-text"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item ne-more-item ne-narrow-collapsible ne-remarks-field" data-ne-order="17">
+                <label class="layui-form-label"><span class="ne-label-text ne-label-text-2l"><span>末尾</span><span>备注</span></span></label>
+                <div class="layui-input-block">
+                    <textarea name="neRemarks" placeholder="请输入备注，显示在本人信息、配偶及子女信息之后的尾部" class="layui-textarea ne-textarea-sm ne-bridge-text"></textarea>
+                </div>
+            </div>
+            <!-- 半开状态的附加信息折叠入口：展开时位于末尾备注下面，收起时紧跟关系备注。 -->
+            
+            <!-- 全开状态：题行下方、位于中间编辑区域内的配偶/子女信息折叠按钮。
+                 默认是收起状态（.ne-page 上的 ne-wide-collapsed），所以初始图标用未展开字形 e60b、
+                 文案为「展开更多信息」，与 newEdition.js 点击后的同步逻辑一致。 -->
+            <div class="ne-wide-fold-bar">
+                <span class="ne-wide-fold-btn" title="展开更多信息" aria-label="展开更多信息">
+                    <i class="mfbIconfont ne-fold-icon" aria-hidden="true"></i>
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+    <!-- 左侧下部：配偶信息 + 子女信息，高度固定，内容超出时在该区域内部滚动 -->
+    <!-- 列宽说明（操作列放得下 5 个图标）：操作列里前 4 个图标走 familyIcon，
+         实测每个的宽度正好是 1em = 16px（删除 e654 / 上移 e6ec / 下移 e6eb / 进入 e6f9），
+         第 5 个「称谓修改」走 mfbIconfont、按度量比调成 13px，图标间距 6px 且末位不带右边距，
+         于是内容宽 = 16×4 + 13 + 6×4 = 101px；单元格左右内边距各 6px，共需 113px。
+         原来的 112px 恰好吃掉 1px，虽然 th/td 上有 white-space:nowrap，
+         但 text-overflow:ellipsis 仍会把放不下的第 5 个图标换成「…」，
+         所以操作列统一放宽到 124px（留 11px 余量，避免不同字体版本/系统度量差异再顶格）；
+         让出的差额从前缀列扣（配偶 100→76、子女 68→56）。
+         前缀列取 nodeNamePrefix（旧版「修改关系称谓」弹窗里的「前缀」，如「左徒」，最多 10 字），
+         常见 2~3 字宽度够用，超长时按 text-overflow:ellipsis 省略。 -->
+    <div class="ne-bottom">
+    <!-- 配偶信息：列表默认收起只显示标题行，点击右侧图标展开/收起 -->
+    <div class="ne-table-block ne-table-spouse ne-more-item ne-narrow-always" data-ne-order="29">
+        <div class="ne-table-head">
+            <span class="ne-table-title">配偶信息<span class="ne-table-count">(0)</span></span>
+            <span class="ne-add-link" style="display: inline;">+ 添加配偶</span>
+            <span class="ne-table-fold" title="展开列表" aria-label="展开列表">
+                <span class="ne-table-fold-text">展开</span><i class="mfbIconfont ne-table-fold-icon" aria-hidden="true"></i>
+            </span>
+        </div>
+        <!-- 展开后的列表滚动区：宽版下超长列表在这里内部滚动，另一列表的标题行保持可见 -->
+        <div class="ne-table-scroll">
+            <table class="ne-table">
+                <thead>
+                <tr>
+                    <th class="ne-col-sort" style="width: 48px;">排序</th>
+                    <th class="ne-col-call" style="width: 88px;"><span class="ne-wide-title">关系称谓</span><span class="ne-narrow-title">关系</span><span class="ne-help" data-tip="该人物与当前人物的关系称呼，如原配、继配、长子、次子等">?</span></th>
+                    <th class="ne-col-prefix" style="width: 76px;">前缀<span class="ne-help" data-tip="显示在人物姓名前面的补充称谓或说明">?</span></th>
+                    <th class="ne-col-name"><span class="ne-wide-title">姓名</span><span class="ne-narrow-title">姓名</span></th>
+                    <th class="ne-col-extra">备注<span class="ne-help" data-tip="用于填写该人物关系或身份的补充说明">?</span></th>
+                    <th class="ne-col-ops" style="width: 124px;"><span class="ne-wide-title">操作</span><span class="ne-narrow-title">操作</span></th>
+                </tr>
+                </thead>
+                <tbody><tr class="ne-empty-row"><td class="ne-empty-cell" colspan="6">暂无配偶</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 子女信息：列表默认收起只显示标题行，点击右侧图标展开/收起 -->
+    <div class="ne-table-block ne-table-child ne-more-item ne-narrow-always" data-ne-order="30">
+        <div class="ne-table-head">
+            <span class="ne-table-title">子女信息<span class="ne-table-count">(0)</span></span>
+            <span class="ne-add-link">+ 添加子女</span>
+            <span class="ne-table-fold" title="展开列表" aria-label="展开列表">
+                <span class="ne-table-fold-text">展开</span><i class="mfbIconfont ne-table-fold-icon" aria-hidden="true"></i>
+            </span>
+        </div>
+        <!-- 展开后的列表滚动区：宽版下超长列表在这里内部滚动，另一列表的标题行保持可见 -->
+        <div class="ne-table-scroll">
+            <table class="ne-table">
+                <thead>
+                <tr>
+                    <th class="ne-col-sort" style="width: 48px;">排序</th>
+                    <th class="ne-col-call" style="width: 88px;"><span class="ne-wide-title">关系称谓</span><span class="ne-narrow-title">关系</span><span class="ne-help" data-tip="该人物与当前人物的关系称呼，如原配、继配、长子、次子等">?</span></th>
+                    <th class="ne-col-prefix" style="width: 56px;">前缀<span class="ne-help" data-tip="显示在人物姓名前面的补充称谓或说明">?</span></th>
+                    <th class="ne-col-name"><span class="ne-wide-title">姓名</span><span class="ne-narrow-title">姓名</span></th>
+                    <th class="ne-col-parents" style="width: 132px;">父母</th>
+                    <th class="ne-col-extra">备注<span class="ne-help" data-tip="用于填写该人物关系或身份的补充说明">?</span></th>
+                    <th class="ne-col-ops" style="width: 124px;"><span class="ne-wide-title">操作</span><span class="ne-narrow-title">操作</span></th>
+                </tr>
+                </thead>
+                <tbody><tr class="ne-empty-row"><td class="ne-empty-cell" colspan="7">暂无子女</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+    </div>
+    <!-- 右侧区域：行传预览（含联系方式、保存操作），独立滚动 -->
+        <div class="ne-right">
+        <!-- 可滚动区：行传预览 + 联系方式一起滚动；下方三个按钮固定在右侧区域底部 -->
+        <div class="ne-right-scroll">
+            <div class="ne-preview">
+                <div class="ne-preview-head">
+                    <span class="ne-preview-title">行传预览</span>
+                    <span class="ne-pref">偏好设置</span>
+                </div>
+                <div class="ne-preview-name"><span class="ne-preview-main-name">1</span><span class="ne-preview-legal-name"></span><span class="ne-preview-badge">殁</span></div>
+                <div class="ne-preview-lines"><div class="ne-preview-line">1之子</div></div>
+                <div class="ne-preview-extra">
+                    <div class="ne-preview-extra-line ne-preview-birth" style="display: none;"><span class="ne-preview-extra-label">出生</span><span class="ne-preview-extra-value">生于一九二一年辛酉八月廿八日    </span></div>
+                    <div class="ne-preview-extra-line ne-preview-life" style="display: none;"><span class="ne-preview-extra-label">生平</span><span class="ne-preview-extra-value">233  1  3</span></div>
+                    <div class="ne-preview-extra-line ne-preview-death" style="display: none;"><span class="ne-preview-extra-label">卒葬</span><span class="ne-preview-extra-value">卒于一九九九年己卯 冬月廿五日  33  </span></div>
+                </div>
+                <div class="ne-preview-extra-line ne-preview-biography" style="display: none;">24234</div>
+                <div class="ne-preview-children"></div>
+                <div class="ne-preview-extra-line ne-preview-remarks" style="display: none;">12</div>
+            </div>
+            <div class="ne-owner-info" style="display: none;">
+                <div class="ne-owner-row ne-owner-name" style="display: none;"><i class="bpIconfont"></i><span></span></div>
+                <div class="ne-owner-row ne-owner-mobile" style="display: none;"><i class="mfbIconfont"></i><span></span></div>
+                <div class="ne-owner-row ne-owner-id" style="display: none;"><i class="mfbIconfont"></i><span></span></div>
+                <div class="ne-owner-row ne-owner-address" style="display: none;"><i class="mfbIconfont"></i><span></span></div>
+            </div>
+        </div>
+            <div class="ne-footer">
+                <button type="button" class="layui-btn layui-btn-primary ne-outline-btn ne-realname-btn">+ 实名信息</button>
+                <button type="button" class="layui-btn layui-btn-primary ne-outline-btn ne-contact-btn">+ 联系方式</button>
+                <!-- 旧版/新版 切换：两枚按钮同属 .ne-edition-switch 一个父元素，显示在保存按钮的正上方（新版在左、旧版在右）。
+                     点击后交给父页面 window.setEdition_1031 统一切换（旧版面板底部那组走同一个入口），
+                     选中态由父页面回推，避免两处按钮各说各话 -->
+                <div class="ne-edition-switch">
+                    <span class="ne-edition-btn active" data-edition="new">新版</span>
+                    <span class="ne-edition-btn" data-edition="old">旧版</span>
+                </div>
+                <!-- 保存：由 newEdition.js 先把新版字段桥接写回旧版表单，再调用旧版 manualSaveAction -->
+                <button type="button" class="layui-btn ne-save-btn">保存人物信息Ctrl+S</button>
+                <div class="ne-extra-fields">
+                    <input type="hidden" name="nodeIdcardName" value="">
+                    <input type="hidden" name="nodeIdcardNum" value="">
+                    <input type="hidden" name="nodeMobile" value="">
+                    <input type="hidden" name="nodeAddress" value="">
+                </div>
+            </div>
+    </div>
+</div>

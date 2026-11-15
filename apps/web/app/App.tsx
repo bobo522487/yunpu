@@ -34,6 +34,7 @@ import MembersPage from '../features/dashboard/pages/MembersPage';
 import WorkspaceSettingsPage from '../features/dashboard/pages/WorkspaceSettingsPage';
 import ProjectHomePage from '../features/project/pages/ProjectHomePage';
 import ProjectSettingsPage from '../features/project/pages/ProjectSettingsPage';
+import GenealogySectionPage from '../features/project/pages/GenealogySectionPage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
@@ -258,10 +259,7 @@ const App: React.FC = () => {
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
   const theme = usePreferencesStore((s) => s.theme);
   const bootstrap = useAuthStore((s) => s.bootstrap);
-  const defaultPageId = useBuilderStore(
-    (s) => s.pages.find((p) => p.type === 'page')?.id || 'page-1'
-  );
-  const defaultTableId = useDataStore((s) => s.tables[0]?.id || 'users');
+  const defaultTableId = useDataStore((s) => s.tables[0]?.id || 'clan_members');
 
   useEffect(() => {
     void bootstrap();
@@ -341,6 +339,18 @@ const App: React.FC = () => {
           {/* Project Shell Routes */}
           <Route path="/projects/:projectId" element={<ProjectHomePage />} />
           <Route
+            path="/projects/:projectId/lineage"
+            element={<GenealogySectionPage section="lineage" />}
+          />
+          <Route
+            path="/projects/:projectId/articles"
+            element={<GenealogySectionPage section="articles" />}
+          />
+          <Route
+            path="/projects/:projectId/books"
+            element={<GenealogySectionPage section="books" />}
+          />
+          <Route
             path="/projects/:projectId/data/:tableId"
             element={<DataPage />}
           />
@@ -366,26 +376,9 @@ const App: React.FC = () => {
             element={<AppBuilderPage />}
           />
 
-          {/* Legacy Direct Routes (also render inside Project Shell) */}
-          <Route
-            path="/apps"
-            element={
-              <Navigate
-                to={`/apps/app-order-mgmt/pages/${defaultPageId}`}
-                replace
-              />
-            }
-          />
-          <Route
-            path="/apps/:appId"
-            element={
-              <Navigate
-                to={`/apps/app-order-mgmt/pages/${defaultPageId}`}
-                replace
-              />
-            }
-          />
-          <Route path="/apps/:appId/pages/:pageId" element={<AppBuilderPage />} />
+          {/* Legacy /apps routes redirect to Cloud Genealogy dashboard */}
+          <Route path="/apps" element={<Navigate to="/" replace />} />
+          <Route path="/apps/*" element={<Navigate to="/" replace />} />
 
           <Route
             path="/data"

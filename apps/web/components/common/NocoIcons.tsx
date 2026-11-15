@@ -109,10 +109,10 @@ export const AppColoredIcon: React.FC<{
       fill="none"
       className={className}
     >
-      <rect x="3" y="3" width="8.2" height="8.2" rx="2.2" fill={palette.fillLight} />
-      <rect x="12.8" y="3" width="8.2" height="8.2" rx="2.2" fill={palette.fillDark} />
-      <rect x="3" y="12.8" width="8.2" height="8.2" rx="2.2" fill={palette.fillDark} />
-      <rect x="12.8" y="12.8" width="8.2" height="8.2" rx="2.2" fill={palette.fillLight} />
+      <rect x="3" y="3" width="18" height="5.2" rx="1.8" fill={palette.fillDark} />
+      <rect x="3" y="10.2" width="7.4" height="10.8" rx="1.8" fill={palette.fillLight} />
+      <rect x="12.4" y="10.2" width="8.6" height="4.6" rx="1.5" fill={palette.fillLight} />
+      <rect x="12.4" y="16.4" width="8.6" height="4.6" rx="1.5" fill={palette.fillDark} />
     </svg>
   );
 };

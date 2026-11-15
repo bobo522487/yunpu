@@ -19,6 +19,9 @@ export enum ViewMode {
   MEMBERS = 'MEMBERS',
   WORKSPACE_SETTINGS = 'WORKSPACE_SETTINGS',
   PROJECT_HOME = 'PROJECT_HOME',
+  LINEAGE = 'LINEAGE',
+  ARTICLES = 'ARTICLES',
+  BOOKS = 'BOOKS',
   PROJECT_SETTINGS = 'PROJECT_SETTINGS',
   APPS = 'APPS',
   DATA = 'DATA',
@@ -51,6 +54,11 @@ export interface ProjectItem {
   ownerType: 'owned' | 'shared';
   defaultTableId: string;
   updatedAt: string;
+  primarySurname?: string;
+  region?: string;
+  primaryName?: string;
+  projectState?: '0' | '1';
+  projectLevel?: number;
 }
 
 export interface AppItem {

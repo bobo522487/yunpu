@@ -1,7 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppTheme, DeviceType, ThemeMode, UserProfile } from '../types';
+import {
+  BiographyPreviewPreferences,
+  DrawerLayoutMode,
+} from '../features/lineage/types';
 import { createAppStorage } from './storageAdapter';
+
+export const DEFAULT_BIOGRAPHY_PREVIEW_PREFS: BiographyPreviewPreferences = {
+  showBirth: true,
+  showBirthDetail: true,
+  showLife: true,
+  showDeath: true,
+  showDeathDetail: true,
+  showBiography: true,
+  showChildren: true,
+  showRemarks: true,
+  showPrivateInfo: true,
+};
 
 export const resolveIsDarkMode = (mode: ThemeMode): boolean => {
   if (mode === 'dark') return true;
@@ -18,6 +34,8 @@ interface PreferencesState {
   theme: AppTheme;
   activeDevice: DeviceType;
   isProjectSidebarCollapsed: boolean;
+  lineageDrawerMode: DrawerLayoutMode;
+  biographyPreviewPrefs: BiographyPreviewPreferences;
   user: UserProfile;
   setThemeMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
@@ -25,6 +43,10 @@ interface PreferencesState {
   setActiveDevice: (device: DeviceType) => void;
   setProjectSidebarCollapsed: (collapsed: boolean) => void;
   toggleProjectSidebar: () => void;
+  setLineageDrawerMode: (mode: DrawerLayoutMode) => void;
+  updateBiographyPreviewPrefs: (
+    updates: Partial<BiographyPreviewPreferences>
+  ) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
 }
 
@@ -36,6 +58,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       theme: 'vscode',
       activeDevice: 'desktop',
       isProjectSidebarCollapsed: false,
+      lineageDrawerMode: 'narrow',
+      biographyPreviewPrefs: DEFAULT_BIOGRAPHY_PREVIEW_PREFS,
       user: {
         name: '',
         email: '',
@@ -62,6 +86,14 @@ export const usePreferencesStore = create<PreferencesState>()(
         set((state) => ({
           isProjectSidebarCollapsed: !state.isProjectSidebarCollapsed,
         })),
+      setLineageDrawerMode: (lineageDrawerMode) => set({ lineageDrawerMode }),
+      updateBiographyPreviewPrefs: (updates) =>
+        set((state) => ({
+          biographyPreviewPrefs: {
+            ...(state.biographyPreviewPrefs || DEFAULT_BIOGRAPHY_PREVIEW_PREFS),
+            ...updates,
+          },
+        })),
       updateUser: (updates) =>
         set((state) => ({ user: { ...state.user, ...updates } })),
     }),
@@ -69,6 +101,14 @@ export const usePreferencesStore = create<PreferencesState>()(
       name: 'nocoapp:preferences',
       version: 3,
       storage: createAppStorage(),
+      migrate: (persistedState: unknown, version: number) => {
+        const state = (persistedState ?? {}) as Record<string, unknown>;
+        if (version < 3) {
+          const { isAuthenticated: _removed, ...rest } = state;
+          return rest as unknown as PreferencesState;
+        }
+        return state as unknown as PreferencesState;
+      },
     }
   )
 );

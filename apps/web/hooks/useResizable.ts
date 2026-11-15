@@ -66,5 +66,5 @@ export const useResizable = ({
     };
   }, [isResizing, resize, stopResizing]);
 
-  return { width, isResizing, startResizing };
+  return { width, setWidth, isResizing, startResizing };
 };

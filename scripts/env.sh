@@ -49,7 +49,7 @@ compose_file="$repo_root/compose.yaml"
 case $name in
   development)
     project=yunpu-dev
-    app_port=3000
+    app_port=3001
     database_host_port=5432
     storage_host_port=9000
     database_name=yunpu_dev

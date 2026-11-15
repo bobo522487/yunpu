@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { compress } from "hono/compress";
 import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
@@ -6,7 +7,9 @@ import { secureHeaders } from "hono/secure-headers";
 import { Client } from "pg";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { ERROR_STATUS } from "@yunpu/shared";
+import { config } from "./config";
 import { AppError, mapDatabaseError } from "./lib/errors";
+import { logEvent, redact } from "./lib/logger";
 import { authMiddleware } from "./middleware/auth";
 import { authPages } from "./pages/auth";
 import { authRouter } from "./modules/auth/router";
@@ -28,8 +31,8 @@ function healthPayload(database: "up" | "down") {
   };
 }
 
-async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
-  const databaseUrl = process.env.DATABASE_URL;
+export async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
+  const databaseUrl = config().DATABASE_URL;
   if (!databaseUrl) {
     return { up: false };
   }
@@ -44,10 +47,21 @@ async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
     await client.connect();
     const result = await client.query<{ version: string }>("SELECT version()");
     return { up: true, version: result.rows[0]?.version };
-  } catch {
+  } catch (error) {
+    logEvent({
+      event: "database_probe",
+      result: "failed",
+      reason: redact(error instanceof Error ? error.message : String(error)),
+    });
     return { up: false };
   } finally {
-    await client?.end().catch(() => undefined);
+    await client?.end().catch((error: unknown) => {
+      logEvent({
+        event: "database_probe_close",
+        result: "failed",
+        reason: redact(error instanceof Error ? error.message : String(error)),
+      });
+    });
   }
 }
 
@@ -56,7 +70,7 @@ app.use(secureHeaders());
 app.use(compress());
 app.use(authMiddleware());
 
-app.onError((error, c) => {
+export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
   if (error instanceof AppError) {
     const retryAfter = error.details?.retryAfterSeconds;
     if (typeof retryAfter === "number") {
@@ -87,6 +101,12 @@ app.onError((error, c) => {
     );
   }
 
+  logEvent({
+    event: "unhandled_error",
+    request_id: c.get("requestId"),
+    reason: redact(error instanceof Error ? error.message : String(error)),
+    stack: redact(error instanceof Error ? (error.stack ?? "") : ""),
+  });
   const mapped = mapDatabaseError(error);
   return c.json(
     {
@@ -96,7 +116,9 @@ app.onError((error, c) => {
     },
     mapped.status as ContentfulStatusCode,
   );
-});
+}
+
+app.onError(onApiError);
 
 app.notFound((c) =>
   c.json({ ok: false, code: "NOT_FOUND", message: "接口不存在" }, 404),

@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { organization, organizationMember, project } from "@yunpu/db";
-import type { ProjectStatus } from "@yunpu/shared";
+import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import type { TxDatabase } from "../../db/with-user";
 
 export type ProjectRecord = {
@@ -12,6 +12,8 @@ export type ProjectRecord = {
   hallName: string | null;
   originText: string | null;
   description: string | null;
+  colorTheme: ProjectColorTheme;
+  projectLevel: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -33,6 +35,8 @@ const projectColumns = {
   hallName: project.hallName,
   originText: project.originText,
   description: project.description,
+  colorTheme: project.colorTheme,
+  projectLevel: project.projectLevel,
   createdAt: timestamp(project.createdAt),
   updatedAt: timestamp(project.updatedAt),
 };
@@ -87,6 +91,8 @@ export type CreateProjectValues = {
   hallName?: string;
   originText?: string;
   description?: string;
+  colorTheme?: ProjectColorTheme;
+  projectLevel?: number;
 };
 
 export async function insertProject(
@@ -104,6 +110,8 @@ export async function insertProject(
       hallName: values.hallName ?? null,
       originText: values.originText ?? null,
       description: values.description ?? null,
+      colorTheme: values.colorTheme ?? "sky",
+      projectLevel: values.projectLevel ?? 1,
     })
     .returning(projectColumns);
   return rows[0];
@@ -133,6 +141,8 @@ export async function casUpdateProject(
   if ("hallName" in values) set.hallName = values.hallName ?? null;
   if ("originText" in values) set.originText = values.originText ?? null;
   if ("description" in values) set.description = values.description ?? null;
+  if (values.colorTheme !== undefined) set.colorTheme = values.colorTheme;
+  if (values.projectLevel !== undefined) set.projectLevel = values.projectLevel;
 
   const rows = await db
     .update(project)

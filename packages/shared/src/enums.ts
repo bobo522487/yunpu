@@ -10,6 +10,16 @@ export type InviteStatus = (typeof INVITE_STATUSES)[number];
 export const PROJECT_STATUSES = ["planning", "in_progress", "completed"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
+export const PROJECT_COLOR_THEMES = [
+  "sky",
+  "pink",
+  "orange",
+  "indigo",
+  "emerald",
+  "violet",
+] as const;
+export type ProjectColorTheme = (typeof PROJECT_COLOR_THEMES)[number];
+
 export const TABLE_NAMES = [
   "organization",
   "organization_member",

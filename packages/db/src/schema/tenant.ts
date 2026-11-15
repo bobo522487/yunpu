@@ -5,12 +5,13 @@ import {
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { ORGANIZATION_STATUSES, INVITE_STATUSES, MEMBER_ROLES, PROJECT_STATUSES } from "@yunpu/shared";
+import { ORGANIZATION_STATUSES, INVITE_STATUSES, MEMBER_ROLES, PROJECT_COLOR_THEMES, PROJECT_STATUSES } from "@yunpu/shared";
 import { authUser } from "./auth";
 
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({
@@ -98,6 +99,10 @@ export const project = pgTable(
     hallName: text("hall_name"),
     originText: text("origin_text"),
     description: text("description"),
+    colorTheme: text("color_theme", { enum: PROJECT_COLOR_THEMES })
+      .notNull()
+      .default("sky"),
+    projectLevel: smallint("project_level").notNull().default(1),
     createdAt,
     updatedAt,
   },

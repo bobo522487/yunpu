@@ -1,11 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { FolderPlus, MoreVertical, Pencil, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ProjectColoredIcon } from '../../../components/common/NocoIcons';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import { errorMessage } from '../../../lib/api';
 import {
@@ -15,18 +12,28 @@ import {
   fetchProjects,
   updateProjectRequest,
   type OrgDetail,
+  type ProjectColorTheme,
   type ProjectRecord,
   type ProjectStatus,
 } from '../api';
 import PageSkeleton from '../components/PageSkeleton';
 import PageError from '../components/PageError';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { AssetEditorModal } from '../components/AssetEditorModal';
+import { DEFAULT_REGION_PATH } from '../data/regions';
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
   planning: '规划中',
   in_progress: '进行中',
   completed: '已完成',
 };
+
+/** 弹窗状态 ↔ API 状态：'1'已完成；'0'进行中（编辑时保留原有“规划中”，不静默升级）。 */
+const statusFromState = (
+  state: '0' | '1',
+  original?: ProjectStatus,
+): ProjectStatus =>
+  state === '1' ? 'completed' : original === 'planning' ? 'planning' : 'in_progress';
 
 type PageState = {
   loading: boolean;
@@ -44,108 +51,6 @@ const EMPTY: PageState = {
   nextCursor: null,
 };
 
-function ProjectFormDialog(props: {
-  mode: 'create' | 'edit';
-  project?: ProjectRecord;
-  onClose: () => void;
-  onSaved: (project: ProjectRecord) => void;
-}) {
-  const { mode, project, onClose, onSaved } = props;
-  const [name, setName] = useState(project?.name ?? '');
-  const [status, setStatus] = useState<ProjectStatus>(project?.status ?? 'planning');
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const submit = async () => {
-    setError(null);
-    setSaving(true);
-    try {
-      if (mode === 'create') {
-        const created = await createProjectRequest(
-          useWorkspaceStore.getState().activeWorkspaceId,
-          { name: name.trim(), status },
-        );
-        onSaved(created.project);
-      } else if (project) {
-        const updated = await updateProjectRequest(project.id, {
-          name: name.trim(),
-          status,
-          expectedUpdatedAt: project.updatedAt,
-        });
-        onSaved(updated.project);
-      }
-      onClose();
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="w-full max-w-sm rounded-xl border border-border bg-card p-5 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-foreground">
-            {mode === 'create' ? '新建项目' : '编辑项目'}
-          </h2>
-          <button type="button" onClick={onClose} aria-label="关闭">
-            <X size={16} className="text-muted-foreground" />
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="project-name">项目名</Label>
-            <Input
-              id="project-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="例如：李氏家谱"
-              autoFocus
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="project-status">状态</Label>
-            <select
-              id="project-status"
-              value={status}
-              onChange={(event) => setStatus(event.target.value as ProjectStatus)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
-            >
-              {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((value) => (
-                <option key={value} value={value}>
-                  {STATUS_LABELS[value]}
-                </option>
-              ))}
-            </select>
-          </div>
-          {error && <p className="text-[13px] text-destructive">{error}</p>}
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            取消
-          </Button>
-          <Button size="sm" onClick={() => void submit()} disabled={saving || !name.trim()}>
-            {saving ? '保存中…' : '保存'}
-          </Button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -158,6 +63,8 @@ const DashboardPage: React.FC = () => {
     mode: 'create' | 'edit';
     project?: ProjectRecord;
   } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSaving, setFormSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProjectRecord | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -225,6 +132,57 @@ const DashboardPage: React.FC = () => {
         ? prev.projects.map((p) => (p.id === project.id ? project : p))
         : [project, ...prev.projects],
     }));
+  };
+
+  // 富弹窗（远端仓库“新建云谱项目”界面）提交：映射到项目 API 载荷。
+  const handleEditorSubmit = async (values: {
+    name: string;
+    description: string;
+    colorTheme: ProjectColorTheme;
+    primarySurname?: string;
+    region?: string;
+    primaryName?: string;
+    projectState?: '0' | '1';
+    projectLevel?: number;
+  }) => {
+    if (!formDialog) return;
+    setFormError(null);
+    setFormSaving(true);
+    try {
+      const state0 = values.projectState ?? '0';
+      if (formDialog.mode === 'create') {
+        const created = await createProjectRequest(activeWorkspaceId, {
+          name: values.name.trim(),
+          status: statusFromState(state0),
+          surname: values.primarySurname?.trim(),
+          hallName: values.primaryName?.trim(),
+          originText: values.region?.trim(),
+          description: values.description.trim() || undefined,
+          colorTheme: values.colorTheme,
+          projectLevel: values.projectLevel ?? 1,
+        });
+        handleSaved(created.project);
+      } else if (formDialog.project) {
+        const original = formDialog.project;
+        const updated = await updateProjectRequest(original.id, {
+          name: values.name.trim(),
+          status: statusFromState(state0, original.status),
+          surname: values.primarySurname?.trim() ?? null,
+          hallName: values.primaryName?.trim() ?? null,
+          originText: values.region?.trim() ?? null,
+          description: values.description.trim() || null,
+          colorTheme: values.colorTheme,
+          projectLevel: values.projectLevel ?? original.projectLevel,
+          expectedUpdatedAt: original.updatedAt,
+        });
+        handleSaved(updated.project);
+      }
+      setFormDialog(null);
+    } catch (err) {
+      setFormError(errorMessage(err));
+    } finally {
+      setFormSaving(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -387,11 +345,36 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {formDialog && (
-        <ProjectFormDialog
+        <AssetEditorModal
+          open
           mode={formDialog.mode}
-          project={formDialog.project}
-          onClose={() => setFormDialog(null)}
-          onSaved={handleSaved}
+          kind="project"
+          submitting={formSaving}
+          error={formError}
+          initialValue={
+            formDialog.mode === 'edit' && formDialog.project
+              ? (() => {
+                  const p = formDialog.project;
+                  return {
+                    name: p.name,
+                    description: p.description ?? '',
+                    // 网络边界兜底：后端未返回新字段时避免预览组件读 undefined 崩溃。
+                    colorTheme: p.colorTheme ?? 'sky',
+                    primarySurname: p.surname ?? '',
+                    region: p.originText || DEFAULT_REGION_PATH,
+                    primaryName: p.hallName ?? '',
+                    projectState: (p.status === 'completed' ? '1' : '0') as '0' | '1',
+                    projectLevel: p.projectLevel ?? 1,
+                  };
+                })()
+              : undefined
+          }
+          onClose={() => {
+            if (formSaving) return;
+            setFormDialog(null);
+            setFormError(null);
+          }}
+          onSubmit={(values) => void handleEditorSubmit(values)}
         />
       )}
 

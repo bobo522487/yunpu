@@ -87,6 +87,9 @@ describe("console foundation (project table)", () => {
       "description",
       "created_at",
       "updated_at",
+      // 0010 迁移以 ADD COLUMN 追加到表尾。
+      "color_theme",
+      "project_level",
     ]);
   });
 });

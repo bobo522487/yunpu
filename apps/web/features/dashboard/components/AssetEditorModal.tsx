@@ -44,6 +44,10 @@ export interface AssetEditorModalProps {
     projectState?: '0' | '1';
     projectLevel?: number;
   };
+  /** 提交进行中：禁用提交按钮（由接入方驱动 API 请求）。 */
+  submitting?: boolean;
+  /** 提交失败的错误回显（如 409 冲突）。 */
+  error?: string | null;
   onClose: () => void;
   onSubmit: (values: AssetEditorSubmitValues) => void;
 }
@@ -60,6 +64,8 @@ export const AssetEditorModal: React.FC<AssetEditorModalProps> = ({
   mode,
   kind,
   initialValue,
+  submitting = false,
+  error = null,
   onClose,
   onSubmit,
 }) => {
@@ -678,17 +684,31 @@ export const AssetEditorModal: React.FC<AssetEditorModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
+              {error && (
+                <p
+                  role="alert"
+                  className="text-[12px] text-destructive mr-1 max-w-[280px] text-right"
+                >
+                  {error}
+                </p>
+              )}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={onClose}
+                disabled={submitting}
                 className="h-8 px-4"
               >
                 取消
               </Button>
-              <Button type="submit" size="sm" className="h-8 px-5">
-                确定
+              <Button
+                type="submit"
+                size="sm"
+                disabled={submitting}
+                className="h-8 px-5"
+              >
+                {submitting ? '保存中…' : '确定'}
               </Button>
             </div>
           </div>

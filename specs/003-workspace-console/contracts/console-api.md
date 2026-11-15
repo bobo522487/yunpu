@@ -62,7 +62,7 @@
 | 方法 | 路径 | 请求 | `data` 响应 |
 | --- | --- | --- | --- |
 | `GET` | `/organizations/:organizationId/projects` | 分页 + `?sort=recent` | `{ items: [{ id, name, status, updatedAt, createdAt }], nextCursor }`；首页取 `limit=5` 即「最近 5 条」（按 `updated_at` 降序，无更新按 `created_at`） |
-| `POST` | `/organizations/:organizationId/projects` | `{ name, status?, surname?, hallName?, originText?, description? }` | 201 `{ project }` |
+| `POST` | `/organizations/:organizationId/projects` | `{ name, status?, surname?, hallName?, originText?, description?, colorTheme?, projectLevel? }` | 201 `{ project }`（`colorTheme` ∈ 6 色、`projectLevel` 1–5，见迁移 `0010_project_theme_level.sql`） |
 | `GET` | `/projects/:projectId` | — | `{ project }` |
 | `PATCH` | `/projects/:projectId` | 变更字段 + **`expectedUpdatedAt`**（乐观锁令牌） | `{ project }`；令牌不匹配 → 409 `CONCURRENT_MODIFICATION` |
 | `DELETE` | `/projects/:projectId` | — | `{ deleted: true }`；未来内容表 `RESTRICT` 时 → 409 |

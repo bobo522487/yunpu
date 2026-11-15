@@ -37,6 +37,14 @@ export type OrgDetail = {
 
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed';
 
+export type ProjectColorTheme =
+  | 'sky'
+  | 'pink'
+  | 'orange'
+  | 'indigo'
+  | 'emerald'
+  | 'violet';
+
 export type ProjectRecord = {
   id: string;
   organizationId: string;
@@ -46,6 +54,8 @@ export type ProjectRecord = {
   hallName: string | null;
   originText: string | null;
   description: string | null;
+  colorTheme: ProjectColorTheme;
+  projectLevel: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -86,6 +96,8 @@ export type CreateProjectPayload = {
   hallName?: string;
   originText?: string;
   description?: string;
+  colorTheme?: ProjectColorTheme;
+  projectLevel?: number;
 };
 
 function query(params: Record<string, string | number | undefined>): string {

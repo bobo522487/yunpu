@@ -15,6 +15,8 @@ type MockProject = {
   hallName: string | null;
   originText: string | null;
   description: string | null;
+  colorTheme: 'sky' | 'pink' | 'orange' | 'indigo' | 'emerald' | 'violet';
+  projectLevel: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -48,7 +50,15 @@ type ConsoleDb = {
 function loadConsoleDb(): ConsoleDb {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as ConsoleDb;
+    if (raw) {
+      const db = JSON.parse(raw) as ConsoleDb;
+      // 旧本地数据可能缺新增字段，归一化避免编辑弹窗读到 undefined。
+      for (const project of db.projects ?? []) {
+        project.colorTheme ??= 'sky';
+        project.projectLevel ??= 1;
+      }
+      return db;
+    }
   } catch {
     // 忽略损坏的本地数据。
   }
@@ -412,6 +422,21 @@ function handleOrganizations(parts: string[], search: string, options: RequestOp
         hallName: typeof body.hallName === 'string' && body.hallName.trim() ? body.hallName.trim() : null,
         originText: typeof body.originText === 'string' && body.originText.trim() ? body.originText.trim() : null,
         description: typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null,
+        colorTheme:
+          body.colorTheme === 'pink' ||
+          body.colorTheme === 'orange' ||
+          body.colorTheme === 'indigo' ||
+          body.colorTheme === 'emerald' ||
+          body.colorTheme === 'violet'
+            ? body.colorTheme
+            : 'sky',
+        projectLevel:
+          typeof body.projectLevel === 'number' &&
+          Number.isInteger(body.projectLevel) &&
+          body.projectLevel >= 1 &&
+          body.projectLevel <= 5
+            ? body.projectLevel
+            : 1,
         createdAt: nowIso(),
         updatedAt: nowIso(),
       };
@@ -477,6 +502,24 @@ function handleProjects(parts: string[], search: string, options: RequestOptions
         project[field] =
           typeof value === 'string' && value.trim() ? value.trim() : null;
       }
+    }
+    if (
+      body.colorTheme === 'sky' ||
+      body.colorTheme === 'pink' ||
+      body.colorTheme === 'orange' ||
+      body.colorTheme === 'indigo' ||
+      body.colorTheme === 'emerald' ||
+      body.colorTheme === 'violet'
+    ) {
+      project.colorTheme = body.colorTheme;
+    }
+    if (
+      typeof body.projectLevel === 'number' &&
+      Number.isInteger(body.projectLevel) &&
+      body.projectLevel >= 1 &&
+      body.projectLevel <= 5
+    ) {
+      project.projectLevel = body.projectLevel;
     }
     project.updatedAt = nowIso();
     saveConsoleDb(consoleDb);

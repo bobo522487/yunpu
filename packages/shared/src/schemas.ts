@@ -3,6 +3,7 @@ import {
   INVITE_STATUSES,
   MEMBER_ROLES,
   ORGANIZATION_STATUSES,
+  PROJECT_COLOR_THEMES,
   PROJECT_STATUSES,
 } from "./enums";
 
@@ -92,6 +93,8 @@ export const CreateProjectSchema = z.object({
   hallName: optionalNonBlank(50),
   originText: z.string().trim().max(200).optional(),
   description: z.string().trim().max(2000).optional(),
+  colorTheme: z.enum(PROJECT_COLOR_THEMES).optional(),
+  projectLevel: z.coerce.number().int().min(1).max(5).optional(),
 });
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
 
@@ -103,6 +106,8 @@ export const UpdateProjectSchema = z
     hallName: optionalNonBlank(50).nullable().optional(),
     originText: z.string().trim().max(200).nullable().optional(),
     description: z.string().trim().max(2000).nullable().optional(),
+    colorTheme: z.enum(PROJECT_COLOR_THEMES).optional(),
+    projectLevel: z.coerce.number().int().min(1).max(5).optional(),
     expectedUpdatedAt: z.iso.datetime(),
   })
   .refine(

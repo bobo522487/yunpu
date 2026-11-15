@@ -10,7 +10,7 @@ import { ERROR_STATUS } from "@yunpu/shared";
 import { PG_OPTIONS } from "@yunpu/db";
 import { config } from "./config";
 import { AppError, mapDatabaseError } from "./lib/errors";
-import { logEvent, redact } from "./lib/logger";
+import { logEvent } from "./lib/logger";
 import { authMiddleware } from "./middleware/auth";
 import { authPages } from "./pages/auth";
 import { authRouter } from "./modules/auth/router";
@@ -54,7 +54,7 @@ export async function probeDatabase(): Promise<{ up: boolean; version?: string }
     logEvent({
       event: "database_probe",
       result: "failed",
-      reason: redact(error instanceof Error ? error.message : String(error)),
+      reason: error instanceof Error ? error.message : String(error),
     });
     return { up: false };
   } finally {
@@ -62,7 +62,7 @@ export async function probeDatabase(): Promise<{ up: boolean; version?: string }
       logEvent({
         event: "database_probe_close",
         result: "failed",
-        reason: redact(error instanceof Error ? error.message : String(error)),
+        reason: error instanceof Error ? error.message : String(error),
       });
     });
   }
@@ -107,8 +107,8 @@ export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
   logEvent({
     event: "unhandled_error",
     request_id: c.get("requestId"),
-    reason: redact(error instanceof Error ? error.message : String(error)),
-    stack: redact(error instanceof Error ? (error.stack ?? "") : ""),
+    reason: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? (error.stack ?? "") : "",
   });
   const mapped = mapDatabaseError(error);
   return c.json(

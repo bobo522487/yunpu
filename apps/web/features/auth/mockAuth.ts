@@ -1,4 +1,4 @@
-import { ApiError, registerMockHandler, type RequestOptions } from '../../lib/api';
+import { ApiError, type RequestOptions } from '../../lib/api';
 import { handleConsoleMock } from '../dashboard/mockConsole';
 
 export type MockUser = {
@@ -174,7 +174,7 @@ function acceptInvite(db: MockDb, options: RequestOptions) {
   return { organization, defaultOrganizationChanged: true };
 }
 
-function handleMockRequest(path: string, options: RequestOptions): unknown {
+export function handleMockRequest(path: string, options: RequestOptions): unknown {
   const method = options.method ?? 'GET';
   const db = loadDb();
 
@@ -209,4 +209,5 @@ function currentUserOrNull(db: MockDb): MockUser | null {
   return db.users.find((item) => item.id === db.sessionUserId) ?? null;
 }
 
-registerMockHandler(handleMockRequest);
+// 注册由 features/auth/enableMock（dev + VITE_ENABLE_MOCK=1）显式驱动，
+// 本模块不再顶层自注册，生产构建不会包含 mock 链。

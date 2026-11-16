@@ -5,6 +5,7 @@
 .worktrees/
 # local secrets, test env, runtime state, and bun's lockfile
 .env
+.env.local
 .env.test
 .local/
 bun.lock

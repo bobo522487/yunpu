@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AppTheme, DeviceType, ThemeMode, UserProfile } from '../types';
+import { AppTheme, ThemeMode, UserProfile } from '../types';
 import {
   BiographyPreviewPreferences,
   DrawerLayoutMode,
@@ -32,7 +32,6 @@ interface PreferencesState {
   themeMode: ThemeMode;
   isDarkMode: boolean;
   theme: AppTheme;
-  activeDevice: DeviceType;
   isProjectSidebarCollapsed: boolean;
   lineageDrawerMode: DrawerLayoutMode;
   biographyPreviewPrefs: BiographyPreviewPreferences;
@@ -40,7 +39,6 @@ interface PreferencesState {
   setThemeMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   setAppTheme: (theme: AppTheme) => void;
-  setActiveDevice: (device: DeviceType) => void;
   setProjectSidebarCollapsed: (collapsed: boolean) => void;
   toggleProjectSidebar: () => void;
   setLineageDrawerMode: (mode: DrawerLayoutMode) => void;
@@ -56,7 +54,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       themeMode: 'light',
       isDarkMode: false,
       theme: 'vscode',
-      activeDevice: 'desktop',
       isProjectSidebarCollapsed: false,
       lineageDrawerMode: 'narrow',
       biographyPreviewPrefs: DEFAULT_BIOGRAPHY_PREVIEW_PREFS,
@@ -79,7 +76,6 @@ export const usePreferencesStore = create<PreferencesState>()(
         });
       },
       setAppTheme: (theme) => set({ theme }),
-      setActiveDevice: (activeDevice) => set({ activeDevice }),
       setProjectSidebarCollapsed: (isProjectSidebarCollapsed) =>
         set({ isProjectSidebarCollapsed }),
       toggleProjectSidebar: () =>

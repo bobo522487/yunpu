@@ -1,77 +1,53 @@
 import React, { useState } from 'react';
-import {
-  LayoutGrid,
-  Database,
-  Table,
-  Plus,
-  File,
-  Eye,
-  Filter,
-  TableIcon,
-  Server,
-  Copy,
-  Check,
-  FolderKanban,
-} from 'lucide-react';
+import { Plus, Copy, Check, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem } from './Dropdown';
-import { Button } from '../ui/button';
 import CreateWorkspaceDialog from '../../features/workspace/components/CreateWorkspaceDialog';
 import { ViewMode } from '../../types';
 import { useRouteContext } from '../../hooks/useRouteContext';
-import { useBuilderStore } from '../../store/useBuilderStore';
-import { useDataStore } from '../../store/useDataStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
+
+const SECTION_LABELS: Partial<Record<ViewMode, string>> = {
+  [ViewMode.HOME]: '首页',
+  [ViewMode.PROJECTS]: '项目',
+  [ViewMode.MEMBERS]: '成员和团队',
+  [ViewMode.WORKSPACE_SETTINGS]: '设置',
+  [ViewMode.PROJECT_HOME]: '项目首页',
+  [ViewMode.PROJECT_SETTINGS]: '项目设置',
+  [ViewMode.LINEAGE]: '世系',
+  [ViewMode.ARTICLES]: '人物传记',
+  [ViewMode.BOOKS]: '宗谱',
+};
+
+const Separator: React.FC = () => (
+  <span className="text-muted-foreground/40 mx-1 text-base font-light">/</span>
+);
 
 const Breadcrumb: React.FC = () => {
   const navigate = useNavigate();
-  const { activeView, appId, activePageId, activeTableId, isWorkspaceShell } =
-    useRouteContext();
+  const { activeView, isWorkspaceShell } = useRouteContext();
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const switchWorkspace = useWorkspaceStore((s) => s.switchWorkspace);
   const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
-  const apps = useWorkspaceStore((s) => s.apps);
   const members = useWorkspaceStore((s) => s.members);
+  const projects = useWorkspaceStore((s) => s.projects);
+  const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
 
-  const pages = useBuilderStore((s) => s.pages);
-  const tables = useDataStore((s) => s.tables);
-  const views = useDataStore((s) => s.views);
-  const activeViewId = useDataStore((s) => s.activeViewId);
-  const setActiveViewId = useDataStore((s) => s.setActiveViewId);
-  const dataViewMode = useDataStore((s) => s.dataViewMode);
-  const setDataViewMode = useDataStore((s) => s.setDataViewMode);
-
-  const [selectedSource, setSelectedSource] = useState({
-    id: 'src-1',
-    label: 'nocoapp-db',
-  });
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
   const activeWorkspace =
     workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+  const activeProject = projects.find((p) => p.id === activeProjectId);
   const workspaceMembersCount = members.filter(
     (m) => m.workspaceId === activeWorkspace?.id
   ).length;
 
-  // In Workspace Shell mode (NocoDB style: 个人空间 / 项目)
+  // Workspace Shell mode (NocoDB style: 个人空间 / 项目)
   if (isWorkspaceShell) {
-    const sectionLabelMap: Partial<Record<ViewMode, string>> = {
-      [ViewMode.HOME]: '首页',
-      [ViewMode.PROJECTS]: '项目',
-      [ViewMode.MEMBERS]: '成员和团队',
-      [ViewMode.WORKSPACE_SETTINGS]: '设置',
-      [ViewMode.PROJECT_HOME]: '项目首页',
-      [ViewMode.PROJECT_SETTINGS]: '项目设置',
-      [ViewMode.APPS]: '应用',
-      [ViewMode.DATA]: '数据表',
-      [ViewMode.DATASOURCE]: '数据源',
-      [ViewMode.SETTINGS]: '文件',
-    };
-
     return (
       <div
         className="flex items-center gap-1.5 min-w-0 text-[14px] leading-5"
@@ -84,65 +60,13 @@ const Breadcrumb: React.FC = () => {
         >
           {activeWorkspace?.name || '个人空间'}
         </span>
-        <span className="text-muted-foreground/70">/</span>
+        <Separator />
         <span className="font-semibold text-foreground truncate">
-          {sectionLabelMap[activeView] || '项目'}
+          {SECTION_LABELS[activeView] || '项目'}
         </span>
       </div>
     );
   }
-
-  const sources = [
-    { id: 'src-1', label: 'nocoapp-db', group: '数据源', icon: Database },
-    { id: 'src-2', label: 'production-analytics', group: '数据源', icon: Database },
-  ];
-
-  const workspaceApps = apps
-    .filter((a) => a.workspaceId === activeWorkspace?.id)
-    .map((a) => ({
-      id: a.id,
-      label: a.name,
-      group: '应用',
-      icon: LayoutGrid,
-      defaultPageId: a.defaultPageId,
-    }));
-
-  const currentApp =
-    apps.find((a) => a.id === appId) ||
-    apps.find((a) => a.workspaceId === activeWorkspace?.id) ||
-    apps[0];
-
-  const activePage = pages.find((p) => p.id === activePageId);
-  const pageItems = pages
-    .filter((p) => p.type === 'page')
-    .map((p) => ({
-      id: p.id,
-      label: p.name,
-      group: '页面',
-      icon: File,
-    }));
-
-  const activeTableItem = tables.find((t) => t.id === activeTableId);
-  const tableItems = tables.map((t) => ({
-    id: t.id,
-    label: t.name,
-    group: t.kind === 'view' ? '视图' : '数据表',
-    icon: t.kind === 'view' ? Eye : Table,
-  }));
-
-  const activeViewItem = views.find((v) => v.id === activeViewId);
-  const currentTableViews = views
-    .filter((v) => v.tableId === activeTableId)
-    .map((v) => ({
-      id: v.id,
-      label: v.name,
-      group: v.isDefault ? '默认视图' : '自定义视图',
-      icon: Filter,
-    }));
-
-  const Separator = () => (
-    <span className="text-muted-foreground/40 mx-1 text-base font-light">/</span>
-  );
 
   const orgItems: DropdownItem[] = workspaces.map((w) => ({
     id: w.id,
@@ -224,131 +148,17 @@ const Breadcrumb: React.FC = () => {
         }
       />
 
-      {activeView === ViewMode.APPS && (
+      <Separator />
+      <span className="font-semibold text-foreground truncate px-1.5">
+        {activeProject?.name || '项目'}
+      </span>
+
+      {activeView !== ViewMode.PROJECT_HOME && (
         <>
           <Separator />
-          <Dropdown
-            triggerLabel={currentApp?.name || '应用'}
-            triggerIcon={LayoutGrid}
-            items={workspaceApps}
-            selectedId={currentApp?.id}
-            onSelect={(item) => {
-              const target = apps.find((a) => a.id === item.id);
-              navigate(`/apps/${item.id}/pages/${target?.defaultPageId || 'page-1'}`);
-            }}
-            searchPlaceholder="查找应用..."
-            open={activeDropdown === 'app'}
-            onOpenChange={(isOpen) => setActiveDropdown(isOpen ? 'app' : null)}
-          />
-          <Separator />
-          <Dropdown
-            triggerLabel={activePage?.name || '选择页面'}
-            triggerIcon={File}
-            items={pageItems}
-            selectedId={activePageId}
-            onSelect={(item) => navigate(`/apps/${appId}/pages/${item.id}`)}
-            searchPlaceholder="查找页面..."
-            open={activeDropdown === 'page'}
-            onOpenChange={(isOpen) => setActiveDropdown(isOpen ? 'page' : null)}
-          />
-        </>
-      )}
-
-      {activeView === ViewMode.DATA && (
-        <>
-          <Separator />
-          <Dropdown
-            triggerLabel={selectedSource.label}
-            triggerIcon={Database}
-            items={sources}
-            selectedId={selectedSource.id}
-            onSelect={(item) => setSelectedSource({ id: item.id, label: item.label })}
-            searchPlaceholder="查找数据源..."
-            open={activeDropdown === 'source'}
-            onOpenChange={(isOpen) => setActiveDropdown(isOpen ? 'source' : null)}
-            footer={
-              <div
-                className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none hover:bg-muted cursor-pointer w-full text-foreground gap-2 transition-colors"
-                onClick={() => {
-                  setActiveDropdown(null);
-                  navigate('/datasources');
-                }}
-              >
-                <Plus size={14} className="text-muted-foreground" />
-                <span>新建数据源</span>
-              </div>
-            }
-          />
-          <Separator />
-          <Dropdown
-            triggerLabel={activeTableItem?.name || activeTableId || '选择数据表'}
-            triggerIcon={activeTableItem?.kind === 'view' ? Eye : Table}
-            items={tableItems}
-            selectedId={activeTableId}
-            onSelect={(item) => navigate(`/data/${item.id}`)}
-            searchPlaceholder="查找数据表..."
-            open={activeDropdown === 'table'}
-            onOpenChange={(isOpen) => setActiveDropdown(isOpen ? 'table' : null)}
-          />
-          {activeViewId && activeTableId && (
-            <>
-              <Separator />
-              <Dropdown
-                triggerLabel={activeViewItem?.name || '视图'}
-                triggerIcon={Filter}
-                items={currentTableViews}
-                selectedId={activeViewId}
-                onSelect={(item) => setActiveViewId(item.id)}
-                searchPlaceholder="查找视图..."
-                open={activeDropdown === 'view'}
-                onOpenChange={(isOpen) => setActiveDropdown(isOpen ? 'view' : null)}
-                width={200}
-              />
-            </>
-          )}
-
-          {activeTableId && (
-            <>
-              <div className="h-4 w-px bg-border mx-2" />
-              <div className="flex bg-muted/60 p-0.5 rounded-md border border-border/50">
-                <Button
-                  variant={dataViewMode === 'DATA' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setDataViewMode('DATA')}
-                  className="h-6 text-xs gap-1.5 px-2 whitespace-nowrap"
-                >
-                  <TableIcon size={12} /> 数据
-                </Button>
-                <Button
-                  variant={dataViewMode === 'MODEL' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setDataViewMode('MODEL')}
-                  className="h-6 text-xs gap-1.5 px-2 whitespace-nowrap"
-                >
-                  <Database size={12} /> 模型
-                </Button>
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {activeView === ViewMode.DATASOURCE && (
-        <>
-          <Separator />
-          <div className="flex items-center gap-1.5 text-foreground font-semibold px-1.5 py-1 rounded text-[14px]">
-            <Server size={14} className="text-muted-foreground" />
-            <span>数据源</span>
-          </div>
-          <Separator />
-          <span className="text-muted-foreground font-medium text-[14px]">连接配置</span>
-        </>
-      )}
-
-      {activeView === ViewMode.SETTINGS && (
-        <>
-          <Separator />
-          <span className="font-semibold text-foreground text-[14px]">代码文件</span>
+          <span className="text-muted-foreground font-medium truncate px-1.5">
+            {SECTION_LABELS[activeView] || ''}
+          </span>
         </>
       )}
 

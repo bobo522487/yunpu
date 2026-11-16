@@ -89,9 +89,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ width }) => {
     return null;
   }
 
-  const isSettingsMode =
-    activeView === ViewMode.PROJECT_SETTINGS ||
-    activeView === ViewMode.SETTINGS;
+  const isSettingsMode = activeView === ViewMode.PROJECT_SETTINGS;
 
   const moduleItems = [
     {

@@ -8,26 +8,12 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import {
-  DndContext,
-  DragOverlay,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  DragStartEvent,
-  DragEndEvent,
-} from '@dnd-kit/core';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
 import ProjectMiniRail from '../components/layout/ProjectMiniRail';
 import ProjectSidebar from '../components/layout/ProjectSidebar';
 import ProjectTopbar from '../components/layout/ProjectTopbar';
 import { CommandPaletteProvider } from '../components/layout/CommandPaletteModal';
-import Editor from '../features/editor/components/Editor';
-import DataPage from '../features/data-modeler/pages/DataPage';
-import DataSourcePage from '../features/datasource/pages/DataSourcePage';
-import PostgreSQLPage from '../features/datasource/pages/PostgreSQLPage';
-import AppBuilderPage from '../features/app-builder/pages/AppBuilderPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 import WorkspaceHomePage from '../features/dashboard/pages/WorkspaceHomePage';
 import MembersPage from '../features/dashboard/pages/MembersPage';
@@ -41,7 +27,6 @@ import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import OnboardingPage from '../features/auth/pages/OnboardingPage';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import MockModeIndicator from '../components/MockModeIndicator';
-import { ViewMode } from '../types';
 import { useResizable } from '../hooks/useResizable';
 import { useRouteContext } from '../hooks/useRouteContext';
 import {
@@ -49,8 +34,6 @@ import {
   usePreferencesStore,
 } from '../store/usePreferencesStore';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
-import { useBuilderStore } from '../store/useBuilderStore';
-import { useDataStore } from '../store/useDataStore';
 
 const RequireAuth: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const status = useAuthStore((s) => s.status);
@@ -96,18 +79,12 @@ const InviteRedirect: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const { activeView, activeProjectId, isWorkspaceShell } = useRouteContext();
+  const { activeProjectId, isWorkspaceShell } = useRouteContext();
   const isProjectSidebarCollapsed = usePreferencesStore(
     (s) => s.isProjectSidebarCollapsed
   );
   const storedProjectId = useWorkspaceStore((s) => s.activeProjectId);
   const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
-
-  const draggedWidget = useBuilderStore((s) => s.draggedWidget);
-  const setDraggedWidget = useBuilderStore((s) => s.setDraggedWidget);
-  const setDroppedWidget = useBuilderStore((s) => s.setDroppedWidget);
-
-  const isAppBuilder = activeView === ViewMode.APPS;
 
   useEffect(() => {
     if (!isWorkspaceShell && activeProjectId && activeProjectId !== storedProjectId) {
@@ -120,12 +97,6 @@ const MainLayout: React.FC = () => {
     // 组织列表以 API 为唯一事实源；失败时 store 已清空模板假组织，页面各自展示错误态。
     void useWorkspaceStore.getState().hydrateFromApi().catch(() => {});
   }, [isWorkspaceShell]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
-  );
 
   const {
     width: wsSidebarWidth,
@@ -153,22 +124,7 @@ const MainLayout: React.FC = () => {
 
   const isResizing = isResizingWsSidebar || isResizingProjectSidebar;
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setDraggedWidget(event.active.data.current);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && over.id === 'canvas-droppable') {
-      setDroppedWidget({
-        ...active.data.current,
-        id: `widget-${Date.now()}`,
-      });
-    }
-    setDraggedWidget(null);
-  };
-
-  const layoutContent = (
+  return (
     <CommandPaletteProvider>
       <div
         className={`flex h-screen w-screen bg-background text-foreground overflow-hidden font-sans transition-colors duration-200 ${
@@ -220,38 +176,9 @@ const MainLayout: React.FC = () => {
             </div>
           </>
         )}
-
-        <DragOverlay>
-          {draggedWidget ? (
-            <div className="opacity-80 pointer-events-none transform scale-105 cursor-grabbing">
-              <div className="flex flex-col items-center justify-center p-2 rounded-md border bg-card shadow-xl w-20 h-20">
-                {draggedWidget.icon && (
-                  <draggedWidget.icon size={24} className="text-primary mb-1" />
-                )}
-                <span className="text-[10px] font-medium text-foreground">
-                  {draggedWidget.name}
-                </span>
-              </div>
-            </div>
-          ) : null}
-        </DragOverlay>
       </div>
     </CommandPaletteProvider>
   );
-
-  if (isAppBuilder) {
-    return (
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        {layoutContent}
-      </DndContext>
-    );
-  }
-
-  return layoutContent;
 };
 
 const App: React.FC = () => {
@@ -259,7 +186,6 @@ const App: React.FC = () => {
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
   const theme = usePreferencesStore((s) => s.theme);
   const bootstrap = useAuthStore((s) => s.bootstrap);
-  const defaultTableId = useDataStore((s) => s.tables[0]?.id || 'clan_members');
 
   useEffect(() => {
     void bootstrap();
@@ -351,47 +277,29 @@ const App: React.FC = () => {
             element={<GenealogySectionPage section="books" />}
           />
           <Route
-            path="/projects/:projectId/data/:tableId"
-            element={<DataPage />}
-          />
-          <Route
-            path="/projects/:projectId/datasources"
-            element={<DataSourcePage />}
-          />
-          <Route
-            path="/projects/:projectId/datasources/postgresql"
-            element={<PostgreSQLPage />}
-          />
-          <Route
-            path="/projects/:projectId/datasources/postgresql/:id"
-            element={<PostgreSQLPage />}
-          />
-          <Route path="/projects/:projectId/files" element={<Editor />} />
-          <Route
             path="/projects/:projectId/settings"
             element={<ProjectSettingsPage />}
           />
-          <Route
-            path="/projects/:projectId/apps/:appId/pages/:pageId"
-            element={<AppBuilderPage />}
-          />
 
-          {/* Legacy /apps routes redirect to Cloud Genealogy dashboard */}
+          {/* 已下线的模板功能（应用构建/数据表/数据源/代码文件）统一回落到项目首页 */}
+          <Route
+            path="/projects/:projectId/data/:tableId"
+            element={<ProjectFallback />}
+          />
+          <Route
+            path="/projects/:projectId/datasources/*"
+            element={<ProjectFallback />}
+          />
+          <Route path="/projects/:projectId/files" element={<ProjectFallback />} />
+          <Route
+            path="/projects/:projectId/apps/*"
+            element={<ProjectFallback />}
+          />
           <Route path="/apps" element={<Navigate to="/" replace />} />
           <Route path="/apps/*" element={<Navigate to="/" replace />} />
-
-          <Route
-            path="/data"
-            element={<Navigate to={`/data/${defaultTableId}`} replace />}
-          />
-          <Route path="/data/new" element={<Navigate to="/datasources" replace />} />
-          <Route path="/data/:tableId" element={<DataPage />} />
-
-          <Route path="/datasources" element={<DataSourcePage />} />
-          <Route path="/datasources/postgresql" element={<PostgreSQLPage />} />
-          <Route path="/datasources/postgresql/:id" element={<PostgreSQLPage />} />
-
-          <Route path="/files" element={<Editor />} />
+          <Route path="/data/*" element={<Navigate to="/" replace />} />
+          <Route path="/datasources/*" element={<Navigate to="/" replace />} />
+          <Route path="/files" element={<Navigate to="/" replace />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Route>
@@ -399,6 +307,12 @@ const App: React.FC = () => {
       <MockModeIndicator />
     </HashRouter>
   );
+};
+
+/** 模板功能下线后的占位页：项目壳内把旧链接送回项目首页。 */
+const ProjectFallback: React.FC = () => {
+  const { projectId } = useParams();
+  return <Navigate to={`/projects/${projectId ?? ''}`} replace />;
 };
 
 export default App;

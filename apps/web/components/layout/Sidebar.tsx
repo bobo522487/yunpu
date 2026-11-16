@@ -1,32 +1,19 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  ChevronRight,
-  ChevronDown,
   ChevronsUpDown,
-  File as FileIcon,
-  Folder as FolderIcon,
-  FolderOpen,
   Home,
   Users,
   Settings,
-  ArrowLeft,
   Check,
   Plus,
   Search,
-  Database,
-  Table,
-  Code2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { FileSystemNode, FileType, ViewMode } from '../../types';
-import PagesPanel from '../../features/app-builder/components/PagesPanel';
-import TablePanel from '../../features/data-modeler/components/TablePanel';
-import DataSourcePanel from '../../features/datasource/components/DataSourcePanel';
+import { ViewMode } from '../../types';
 import CreateWorkspaceDialog from '../../features/workspace/components/CreateWorkspaceDialog';
 import UserAvatarMenu from './UserAvatarMenu';
 import { ProjectLayersOutlineIcon, WorkspaceLogoIcon } from '../common/NocoIcons';
 import { useRouteContext } from '../../hooks/useRouteContext';
-import { useEditorStore } from '../../store/useEditorStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import { errorMessage } from '../../lib/api';
@@ -34,73 +21,6 @@ import {
   createOrganizationRequest,
   fetchOrganization,
 } from '../../features/dashboard/api';
-
-interface FileTreeProps {
-  node: FileSystemNode;
-  depth: number;
-  onToggleFolder: (id: string) => void;
-  onSelectFile: (node: FileSystemNode) => void;
-  selectedFileId: string | null;
-}
-
-const FileTree: React.FC<FileTreeProps> = ({
-  node,
-  depth,
-  onToggleFolder,
-  onSelectFile,
-  selectedFileId,
-}) => {
-  const isSelected = node.id === selectedFileId;
-  const paddingLeft = `${depth * 12 + 12}px`;
-
-  if (node.type === FileType.FILE) {
-    return (
-      <div
-        onClick={() => onSelectFile(node)}
-        className={`flex items-center py-1.5 cursor-pointer text-[13px] select-none transition-colors rounded-sm mx-1 ${
-          isSelected
-            ? 'bg-accent text-accent-foreground font-semibold'
-            : 'text-foreground/85 font-medium hover:bg-muted/50 hover:text-foreground'
-        }`}
-        style={{ paddingLeft }}
-      >
-        <FileIcon size={14} className="mr-2 text-blue-500" />
-        <span className="truncate">{node.name}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div
-        onClick={() => onToggleFolder(node.id)}
-        className="flex items-center py-1.5 cursor-pointer text-[13px] font-medium text-foreground/85 hover:text-foreground hover:bg-muted/50 select-none transition-colors rounded-sm mx-1"
-        style={{ paddingLeft }}
-      >
-        <span className="mr-1 opacity-70">
-          {node.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </span>
-        {node.isOpen ? (
-          <FolderOpen size={14} className="mr-2 text-yellow-500" />
-        ) : (
-          <FolderIcon size={14} className="mr-2 text-yellow-500" />
-        )}
-        <span className="font-medium truncate">{node.name}</span>
-      </div>
-      {node.isOpen &&
-        node.children?.map((child) => (
-          <FileTree
-            key={child.id}
-            node={child}
-            depth={depth + 1}
-            onToggleFolder={onToggleFolder}
-            onSelectFile={onSelectFile}
-            selectedFileId={selectedFileId}
-          />
-        ))}
-    </div>
-  );
-};
 
 interface SidebarProps {
   width: number;
@@ -117,14 +37,6 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
   // 侧栏计数以组织详情 API 为准（SC-001 数字一致性），不读模板种子数据。
   const [orgCounts, setOrgCounts] = useState({ projects: 0, members: 0 });
   const [switchError, setSwitchError] = useState<string | null>(null);
-
-  const files = useEditorStore((s) => s.files);
-  const toggleFolder = useEditorStore((s) => s.toggleFolder);
-  const selectFile = useEditorStore((s) => s.selectFile);
-  const selectedFileId = useEditorStore((s) => {
-    const activeTab = s.tabs.find((t) => t.id === s.editorActiveTabId);
-    return activeTab?.fileId || null;
-  });
 
   const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
   const [wsSearch, setWsSearch] = useState('');
@@ -392,102 +304,22 @@ const Sidebar: React.FC<SidebarProps> = ({ width }) => {
     );
   }
 
-  // Context Panel Mode (Inside Project / App / Datasource / Files)
-  const renderContextContent = () => {
-    switch (activeView) {
-      case ViewMode.APPS:
-        return <PagesPanel />;
-      case ViewMode.DATA:
-        return <TablePanel />;
-      case ViewMode.DATASOURCE:
-        return <DataSourcePanel />;
-      case ViewMode.SETTINGS:
-      default:
-        return (
-          <div className="flex flex-col h-full">
-            <div className="h-10 px-4 border-b border-border flex items-center shrink-0 bg-background">
-              <span className="font-semibold text-[13px] text-foreground">
-                文件资源管理器
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto py-2">
-              {files.map((node) => (
-                <FileTree
-                  key={node.id}
-                  node={node}
-                  depth={0}
-                  onToggleFolder={toggleFolder}
-                  onSelectFile={selectFile}
-                  selectedFileId={selectedFileId}
-                />
-              ))}
-            </div>
-          </div>
-        );
-    }
-  };
-
+  // 兜底：Sidebar 只在 workspace shell 渲染（项目壳用 ProjectSidebar）。
+  // 模板 context panel（应用/数据表/数据源/文件树）已随模板 UI 整体下线。
   return (
     <aside
       style={{ width }}
-      className="flex flex-col bg-background h-full shrink-0 border-r border-border relative z-30 overflow-visible"
+      className="flex flex-col bg-background h-full shrink-0 border-r border-border relative z-30"
     >
-      {/* Back to Workspace Header (h-14) */}
-      <div className="h-14 px-2 flex items-center justify-between gap-2 border-b border-border flex-none">
+      <div className="h-14 px-2 flex items-center border-b border-border">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[14px] font-semibold text-foreground hover:bg-muted transition-colors min-w-0 flex-1"
+          className="text-[14px] font-semibold text-foreground hover:underline"
         >
-          <ArrowLeft size={15} className="text-muted-foreground shrink-0" />
-          <span className="truncate">返回工作区</span>
+          返回工作区
         </button>
-        <WorkspaceLogoIcon className="w-6 h-6 mr-1 shrink-0" />
       </div>
-
-      {/* Sub-navigation tabs for Project Data / Datasources / Files (since ActivityBar is removed) */}
-      {activeView !== ViewMode.APPS && (
-        <div className="px-2 py-2 border-b border-border bg-muted/20 flex items-center gap-1 flex-none">
-          <button
-            type="button"
-            onClick={() => navigate('/data')}
-            className={`flex-1 h-7 rounded-md text-[13px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
-              activeView === ViewMode.DATA
-                ? 'bg-background text-foreground font-semibold shadow-xs border border-border'
-                : 'text-foreground/75 hover:text-foreground hover:bg-muted/60'
-            }`}
-          >
-            <Table size={12} /> 数据表
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/datasources')}
-            className={`flex-1 h-7 rounded-md text-[13px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
-              activeView === ViewMode.DATASOURCE
-                ? 'bg-background text-foreground font-semibold shadow-xs border border-border'
-                : 'text-foreground/75 hover:text-foreground hover:bg-muted/60'
-            }`}
-          >
-            <Database size={12} /> 数据源
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/files')}
-            className={`flex-1 h-7 rounded-md text-[13px] font-medium flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
-              activeView === ViewMode.SETTINGS
-                ? 'bg-background text-foreground font-semibold shadow-xs border border-border'
-                : 'text-foreground/75 hover:text-foreground hover:bg-muted/60'
-            }`}
-          >
-            <Code2 size={12} /> 文件
-          </button>
-        </div>
-      )}
-
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {renderContextContent()}
-      </div>
-
       <UserAvatarMenu />
     </aside>
   );

@@ -59,9 +59,7 @@ const ProjectMiniRail: React.FC = () => {
   const isLineageActive = activeView === ViewMode.LINEAGE;
   const isArticlesActive = activeView === ViewMode.ARTICLES;
   const isBooksActive = activeView === ViewMode.BOOKS;
-  const isSettingsActive =
-    activeView === ViewMode.PROJECT_SETTINGS ||
-    activeView === ViewMode.SETTINGS;
+  const isSettingsActive = activeView === ViewMode.PROJECT_SETTINGS;
 
   return (
     <nav

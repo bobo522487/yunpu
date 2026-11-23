@@ -78,6 +78,42 @@ describe("US1 registration", () => {
     expect(result.response.status).toBe(201);
   });
 
+  test("ten concurrent signups for one email produce exactly one account", async () => {
+    const email = uniqueEmail("concurrent");
+    const attempts = await Promise.all(
+      Array.from({ length: 10 }, () => signUp(email)),
+    );
+
+    const created = attempts.filter((attempt) => attempt.response.status === 201);
+    const rejected = attempts.filter((attempt) => attempt.response.status === 409);
+    expect(created).toHaveLength(1);
+    expect(rejected).toHaveLength(9);
+    for (const attempt of rejected) {
+      expect(attempt.json.error?.code).toBe("CONFLICT");
+      expect(attempt.json.error?.message).toContain("已注册");
+    }
+
+    const counts = await withAdminDb(async (client) => {
+      const users = await client.query<{ count: string }>(
+        'SELECT count(*)::text AS count FROM auth."user" WHERE email = $1',
+        [email],
+      );
+      const organizations = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+           FROM organization o
+           JOIN organization_member m ON m.organization_id = o.id
+          WHERE m.user_id = (SELECT id FROM auth."user" WHERE email = $1)`,
+        [email],
+      );
+      return {
+        users: Number(users.rows[0]?.count ?? 0),
+        organizations: Number(organizations.rows[0]?.count ?? 0),
+      };
+    });
+    expect(counts.users).toBe(1);
+    expect(counts.organizations).toBe(1);
+  });
+
   test("compensates the auth user when default organization creation fails", async () => {
     const email = uniqueEmail("compensate");
     await withAdminDb((client) =>

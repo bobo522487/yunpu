@@ -7,11 +7,19 @@ import {
   PERSON_SEXES,
   PROJECT_COLOR_THEMES,
   PROJECT_STATUSES,
-} from "./enums";
+} from "./enums.ts";
 
 const normalizedEmail = z.string().trim().toLowerCase().pipe(z.email());
 
-const password = z.string().min(8, "密码至少 8 个字符").max(128);
+// FR-002：空密码、纯空白密码与少于 8 个字符的密码都必须拒绝，且提示里要说明最低要求。
+// 密码本身不做 trim —— 首尾空格是合法字符，只拒绝「整体无实义」的输入。
+const password = z
+  .string()
+  .min(8, "密码至少 8 个字符")
+  .max(128, "密码最多 128 个字符")
+  .refine((value) => value.trim().length > 0, {
+    message: "密码不能为空或全为空白字符，至少 8 个字符",
+  });
 
 export const SignUpSchema = z.object({
   email: normalizedEmail,

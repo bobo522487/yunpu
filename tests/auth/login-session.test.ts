@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   cookieFrom,
   PASSWORD,
@@ -8,7 +8,30 @@ import {
   signUp,
   uniqueEmail,
   withAdminDb,
-} from "./fixtures";
+} from "./fixtures.ts";
+
+type LoggedEvent = Record<string, unknown> & { event?: string };
+
+let logSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  logSpy = vi.spyOn(console, "log");
+});
+
+afterEach(() => {
+  logSpy.mockRestore();
+});
+
+function loggedEvents(): LoggedEvent[] {
+  return logSpy.mock.calls.map((call: unknown[]) => {
+    const line = String(call[0]);
+    try {
+      return JSON.parse(line) as LoggedEvent;
+    } catch {
+      return { event: "unparsed", line };
+    }
+  });
+}
 
 describe("US2 login and session", () => {
   test("signs in and returns the default organization", async () => {
@@ -34,8 +57,8 @@ describe("US2 login and session", () => {
 
     expect(wrong.response.status).toBe(401);
     expect(unknown.response.status).toBe(401);
-    expect(wrong.json.message).toBe(unknown.json.message);
-    expect(wrong.json.message).toBe("邮箱或密码错误");
+    expect(wrong.json.error?.message).toBe(unknown.json.error?.message);
+    expect(wrong.json.error?.message).toBe("邮箱或密码错误");
   });
 
   test("signing out one device keeps the other session alive", async () => {
@@ -77,6 +100,31 @@ describe("US2 login and session", () => {
   test("sign-out requires a session", async () => {
     const response = await request("/api/v1/auth/sign-out", { method: "POST" });
     expect(response.status).toBe(401);
+  });
+
+  test("sign-out records an auditable event without the session token", async () => {
+    const email = uniqueEmail("signout-log");
+    await signUp(email);
+    const device = await signIn(email);
+
+    logSpy.mockClear();
+    const signedOut = await request("/api/v1/auth/sign-out", {
+      method: "POST",
+      headers: { cookie: device.cookie },
+    });
+    expect(signedOut.status).toBe(200);
+
+    const events = loggedEvents();
+    const recorded = events.find((event) => event.event === "auth.signed_out");
+    expect(recorded).toMatchObject({ event: "auth.signed_out", result: "ok" });
+    expect(recorded?.user_id).toEqual(expect.any(String));
+    expect(recorded?.request_id).toEqual(expect.any(String));
+
+    const serialized = JSON.stringify(events);
+    expect(serialized).not.toContain(email.split("@")[0]);
+    for (const secret of device.cookie.split("; ")) {
+      expect(serialized).not.toContain(secret.split("=").slice(1).join("="));
+    }
   });
 
   test("session endpoint returns null user when unauthenticated", async () => {

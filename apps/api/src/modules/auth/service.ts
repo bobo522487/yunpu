@@ -193,12 +193,34 @@ export async function signIn(
   };
 }
 
-export async function signOut(headers: Headers): Promise<Headers> {
-  const result = (await auth.api.signOut({
-    headers,
-    returnHeaders: true,
-  })) as unknown as { headers: Headers };
-  return result.headers;
+export type SignOutMeta = { requestId?: string; userId?: string };
+
+export async function signOut(
+  headers: Headers,
+  meta?: SignOutMeta,
+): Promise<Headers> {
+  try {
+    const result = (await auth.api.signOut({
+      headers,
+      returnHeaders: true,
+    })) as unknown as { headers: Headers };
+    logEvent({
+      event: "auth.signed_out",
+      request_id: meta?.requestId,
+      user_id: meta?.userId,
+      result: "ok",
+    });
+    return result.headers;
+  } catch (error) {
+    logEvent({
+      event: "auth.signed_out",
+      request_id: meta?.requestId,
+      user_id: meta?.userId,
+      result: "failed",
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+    throw error;
+  }
 }
 
 export async function getSessionView(

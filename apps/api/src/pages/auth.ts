@@ -6,8 +6,8 @@ import {
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { AppError } from "../lib/errors";
-import { appendSetCookie } from "../lib/http";
+import { AppError } from "../lib/errors.ts";
+import { appendSetCookie } from "../lib/http.ts";
 import {
   assertLoginAllowed,
   loginKey,
@@ -119,7 +119,7 @@ authPages.post("/sign-up", async (c) => {
   }
 
   try {
-    const result = await register(parsed.data, c.get("requestId"));
+    const result = await register(parsed.data, { requestId: c.get("requestId") });
     appendSetCookie(c, result.headers);
     return c.redirect("/app", 303);
   } catch (error) {
@@ -170,7 +170,7 @@ authPages.post("/sign-in", async (c) => {
   }
 
   try {
-    const result = await signIn(parsed.data, c.get("requestId"));
+    const result = await signIn(parsed.data, { requestId: c.get("requestId") });
     loginRateLimiter.clear(key);
     appendSetCookie(c, result.headers);
     return c.redirect(result.onboarding ? "/onboarding" : "/app", 303);
@@ -188,8 +188,12 @@ authPages.post("/sign-in", async (c) => {
 });
 
 authPages.post("/sign-out", async (c) => {
-  if (!c.get("user")) return c.redirect("/sign-in", 303);
-  const headers = await signOut(c.req.raw.headers);
+  const user = c.get("user");
+  if (!user) return c.redirect("/sign-in", 303);
+  const headers = await signOut(c.req.raw.headers, {
+    requestId: c.get("requestId"),
+    userId: user.id,
+  });
   appendSetCookie(c, headers);
   return c.redirect("/sign-in", 303);
 });

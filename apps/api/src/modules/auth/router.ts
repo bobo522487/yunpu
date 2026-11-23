@@ -25,7 +25,7 @@ authRouter.post("/sign-up", async (c) => {
     throw validationError(parsed.error.flatten().fieldErrors);
   }
 
-  const result = await register(parsed.data, c.get("requestId"));
+  const result = await register(parsed.data, { requestId: c.get("requestId") });
   appendSetCookie(c, result.headers);
 
   return c.json(
@@ -52,7 +52,7 @@ authRouter.post("/sign-in", async (c) => {
   assertLoginAllowed(loginRateLimiter, key);
 
   try {
-    const result = await signIn(parsed.data, c.get("requestId"));
+    const result = await signIn(parsed.data, { requestId: c.get("requestId") });
     loginRateLimiter.clear(key);
     appendSetCookie(c, result.headers);
     return c.json({
@@ -72,10 +72,14 @@ authRouter.post("/sign-in", async (c) => {
 });
 
 authRouter.post("/sign-out", async (c) => {
-  if (!c.get("user")) {
+  const user = c.get("user");
+  if (!user) {
     throw unauthorized();
   }
-  const headers = await signOut(c.req.raw.headers);
+  const headers = await signOut(c.req.raw.headers, {
+    requestId: c.get("requestId"),
+    userId: user.id,
+  });
   appendSetCookie(c, headers);
   return c.json({ ok: true, data: { signedOut: true } });
 });

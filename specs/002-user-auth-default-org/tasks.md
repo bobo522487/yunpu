@@ -260,5 +260,5 @@ Task: "编写 apps/api/test/auth-router.test.ts"
 - [x] T062 收紧 `packages/shared/src/schemas.ts:12` 的密码规则以拒绝空密码与纯空白密码（保留最小 8、最大 128 字符），在 `tests/auth/registration.test.ts` 增加纯空白密码返回 400 的用例，并核对 `apps/api/src/modules/auth/client.ts:30` 的 `minPasswordLength` per FR-002 (partial)
 - [x] T063 在真实 PostgreSQL 18 测试环境（127.0.0.1:5433 / 9010）执行 `vitest run tests/env/connection-settings.test.ts` 与重复执行 `node packages/db/src/migrate.ts --env test`，确认三个超时与迁移幂等后关闭 T006；并把 T010/T011 中 `0001_auth_tables.sql` / `0002_tenant_tables.sql` 的陈旧文件名对齐为实际的 `0001_auth_tenant.sql`（未发现 `0002`）per T006 (partial)
 - [x] T064 扩展 `tests/auth/log-redaction.test.ts`：捕获 `logEvent` 输出，断言注册、登录、邀请兑换的日志与错误响应均不含密码、会话 token、邀请明文 per T054 (partial)
-- [ ] T065 在 `tests/auth/registration.test.ts` 增加 10 个并发同邮箱注册用例，断言恰好 1 个成功、其余返回「邮箱已注册」且只创建一个默认组织 per SC-003 (partial)
-- [ ] T066 使用注入时钟增加会话滑动续期与无绝对最长寿命的测试，覆盖 `apps/api/src/modules/auth/client.ts:38` 的 `updateAge: 86400` 与 7 天有效期 per SC-011 (partial)
+- [x] T065 在 `tests/auth/registration.test.ts` 增加 10 个并发同邮箱注册用例，断言恰好 1 个成功、其余返回「邮箱已注册」且只创建一个默认组织 per SC-003 (partial)
+- [x] T066 使用注入时钟增加会话滑动续期与无绝对最长寿命的测试，覆盖 `apps/api/src/modules/auth/client.ts:38` 的 `updateAge: 86400` 与 7 天有效期 per SC-011 (partial)

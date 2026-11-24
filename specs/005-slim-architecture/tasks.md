@@ -234,3 +234,12 @@
 - 不要把 `lineage_projection` 当成关系事实；事实仍是 `person_relation`
 - 性能测试默认不进普通 CI，用 `YUNPU_PERF=1` 手动或在发布前跑
 - 每个任务或每一组相关任务完成后单独提交
+
+---
+
+## Phase 8: Convergence
+
+- [ ] T033 从 `apps/api/src/lib/errors.ts` 的 `asDatabaseError` 去掉按消息文本识别 `GX001` 的分支。环检测只按 SQLSTATE `GX001` 映射 per Constitution 同一事实只有一处权威 (contradicts)
+- [ ] T034 在 `tests/security/write-role.test.ts` 补上尚未固定的写入矩阵：viewer 直接写 `person_name`、`person_relation`、`lineage_projection` 得到 SQLSTATE `42501`；editor 不能删除 project；本人可以改自己的 `last_used_at`，不能改自己的角色；本人可以退出；`invite` 与 `organization` 的写入只有 admin per T018 / data-model 谁可以写 (partial)
+- [ ] T035 在 `tests/genealogy/life-years.test.ts` 补上尚未覆盖的规则：死亡年早于出生年被拒绝；只有出生年允许；死亡年未知且 `is_living` 为假允许；失败时已有行不变 per T009 / data-model Person (partial)
+- [ ] T036 在 `tests/genealogy/archived-org-write.test.ts` 补上七张表的 UPDATE 与 DELETE 被拒绝，并断言调用方仍是 `CONFLICT` / 409、「组织已归档，无法写入」 per T011 / data-model Organization (partial)

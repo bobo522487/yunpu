@@ -1,16 +1,14 @@
+import { requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "../../lib/errors";
-import { conflict, forbidden, projectNotFound } from "./errors";
+import { conflict, projectNotFound } from "./errors";
 import {
   type CreateProjectValues,
   casUpdateProject,
   deleteProject,
   getProject,
-  hasRole,
   insertProject,
   listProjects,
-  membershipRole,
-  organizationStatus,
   type ProjectRecord,
   type UpdateProjectValues,
 } from "./queries";
@@ -18,29 +16,6 @@ import {
 function asAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
   return mapDatabaseError(error);
-}
-
-/** 非成员 → 404（不存在或无权）；角色不足 → 403。执行者：服务层 + C3 权限矩阵。 */
-async function requireRole(
-  db: Parameters<typeof membershipRole>[0],
-  organizationId: string,
-  userId: string,
-  min: "editor" | "admin",
-): Promise<void> {
-  const role = await membershipRole(db, organizationId, userId);
-  if (role === null) throw projectNotFound();
-  if (!hasRole(role, min)) throw forbidden();
-}
-
-/** 归档组织拒绝写入（EC-08：数据库层不拦截的已声明软约束，执行者为服务层）。 */
-async function requireActiveOrganization(
-  db: Parameters<typeof organizationStatus>[0],
-  organizationId: string,
-): Promise<void> {
-  const status = await organizationStatus(db, organizationId);
-  if (status !== "active") {
-    throw conflict("组织已归档，无法写入");
-  }
 }
 
 export async function listProjectsForOrg(
@@ -52,8 +27,7 @@ export async function listProjectsForOrg(
     return await withTenantTransaction(
       { userId, orgId: organizationId },
       async (db) => {
-        const role = await membershipRole(db, organizationId, userId);
-        if (role === null) throw projectNotFound();
+        await requireMember(db, organizationId, userId, null);
         return listProjects(db, organizationId, {
           cursor: options.cursor,
           limit: options.limit ?? 50,
@@ -74,8 +48,7 @@ export async function createProject(
     return await withTenantTransaction(
       { userId, orgId: organizationId },
       async (db) => {
-        await requireRole(db, organizationId, userId, "editor");
-        await requireActiveOrganization(db, organizationId);
+        await requireMember(db, organizationId, userId, "editor");
         return insertProject(db, organizationId, values);
       },
     );
@@ -92,8 +65,7 @@ async function loadProjectForWrite(
 ): Promise<ProjectRecord> {
   const existing = await getProject(db, projectId);
   if (!existing) throw projectNotFound();
-  await requireRole(db, existing.organizationId, userId, min);
-  await requireActiveOrganization(db, existing.organizationId);
+  await requireMember(db, existing.organizationId, userId, min);
   return existing;
 }
 

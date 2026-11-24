@@ -50,7 +50,20 @@ export function mapDatabaseError(error: unknown): AppError {
     case "22P02":
       return new AppError("VALIDATION", "输入格式不合法", 400);
     case "23514":
+      if (dbError.constraint === "ck_person_life_years") {
+        return new AppError("VALIDATION", "年份与在世状态不一致", 400, {
+          constraint: dbError.constraint,
+        });
+      }
       return new AppError("VALIDATION", "输入不符合约束", 400);
+    case "GX011":
+      return new AppError("PARENT_LIMIT", "同类型父母边已达上限", 409, {
+        sqlstate: dbError.code,
+      });
+    case "GX012":
+      return new AppError("CONFLICT", "组织已归档，无法写入", 409, {
+        sqlstate: dbError.code,
+      });
     case "GX001":
       return new AppError("CYCLE_DETECTED", "会形成祖先环路", 409, {
         sqlstate: dbError.code,

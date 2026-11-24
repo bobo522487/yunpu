@@ -1,32 +1,26 @@
 import type { ApiRelationKind } from "@yunpu/shared";
-import { sql } from "drizzle-orm";
+import { requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "../../lib/errors";
 import {
   conflict,
   cycleDetected,
-  forbidden,
-  parentLimit,
   personNotFound,
   versionConflict,
 } from "./errors";
 import {
   casUpdatePerson,
-  countParentsOfKind,
   deletePerson,
   deleteRelation,
   getPerson,
   getProjectScope,
-  hasRole,
   insertPerson,
   insertRelation,
-  membershipRole,
-  organizationStatus,
+  listPersons,
   type PersonView,
   personExistsInProject,
   querySubgraph,
   type RelationView,
-  refreshLineageProjectionSubtree,
 } from "./queries";
 import type {
   CreatePersonInput,
@@ -51,27 +45,6 @@ function normalizeSpouse(
     : { fromPersonId: toPersonId, toPersonId: fromPersonId };
 }
 
-async function requireRole(
-  db: Parameters<typeof membershipRole>[0],
-  organizationId: string,
-  userId: string,
-  min: "editor" | "admin",
-): Promise<void> {
-  const role = await membershipRole(db, organizationId, userId);
-  if (role === null) throw personNotFound();
-  if (!hasRole(role, min)) throw forbidden();
-}
-
-async function requireActiveOrganization(
-  db: Parameters<typeof organizationStatus>[0],
-  organizationId: string,
-): Promise<void> {
-  const status = await organizationStatus(db, organizationId);
-  if (status !== "active") {
-    throw conflict("组织已归档，无法写入");
-  }
-}
-
 async function resolveProjectScope(
   db: Parameters<typeof getProjectScope>[0],
   projectId: string,
@@ -89,8 +62,7 @@ export async function createPersonForProject(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      await requireRole(db, scope.organizationId, userId, "editor");
-      await requireActiveOrganization(db, scope.organizationId);
+      await requireMember(db, scope.organizationId, userId, "editor");
       return insertPerson(db, scope.organizationId, projectId, {
         displayName: input.displayName,
         sex: input.sex,
@@ -113,11 +85,25 @@ export async function getPersonForProject(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      const role = await membershipRole(db, scope.organizationId, userId);
-      if (role === null) throw personNotFound();
+      await requireMember(db, scope.organizationId, userId, null);
       const person = await getPerson(db, projectId, personId);
       if (!person) throw personNotFound();
       return person;
+    });
+  } catch (error) {
+    throw asAppError(error);
+  }
+}
+
+export async function listPersonsForProject(
+  userId: string,
+  projectId: string,
+): Promise<PersonView[]> {
+  try {
+    return await withTenantTransaction({ userId }, async (db) => {
+      const scope = await resolveProjectScope(db, projectId);
+      await requireMember(db, scope.organizationId, userId, null);
+      return listPersons(db, scope.organizationId, projectId);
     });
   } catch (error) {
     throw asAppError(error);
@@ -133,8 +119,7 @@ export async function updatePersonForProject(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      await requireRole(db, scope.organizationId, userId, "editor");
-      await requireActiveOrganization(db, scope.organizationId);
+      await requireMember(db, scope.organizationId, userId, "editor");
       const existing = await getPerson(db, projectId, personId);
       if (!existing) throw personNotFound();
       const updated = await casUpdatePerson(
@@ -167,8 +152,7 @@ export async function deletePersonForProject(
   try {
     await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      await requireRole(db, scope.organizationId, userId, "editor");
-      await requireActiveOrganization(db, scope.organizationId);
+      await requireMember(db, scope.organizationId, userId, "editor");
       const ok = await deletePerson(db, projectId, personId);
       if (!ok) throw personNotFound();
     });
@@ -185,8 +169,7 @@ export async function createRelationForProject(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      await requireRole(db, scope.organizationId, userId, "editor");
-      await requireActiveOrganization(db, scope.organizationId);
+      await requireMember(db, scope.organizationId, userId, "editor");
 
       let fromPersonId = input.fromPersonId;
       let toPersonId = input.toPersonId;
@@ -206,11 +189,6 @@ export async function createRelationForProject(
         ));
       }
 
-      if (kind === "biological_parent" || kind === "adoptive_parent") {
-        const count = await countParentsOfKind(db, projectId, toPersonId, kind);
-        if (count >= 2) throw parentLimit();
-      }
-
       const created = await insertRelation(
         db,
         scope.organizationId,
@@ -222,26 +200,15 @@ export async function createRelationForProject(
         },
       );
 
-      if (kind === "biological_parent" || kind === "adoptive_parent") {
-        // Force deferred cycle trigger before projection rebuild.
-        await db.execute(
-          sql`SET CONSTRAINTS trg_person_relation_no_cycle IMMEDIATE`,
-        );
-        await refreshLineageProjectionSubtree(
-          db,
-          scope.organizationId,
-          projectId,
-          toPersonId,
-        );
-      }
-
       return created;
     });
   } catch (error) {
     if (error instanceof AppError) throw error;
     const mapped = mapDatabaseError(error);
     if (mapped.code === "CYCLE_DETECTED") throw cycleDetected();
-    if (mapped.code === "CONFLICT") throw conflict("这条关系已存在");
+    if (mapped.code === "CONFLICT" && mapped.message === "记录已存在") {
+      throw conflict("这条关系已存在");
+    }
     throw mapped;
   }
 }
@@ -254,22 +221,9 @@ export async function deleteRelationForProject(
   try {
     await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      await requireRole(db, scope.organizationId, userId, "editor");
-      await requireActiveOrganization(db, scope.organizationId);
+      await requireMember(db, scope.organizationId, userId, "editor");
       const deleted = await deleteRelation(db, projectId, relationId);
       if (!deleted) throw personNotFound();
-      if (
-        deleted.kind === "biological_parent" ||
-        deleted.kind === "adoptive_parent" ||
-        deleted.kind === "ritual_heir"
-      ) {
-        await refreshLineageProjectionSubtree(
-          db,
-          scope.organizationId,
-          projectId,
-          deleted.toPersonId,
-        );
-      }
     });
   } catch (error) {
     throw asAppError(error);
@@ -284,9 +238,8 @@ export async function getSubgraphForProject(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
-      const role = await membershipRole(db, scope.organizationId, userId);
-      if (role === null) throw personNotFound();
-      const graph = await querySubgraph(db, projectId, {
+      await requireMember(db, scope.organizationId, userId, null);
+      const graph = await querySubgraph(db, scope.organizationId, projectId, {
         rootPersonId: query.rootPersonId,
         upDepth: query.upDepth ?? 2,
         downDepth: query.downDepth ?? 4,

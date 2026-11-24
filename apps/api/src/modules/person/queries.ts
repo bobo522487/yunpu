@@ -1,7 +1,5 @@
 import {
   lineageProjection,
-  organization,
-  organizationMember,
   person,
   personName,
   personRelation,
@@ -42,36 +40,6 @@ function pathLabel(personId: string): string {
   return personId.replace(/-/g, "");
 }
 
-export async function membershipRole(
-  db: TxDatabase,
-  organizationId: string,
-  userId: string,
-): Promise<"admin" | "editor" | "viewer" | null> {
-  const rows = await db
-    .select({ role: organizationMember.role })
-    .from(organizationMember)
-    .where(
-      and(
-        eq(organizationMember.organizationId, organizationId),
-        eq(organizationMember.userId, userId),
-      ),
-    )
-    .limit(1);
-  return rows[0]?.role ?? null;
-}
-
-export async function organizationStatus(
-  db: TxDatabase,
-  organizationId: string,
-): Promise<"active" | "suspended" | "archived" | null> {
-  const rows = await db
-    .select({ status: organization.status })
-    .from(organization)
-    .where(eq(organization.id, organizationId))
-    .limit(1);
-  return rows[0]?.status ?? null;
-}
-
 export async function getProjectScope(
   db: TxDatabase,
   projectId: string,
@@ -82,15 +50,6 @@ export async function getProjectScope(
     .where(eq(project.id, projectId))
     .limit(1);
   return rows[0] ?? null;
-}
-
-export const ROLE_RANK = { viewer: 0, editor: 1, admin: 2 } as const;
-
-export function hasRole(
-  role: "admin" | "editor" | "viewer" | null,
-  min: "editor" | "admin",
-): boolean {
-  return role !== null && ROLE_RANK[role] >= ROLE_RANK[min];
 }
 
 async function loadPersonView(
@@ -132,6 +91,44 @@ export async function getPerson(
   personId: string,
 ): Promise<PersonView | null> {
   return loadPersonView(db, projectId, personId);
+}
+
+export async function listPersons(
+  db: TxDatabase,
+  organizationId: string,
+  projectId: string,
+): Promise<PersonView[]> {
+  return db
+    .select({
+      id: person.id,
+      projectId: person.projectId,
+      displayName: personName.value,
+      sex: person.sex,
+      surname: person.surname,
+      birthYear: person.birthYear,
+      deathYear: person.deathYear,
+      isLiving: person.isLiving,
+      version: person.version,
+      createdAt: timestamp(person.createdAt),
+      updatedAt: timestamp(person.updatedAt),
+    })
+    .from(person)
+    .innerJoin(
+      personName,
+      and(
+        eq(personName.organizationId, person.organizationId),
+        eq(personName.projectId, person.projectId),
+        eq(personName.personId, person.id),
+        eq(personName.isPrimary, true),
+      ),
+    )
+    .where(
+      and(
+        eq(person.organizationId, organizationId),
+        eq(person.projectId, projectId),
+      ),
+    )
+    .orderBy(person.id);
 }
 
 export type CreatePersonValues = {
@@ -269,25 +266,6 @@ export async function personExistsInProject(
   return rows.length > 0;
 }
 
-export async function countParentsOfKind(
-  db: TxDatabase,
-  projectId: string,
-  toPersonId: string,
-  kind: "biological_parent" | "adoptive_parent",
-): Promise<number> {
-  const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(personRelation)
-    .where(
-      and(
-        eq(personRelation.projectId, projectId),
-        eq(personRelation.toPersonId, toPersonId),
-        eq(personRelation.kind, kind),
-      ),
-    );
-  return rows[0]?.count ?? 0;
-}
-
 export async function insertRelation(
   db: TxDatabase,
   organizationId: string,
@@ -365,83 +343,6 @@ export async function deleteRelation(
   return existing;
 }
 
-/** Refresh primary_path for a person and all descendants after parent-edge changes. */
-export async function refreshLineageProjectionSubtree(
-  db: TxDatabase,
-  organizationId: string,
-  projectId: string,
-  seedPersonId: string,
-): Promise<void> {
-  await db.execute(sql`
-    WITH RECURSIVE
-    ranked_parent AS (
-      SELECT DISTINCT ON (r.to_person_id)
-             r.to_person_id AS person_id,
-             r.from_person_id AS parent_id
-        FROM person_relation r
-       WHERE r.project_id = ${projectId}::uuid
-         AND r.kind IN ('biological_parent', 'adoptive_parent', 'ritual_heir')
-       ORDER BY r.to_person_id,
-                CASE r.kind
-                  WHEN 'biological_parent' THEN 0
-                  WHEN 'adoptive_parent' THEN 1
-                  ELSE 2
-                END,
-                r.from_person_id
-    ),
-    seed_path AS (
-      SELECT
-        ${seedPersonId}::uuid AS person_id,
-        CASE
-          WHEN rp.parent_id IS NULL THEN replace(${seedPersonId}::text, '-', '')::ltree
-          ELSE (
-            coalesce(
-              (SELECT lp.primary_path
-                 FROM lineage_projection lp
-                WHERE lp.project_id = ${projectId}::uuid
-                  AND lp.person_id = rp.parent_id),
-              replace(rp.parent_id::text, '-', '')::ltree
-            ) || replace(${seedPersonId}::text, '-', '')
-          )::ltree
-        END AS primary_path,
-        CASE
-          WHEN rp.parent_id IS NULL THEN 0
-          ELSE coalesce(
-            (SELECT lp.generation + 1
-               FROM lineage_projection lp
-              WHERE lp.project_id = ${projectId}::uuid
-                AND lp.person_id = rp.parent_id),
-            1
-          )
-        END AS generation
-      FROM (SELECT 1) AS _
-      LEFT JOIN ranked_parent rp ON rp.person_id = ${seedPersonId}::uuid
-    ),
-    rebuilt AS (
-      SELECT person_id, primary_path, generation FROM seed_path
-      UNION ALL
-      SELECT rp.person_id,
-             (p.primary_path || replace(rp.person_id::text, '-', ''))::ltree,
-             p.generation + 1
-        FROM ranked_parent rp
-        JOIN rebuilt p ON p.person_id = rp.parent_id
-    )
-    INSERT INTO lineage_projection AS lp
-      (organization_id, project_id, person_id, primary_path, generation, updated_at)
-    SELECT ${organizationId}::uuid,
-           ${projectId}::uuid,
-           r.person_id,
-           r.primary_path,
-           r.generation,
-           clock_timestamp()
-      FROM rebuilt r
-    ON CONFLICT (project_id, person_id) DO UPDATE
-      SET primary_path = EXCLUDED.primary_path,
-          generation = EXCLUDED.generation,
-          updated_at = clock_timestamp()
-  `);
-}
-
 export type SubgraphResult = {
   rootPersonId: string;
   persons: PersonView[];
@@ -452,6 +353,7 @@ export type SubgraphResult = {
 
 export async function querySubgraph(
   db: TxDatabase,
+  organizationId: string,
   projectId: string,
   options: {
     rootPersonId: string;
@@ -473,7 +375,8 @@ export async function querySubgraph(
     root_path AS (
       SELECT lp.person_id, lp.primary_path, lp.generation
         FROM lineage_projection lp
-       WHERE lp.project_id = ${projectId}::uuid
+       WHERE lp.organization_id = ${organizationId}::uuid
+         AND lp.project_id = ${projectId}::uuid
          AND lp.person_id = ${options.rootPersonId}::uuid
     ),
     ancestors AS (
@@ -482,7 +385,8 @@ export async function querySubgraph(
       SELECT r.from_person_id, a.depth + 1
         FROM person_relation r
         JOIN ancestors a ON r.to_person_id = a.person_id
-       WHERE r.project_id = ${projectId}::uuid
+       WHERE r.organization_id = ${organizationId}::uuid
+         AND r.project_id = ${projectId}::uuid
          AND r.kind IN ('biological_parent', 'adoptive_parent', 'ritual_heir')
          AND a.depth < ${options.upDepth}
     ),
@@ -491,7 +395,8 @@ export async function querySubgraph(
              (nlevel(lp.primary_path) - nlevel(rp.primary_path)) AS depth
         FROM lineage_projection lp
         JOIN root_path rp ON true
-       WHERE lp.project_id = ${projectId}::uuid
+       WHERE lp.organization_id = ${organizationId}::uuid
+         AND lp.project_id = ${projectId}::uuid
          AND lp.primary_path <@ rp.primary_path
          AND nlevel(lp.primary_path) <= nlevel(rp.primary_path) + ${options.downDepth}
     ),
@@ -506,7 +411,8 @@ export async function querySubgraph(
           UNION
           SELECT person_id FROM descendants
         ) c ON c.person_id IN (r.from_person_id, r.to_person_id)
-       WHERE r.project_id = ${projectId}::uuid
+       WHERE r.organization_id = ${organizationId}::uuid
+         AND r.project_id = ${projectId}::uuid
          AND r.kind = 'spouse'
     ),
     candidate AS (
@@ -552,9 +458,15 @@ export async function querySubgraph(
                'updatedAt', to_char(p.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
              ) ORDER BY p.id), '[]'::jsonb) AS persons
         FROM limited l
-        JOIN person p ON p.project_id = ${projectId}::uuid AND p.id = l.person_id
+        JOIN person p
+          ON p.organization_id = ${organizationId}::uuid
+         AND p.project_id = ${projectId}::uuid
+         AND p.id = l.person_id
         JOIN person_name pn
-          ON pn.project_id = p.project_id AND pn.person_id = p.id AND pn.is_primary
+          ON pn.organization_id = p.organization_id
+         AND pn.project_id = p.project_id
+         AND pn.person_id = p.id
+         AND pn.is_primary
     ),
     relation_json AS (
       SELECT coalesce(jsonb_agg(jsonb_build_object(
@@ -567,7 +479,8 @@ export async function querySubgraph(
                'updatedAt', to_char(r.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
              ) ORDER BY r.id), '[]'::jsonb) AS relations
         FROM person_relation r
-       WHERE r.project_id = ${projectId}::uuid
+       WHERE r.organization_id = ${organizationId}::uuid
+         AND r.project_id = ${projectId}::uuid
          AND r.from_person_id IN (SELECT person_id FROM limited)
          AND r.to_person_id IN (SELECT person_id FROM limited)
          AND r.kind IN ('biological_parent', 'adoptive_parent', 'spouse')
@@ -583,7 +496,8 @@ export async function querySubgraph(
              AND ${options.upDepth} > 0
              AND EXISTS (
                SELECT 1 FROM person_relation r
-                WHERE r.project_id = ${projectId}::uuid
+                WHERE r.organization_id = ${organizationId}::uuid
+         AND r.project_id = ${projectId}::uuid
                   AND r.to_person_id = a.person_id
                   AND r.kind IN ('biological_parent', 'adoptive_parent', 'ritual_heir')
              )
@@ -602,13 +516,15 @@ export async function querySubgraph(
           SELECT 1
             FROM lineage_projection lp
             JOIN root_path rp ON true
-           WHERE lp.project_id = ${projectId}::uuid
+           WHERE lp.organization_id = ${organizationId}::uuid
+         AND lp.project_id = ${projectId}::uuid
              AND lp.primary_path <@ rp.primary_path
              AND nlevel(lp.primary_path) = nlevel(rp.primary_path) + ${options.downDepth}
              AND ${options.downDepth} > 0
              AND EXISTS (
                SELECT 1 FROM person_relation r
-                WHERE r.project_id = ${projectId}::uuid
+                WHERE r.organization_id = ${organizationId}::uuid
+         AND r.project_id = ${projectId}::uuid
                   AND r.from_person_id = lp.person_id
                   AND r.kind IN ('biological_parent', 'adoptive_parent', 'ritual_heir')
              )

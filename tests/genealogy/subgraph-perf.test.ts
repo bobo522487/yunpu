@@ -43,4 +43,59 @@ describe.skipIf(!runPerf)("subgraph performance (~5k)", () => {
     const p95 = samples[index];
     expect(p95).toBeLessThan(200);
   }, 180_000);
+
+  test("10k list and subgraph stay under 2s and ignore a doubled other project", async () => {
+    const first = await seedOwnerProject("sub-10k");
+    const tree = await seedLargeTree({
+      organizationId: first.organizationId,
+      projectId: first.projectId,
+      personCount: 10_000,
+    });
+    const second = await seedOwnerProject("sub-10k-other");
+
+    async function sample(): Promise<{ list: number; subgraph: number }> {
+      const listStarted = performance.now();
+      const listed = await call(
+        `/api/v1/projects/${first.projectId}/persons`,
+        first.cookie,
+      );
+      const list = performance.now() - listStarted;
+      expect(listed.status).toBe(200);
+      expect((listed.data?.persons as unknown[]).length).toBe(10_000);
+
+      const graphStarted = performance.now();
+      const graph = await call(
+        `/api/v1/projects/${first.projectId}/subgraph?rootPersonId=${tree.rootPersonId}`,
+        first.cookie,
+      );
+      const subgraph = performance.now() - graphStarted;
+      expect(graph.status).toBe(200);
+      return { list, subgraph };
+    }
+
+    async function measure(): Promise<{ list: number; subgraph: number }> {
+      await sample();
+      const samples = [await sample(), await sample(), await sample()];
+      const median = (values: number[]) =>
+        values.sort((a, b) => a - b)[Math.floor(values.length / 2)];
+      return {
+        list: median(samples.map((item) => item.list)),
+        subgraph: median(samples.map((item) => item.subgraph)),
+      };
+    }
+
+    const before = await measure();
+    expect(before.list).toBeLessThan(2_000);
+    expect(before.subgraph).toBeLessThan(2_000);
+
+    await seedLargeTree({
+      organizationId: second.organizationId,
+      projectId: second.projectId,
+      personCount: 20_000,
+    });
+
+    const after = await measure();
+    expect(after.list).toBeLessThanOrEqual(before.list * 1.1);
+    expect(after.subgraph).toBeLessThanOrEqual(before.subgraph * 1.1);
+  }, 600_000);
 });

@@ -29,7 +29,7 @@
 
 **Purpose**: 确认测试会跑到新文件，且不引入依赖注入或接口生成器
 
-- [ ] T001 核对根 `package.json` 的 `test:all` 已包含 `tests/genealogy`、`tests/security`、`tests/runtime`、`tests/console`。缺哪一段就只补那一段。不要往 `package.json` 或 `apps/api/package.json` 加入依赖注入框架或 OpenAPI 生成器
+- [X] T001 核对根 `package.json` 的 `test:all` 已包含 `tests/genealogy`、`tests/security`、`tests/runtime`、`tests/console`。缺哪一段就只补那一段。不要往 `package.json` 或 `apps/api/package.json` 加入依赖注入框架或 OpenAPI 生成器
 
 **Checkpoint**: 新测试放到上述目录即可被 `pnpm test:all` 执行
 
@@ -41,7 +41,7 @@
 
 **⚠️ CRITICAL**: 用户故事开始前必须完成本阶段
 
-- [ ] T002 按 [plan.md](plan.md)「宪法改写」把 `.specify/memory/constitution.md` 改为 **2.0.0**。保留这些行为原则并写清：能由存储拒绝的状态就由存储拒绝；同一事实只有一处权威（已执行迁移、与之对照的 Drizzle schema、`AppType`、`ERROR_STATUS` 与 `mapDatabaseError`）；失败对调用方可见；租户隔离仍在数据库行级策略，应用只在唯一事务里设置 `app.user_id`；删除是物理删除，归档仍是状态；不为未到来的表预建索引或软约束登记。从合并条件中删除编号族、`scripts/check-docs.sh`、两次散文门禁、复杂度例外三列表、软约束登记表、外键例外白名单
+- [X] T002 按 [plan.md](plan.md)「宪法改写」把 `.specify/memory/constitution.md` 改为 **2.0.0**。保留这些行为原则并写清：能由存储拒绝的状态就由存储拒绝；同一事实只有一处权威（已执行迁移、与之对照的 Drizzle schema、`AppType`、`ERROR_STATUS` 与 `mapDatabaseError`）；失败对调用方可见；租户隔离仍在数据库行级策略，应用只在唯一事务里设置 `app.user_id`；删除是物理删除，归档仍是状态；不为未到来的表预建索引或软约束登记。从合并条件中删除编号族、`scripts/check-docs.sh`、两次散文门禁、复杂度例外三列表、软约束登记表、外键例外白名单
 
 **Checkpoint**: 宪法不再要求为新约束补 `docs/architecture/data/errors.md` 或 `docs/README.md` 编号
 
@@ -55,15 +55,15 @@
 
 ### Tests for User Story 1
 
-- [ ] T003 [P] [US1] 在 `tests/runtime/living-docs.test.ts` 写会失败的断言：`docs/` 下现行文件只有 `docs/boundaries.md` 和 `docs/decisions/**`；`docs/decisions/0001-pg18-defects.md` 仍在；`docs/README.md`、`docs/requirements/`、`docs/architecture/`、`docs/verification/`、`docs/superpowers/`、`docs/.check-docs-baseline.txt` 不存在
-- [ ] T004 [P] [US1] 在 `tests/runtime/no-doc-gate.test.ts` 写会失败的断言：`.github/workflows/verify.yml` 与 `.github/workflows/docs.yml` 都不包含 `check-docs.sh`，且 `scripts/check-docs.sh` 不存在
+- [X] T003 [P] [US1] 在 `tests/runtime/living-docs.test.ts` 写会失败的断言：`docs/` 下现行文件只有 `docs/boundaries.md` 和 `docs/decisions/**`；`docs/decisions/0001-pg18-defects.md` 仍在；`docs/README.md`、`docs/requirements/`、`docs/architecture/`、`docs/verification/`、`docs/superpowers/`、`docs/.check-docs-baseline.txt` 不存在
+- [X] T004 [P] [US1] 在 `tests/runtime/no-doc-gate.test.ts` 写会失败的断言：`.github/workflows/verify.yml` 与 `.github/workflows/docs.yml` 都不包含 `check-docs.sh`，且 `scripts/check-docs.sh` 不存在
 
 ### Implementation for User Story 1
 
-- [ ] T005 [P] [US1] 新建 `docs/boundaries.md`，只写 [contracts/tenant-entry.md](contracts/tenant-entry.md) 的三个例外：健康检查短连接只允许 `SELECT version()`；认证库连接只访问 Better Auth 自己的表；迁移命令使用独立连接。写明这三者不能被普通请求或普通后台任务用来读写家谱租户表
-- [ ] T006 [P] [US1] 删除 `docs/README.md`、`docs/requirements/`、`docs/architecture/`、`docs/verification/`、`docs/superpowers/`、`docs/.check-docs-baseline.txt`。保留 `docs/decisions/0001-pg18-defects.md`。不要把删掉的文章移到新的 archive 目录
-- [ ] T007 [P] [US1] 从 `.github/workflows/verify.yml` 和 `.github/workflows/docs.yml` 去掉 `sh -n scripts/check-docs.sh`、`tests/docs/check-docs.test.sh`、`tests/docs/check-docs-review.test.sh`、`scripts/check-docs.sh --root docs --strict` 以及 `wc -l docs/.check-docs-baseline.txt`
-- [ ] T008 [US1] 删除 `scripts/check-docs.sh` 和目录 `tests/docs/`（含现在要求工作流必须调用 `check-docs.sh` 的 `tests/docs/check-ci-gates.test.sh`）。不要改 `specs/001-dev-test-environment/`、`specs/002-user-auth-default-org/`、`specs/003-workspace-console/`、`specs/004-backend-architecture/`
+- [X] T005 [P] [US1] 新建 `docs/boundaries.md`，只写 [contracts/tenant-entry.md](contracts/tenant-entry.md) 的三个例外：健康检查短连接只允许 `SELECT version()`；认证库连接只访问 Better Auth 自己的表；迁移命令使用独立连接。写明这三者不能被普通请求或普通后台任务用来读写家谱租户表
+- [X] T006 [P] [US1] 删除 `docs/README.md`、`docs/requirements/`、`docs/architecture/`、`docs/verification/`、`docs/superpowers/`、`docs/.check-docs-baseline.txt`。保留 `docs/decisions/0001-pg18-defects.md`。不要把删掉的文章移到新的 archive 目录
+- [X] T007 [P] [US1] 从 `.github/workflows/verify.yml` 和 `.github/workflows/docs.yml` 去掉 `sh -n scripts/check-docs.sh`、`tests/docs/check-docs.test.sh`、`tests/docs/check-docs-review.test.sh`、`scripts/check-docs.sh --root docs --strict` 以及 `wc -l docs/.check-docs-baseline.txt`
+- [X] T008 [US1] 删除 `scripts/check-docs.sh` 和目录 `tests/docs/`（含现在要求工作流必须调用 `check-docs.sh` 的 `tests/docs/check-ci-gates.test.sh`）。不要改 `specs/001-dev-test-environment/`、`specs/002-user-auth-default-org/`、`specs/003-workspace-console/`、`specs/004-backend-architecture/`
 
 **Checkpoint**: T003 与 T004 通过。维护者改存储、对外形状或失败含义时，不再有手写编号或追溯矩阵要同步
 
@@ -77,18 +77,18 @@
 
 ### Tests for User Story 2
 
-- [ ] T009 [P] [US2] 在 `tests/genealogy/life-years.test.ts` 用直接 SQL 覆盖 data-model 原文：「有 `death_year` 时 `is_living` 必须为假」；「`birth_year` 与 `death_year` 都有值时，`death_year >= birth_year`」；「只有出生年、或死亡年未知但 `is_living` 为假，仍然允许」。失败时调用方得到 `VALIDATION` / 400，约束名为 `ck_person_life_years`，SQLSTATE `23514`，已有行不变
-- [ ] T010 [P] [US2] 在 `tests/genealogy/parent-limit.test.ts` 用直接插入覆盖：「同一项目、同一 `to_person_id`、同为 `biological_parent` 或同为 `adoptive_parent` 的边最多 2 条」。第 3 条得到 `PARENT_LIMIT` / 409，SQLSTATE `GX011`。`ritual_heir` 不套用这个上限
-- [ ] T011 [P] [US2] 在 `tests/genealogy/archived-org-write.test.ts` 覆盖：「`status <> 'active'` 时，已落地的项目、人物、人名、关系、投影、成员与邀请上的新增、修改和删除被拒绝」。消息仍是「组织已归档，无法写入」，`CONFLICT` / 409，SQLSTATE `GX012`。「把组织更新为 `archived` 的那一次写入本身允许通过」
-- [ ] T012 [P] [US2] 在 `tests/genealogy/projection-same-transaction.test.ts` 断言：插入或删除父母类边后，`lineage_projection` 在同一事务内更新；环检测失败时投影一并回滚。测试不得依赖 `apps/api/src/modules/person/service.ts` 里的手动刷新
+- [X] T009 [P] [US2] 在 `tests/genealogy/life-years.test.ts` 用直接 SQL 覆盖 data-model 原文：「有 `death_year` 时 `is_living` 必须为假」；「`birth_year` 与 `death_year` 都有值时，`death_year >= birth_year`」；「只有出生年、或死亡年未知但 `is_living` 为假，仍然允许」。失败时调用方得到 `VALIDATION` / 400，约束名为 `ck_person_life_years`，SQLSTATE `23514`，已有行不变
+- [X] T010 [P] [US2] 在 `tests/genealogy/parent-limit.test.ts` 用直接插入覆盖：「同一项目、同一 `to_person_id`、同为 `biological_parent` 或同为 `adoptive_parent` 的边最多 2 条」。第 3 条得到 `PARENT_LIMIT` / 409，SQLSTATE `GX011`。`ritual_heir` 不套用这个上限
+- [X] T011 [P] [US2] 在 `tests/genealogy/archived-org-write.test.ts` 覆盖：「`status <> 'active'` 时，已落地的项目、人物、人名、关系、投影、成员与邀请上的新增、修改和删除被拒绝」。消息仍是「组织已归档，无法写入」，`CONFLICT` / 409，SQLSTATE `GX012`。「把组织更新为 `archived` 的那一次写入本身允许通过」
+- [X] T012 [P] [US2] 在 `tests/genealogy/projection-same-transaction.test.ts` 断言：插入或删除父母类边后，`lineage_projection` 在同一事务内更新；环检测失败时投影一并回滚。测试不得依赖 `apps/api/src/modules/person/service.ts` 里的手动刷新
 
 ### Implementation for User Story 2
 
-- [ ] T013 [P] [US2] 新增 `packages/db/migrations/0013_shape_invariants.sql`：`person` 上的 `ck_person_life_years`（有 `death_year` 则 `is_living` 为假；两个年份都有则 `death_year >= birth_year`）；父母上限约束触发器只计 `biological_parent` 与 `adoptive_parent`，抛 `GX011`；归档触发器在组织不是 `active` 时拒绝 `project`、`person`、`person_name`、`person_relation`、`lineage_projection`、`organization_member`、`invite` 的 INSERT/UPDATE/DELETE，抛 `GX012`，但允许把 `active` 组织更新为 `archived`；把 `apps/api/src/modules/person/queries.ts` 里的投影刷新收成数据库函数，由 `person_relation` 触发器在同一事务调用；为 `person`、`person_name`、`person_relation`、`lineage_projection` 上指向 `project (organization_id, id)` 的外键各建 `(organization_id, project_id)` 索引，名称分别为 `idx_person_org_project`、`idx_person_name_org_project`、`idx_person_relation_org_project`、`idx_lineage_projection_org_project`。不要为 `fk_organization_owner` 另建索引，不要创建 event、node、folder、book、media 表
-- [ ] T014 [P] [US2] 在 `packages/db/src/schema/genealogy.ts` 同步 `ck_person_life_years` 与上述四个索引名。触发器留在 SQL 迁移里
-- [ ] T015 [P] [US2] 在 `apps/api/src/lib/errors.ts` 的 `mapDatabaseError` 增加映射，且不解析错误文本：`23514` 且约束名 `ck_person_life_years` → `VALIDATION` / 400，消息说明年份与在世状态不一致；`GX011` → `PARENT_LIMIT` / 409，「同类型父母边已达上限」；`GX012` → `CONFLICT` / 409，「组织已归档，无法写入」。`packages/shared/src/errors.ts` 的 `PARENT_LIMIT` 保持 409，不新增错误码
-- [ ] T016 [US2] 删除预检查：`apps/api/src/modules/person/queries.ts` 的 `countParentsOfKind` 与投影刷新函数体，`apps/api/src/modules/person/service.ts` 里调用它们的代码，以及 `apps/api/src/modules/person/service.ts` 与 `apps/api/src/modules/project/service.ts` 中复制的 `requireActiveOrganization`。拒绝必须来自 T013 的触发器，经 T015 映射
-- [ ] T017 [P] [US2] 新建 `docs/decisions/0002-owner-fk-index.md`：`fk_organization_owner` 的引用列前导是 `organization` 主键 `id`，删除成员时按主键定位一行，所以不另建索引。不要在任何文件里重建外键例外白名单
+- [X] T013 [P] [US2] 新增 `packages/db/migrations/0013_shape_invariants.sql`：`person` 上的 `ck_person_life_years`（有 `death_year` 则 `is_living` 为假；两个年份都有则 `death_year >= birth_year`）；父母上限约束触发器只计 `biological_parent` 与 `adoptive_parent`，抛 `GX011`；归档触发器在组织不是 `active` 时拒绝 `project`、`person`、`person_name`、`person_relation`、`lineage_projection`、`organization_member`、`invite` 的 INSERT/UPDATE/DELETE，抛 `GX012`，但允许把 `active` 组织更新为 `archived`；把 `apps/api/src/modules/person/queries.ts` 里的投影刷新收成数据库函数，由 `person_relation` 触发器在同一事务调用；为 `person`、`person_name`、`person_relation`、`lineage_projection` 上指向 `project (organization_id, id)` 的外键各建 `(organization_id, project_id)` 索引，名称分别为 `idx_person_org_project`、`idx_person_name_org_project`、`idx_person_relation_org_project`、`idx_lineage_projection_org_project`。不要为 `fk_organization_owner` 另建索引，不要创建 event、node、folder、book、media 表
+- [X] T014 [P] [US2] 在 `packages/db/src/schema/genealogy.ts` 同步 `ck_person_life_years` 与上述四个索引名。触发器留在 SQL 迁移里
+- [X] T015 [P] [US2] 在 `apps/api/src/lib/errors.ts` 的 `mapDatabaseError` 增加映射，且不解析错误文本：`23514` 且约束名 `ck_person_life_years` → `VALIDATION` / 400，消息说明年份与在世状态不一致；`GX011` → `PARENT_LIMIT` / 409，「同类型父母边已达上限」；`GX012` → `CONFLICT` / 409，「组织已归档，无法写入」。`packages/shared/src/errors.ts` 的 `PARENT_LIMIT` 保持 409，不新增错误码
+- [X] T016 [US2] 删除预检查：`apps/api/src/modules/person/queries.ts` 的 `countParentsOfKind` 与投影刷新函数体，`apps/api/src/modules/person/service.ts` 里调用它们的代码，以及 `apps/api/src/modules/person/service.ts` 与 `apps/api/src/modules/project/service.ts` 中复制的 `requireActiveOrganization`。拒绝必须来自 T013 的触发器，经 T015 映射
+- [X] T017 [P] [US2] 新建 `docs/decisions/0002-owner-fk-index.md`：`fk_organization_owner` 的引用列前导是 `organization` 主键 `id`，删除成员时按主键定位一行，所以不另建索引。不要在任何文件里重建外键例外白名单
 
 **Checkpoint**: T009–T012 通过。直接 SQL 保存非法组合失败，合法写入的可见结果与原来一致
 
@@ -102,19 +102,19 @@
 
 ### Tests for User Story 3
 
-- [ ] T018 [P] [US3] 在 `tests/security/write-role.test.ts` 固定 data-model 矩阵的可见结果：person、person_name、person_relation、lineage_projection 的新增/修改/删除需 editor 或 admin，且组织为 active；project 的新增/修改需 editor 或 admin，删除仅 admin；organization 与 invite 的新增/修改/删除需 admin；organization_member 由 admin 修改，本人只能改自己的 `last_used_at`，本人可以退出，所有者行仍由现有外键限制删除。非成员写人物仍是不存在，不是 403。成员但角色不够得到 `FORBIDDEN` / 403（SQLSTATE `42501`）。修改所有者角色仍是 `CONFLICT` / 409，「不能修改所有者角色」
-- [ ] T019 [P] [US3] 在 `tests/runtime/no-pool-import.test.ts` 扫描 `apps/api/src/modules/**`：不得导入 `businessPool`、`createDb` 或 `withUser`
-- [ ] T020 [P] [US3] 在 `tests/security/tenant-connection-reuse.test.ts` 断言：一次 `withTenantTransaction` 归还连接后，下一次不设置 `app.user_id` 的查询看不到上一租户的行。并断言 `apps/api/src/app.ts` 的 `probeDatabase` 只执行 `SELECT version()`
-- [ ] T021 [P] [US3] 扩展 `tests/genealogy/fixtures/large-tree.ts` 与 `tests/genealogy/subgraph-perf.test.ts`：一个项目 10,000 位人物时，人物名单与 `GET /projects/:projectId/subgraph` 各自在 2 秒内返回；第二个项目数据量加倍后，再测第一个项目，两次耗时增幅都不超过 10%。沿用 `YUNPU_PERF=1` 才运行，避免默认 CI 播种 10,000 人
+- [X] T018 [P] [US3] 在 `tests/security/write-role.test.ts` 固定 data-model 矩阵的可见结果：person、person_name、person_relation、lineage_projection 的新增/修改/删除需 editor 或 admin，且组织为 active；project 的新增/修改需 editor 或 admin，删除仅 admin；organization 与 invite 的新增/修改/删除需 admin；organization_member 由 admin 修改，本人只能改自己的 `last_used_at`，本人可以退出，所有者行仍由现有外键限制删除。非成员写人物仍是不存在，不是 403。成员但角色不够得到 `FORBIDDEN` / 403（SQLSTATE `42501`）。修改所有者角色仍是 `CONFLICT` / 409，「不能修改所有者角色」
+- [X] T019 [P] [US3] 在 `tests/runtime/no-pool-import.test.ts` 扫描 `apps/api/src/modules/**`：不得导入 `businessPool`、`createDb` 或 `withUser`
+- [X] T020 [P] [US3] 在 `tests/security/tenant-connection-reuse.test.ts` 断言：一次 `withTenantTransaction` 归还连接后，下一次不设置 `app.user_id` 的查询看不到上一租户的行。并断言 `apps/api/src/app.ts` 的 `probeDatabase` 只执行 `SELECT version()`
+- [X] T021 [P] [US3] 扩展 `tests/genealogy/fixtures/large-tree.ts` 与 `tests/genealogy/subgraph-perf.test.ts`：一个项目 10,000 位人物时，人物名单与 `GET /projects/:projectId/subgraph` 各自在 2 秒内返回；第二个项目数据量加倍后，再测第一个项目，两次耗时增幅都不超过 10%。沿用 `YUNPU_PERF=1` 才运行，避免默认 CI 播种 10,000 人
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] 新增 `packages/db/migrations/0014_write_policies.sql`。SELECT 策略保持「成员看见所属组织的行」，不要把角色子查询加进读取策略。写入策略按 T018 的矩阵，组织不是 active 时写入仍由 T013 的触发器拒绝。`organization_member.last_used_at` 只允许 `user_id = app.current_user_id()` 的那一行修改，用触发器拒绝本人改角色或其他成员列。不要改 `app.create_organization` 等已有 SECURITY DEFINER 函数的对外结果
-- [ ] T023 [US3] 新建 `apps/api/src/access.ts`，作为唯一的可见结果翻译：非成员保持各模块现有的 not-found；成员角色不够把 `42501` 译成 `FORBIDDEN` / 403；所有者角色冲突保持「不能修改所有者角色」。删除 `apps/api/src/modules/person/service.ts`、`apps/api/src/modules/project/service.ts`、`apps/api/src/modules/organization/service.ts`、`apps/api/src/modules/person/queries.ts`、`apps/api/src/modules/project/queries.ts`、`apps/api/src/modules/organization/queries.ts` 里复制的 `requireRole`、`hasRole`、`hasRoleAtLeast`、`requireMembership`，改为调用 `apps/api/src/access.ts`
-- [ ] T024 [US3] 在 `apps/api/src/lib/errors.ts` 识别 SQLSTATE `42501`，但 HTTP 结果必须经过 `apps/api/src/access.ts`：非成员仍是不存在，成员才是 `FORBIDDEN` / 403。不要把所有 `42501` 一律变成 403
-- [ ] T025 [US3] 删除 `withUser`：`apps/api/src/db/with-tenant-transaction.ts`、`apps/api/src/db/with-user.ts`，以及 `apps/api/src/modules/organization/service.ts` 和仍引用它的测试。调用处改为 `withTenantTransaction({ userId }, fn)`。保持现有行为：`SET LOCAL ROLE genealogy_app`、事务局部 `app.user_id`、角色断言、最多 3 次瞬态重试、`23505` 不重试
-- [ ] T026 [P] [US3] 在 `biome.json` 禁止 `apps/api/src/modules/**` 导入 `apps/api/src/db/pool.ts`、`createDb` 和 `with-user`。健康检查、`apps/api/src/modules/auth/better-auth.ts` 的认证库连接、`packages/db/src/migrate.ts` 不在此禁令内
-- [ ] T027 [P] [US3] 仓库没有人物名单路由。在 `apps/api/src/modules/person/queries.ts`、`apps/api/src/modules/person/service.ts`、`apps/api/src/modules/person/router.ts` 增加 `GET /projects/:projectId/persons`，返回该项目人物，字段与现有 `getPersonForProject` 的单人视图一致，不新增业务字段。读取仍只走 `withTenantTransaction`
+- [X] T022 [US3] 新增 `packages/db/migrations/0014_write_policies.sql`。SELECT 策略保持「成员看见所属组织的行」，不要把角色子查询加进读取策略。写入策略按 T018 的矩阵，组织不是 active 时写入仍由 T013 的触发器拒绝。`organization_member.last_used_at` 只允许 `user_id = app.current_user_id()` 的那一行修改，用触发器拒绝本人改角色或其他成员列。不要改 `app.create_organization` 等已有 SECURITY DEFINER 函数的对外结果
+- [X] T023 [US3] 新建 `apps/api/src/access.ts`，作为唯一的可见结果翻译：非成员保持各模块现有的 not-found；成员角色不够把 `42501` 译成 `FORBIDDEN` / 403；所有者角色冲突保持「不能修改所有者角色」。删除 `apps/api/src/modules/person/service.ts`、`apps/api/src/modules/project/service.ts`、`apps/api/src/modules/organization/service.ts`、`apps/api/src/modules/person/queries.ts`、`apps/api/src/modules/project/queries.ts`、`apps/api/src/modules/organization/queries.ts` 里复制的 `requireRole`、`hasRole`、`hasRoleAtLeast`、`requireMembership`，改为调用 `apps/api/src/access.ts`
+- [X] T024 [US3] 在 `apps/api/src/lib/errors.ts` 识别 SQLSTATE `42501`，但 HTTP 结果必须经过 `apps/api/src/access.ts`：非成员仍是不存在，成员才是 `FORBIDDEN` / 403。不要把所有 `42501` 一律变成 403
+- [X] T025 [US3] 删除 `withUser`：`apps/api/src/db/with-tenant-transaction.ts`、`apps/api/src/db/with-user.ts`，以及 `apps/api/src/modules/organization/service.ts` 和仍引用它的测试。调用处改为 `withTenantTransaction({ userId }, fn)`。保持现有行为：`SET LOCAL ROLE genealogy_app`、事务局部 `app.user_id`、角色断言、最多 3 次瞬态重试、`23505` 不重试
+- [X] T026 [P] [US3] 在 `biome.json` 禁止 `apps/api/src/modules/**` 导入 `apps/api/src/db/pool.ts`、`createDb` 和 `with-user`。健康检查、`apps/api/src/modules/auth/better-auth.ts` 的认证库连接、`packages/db/src/migrate.ts` 不在此禁令内
+- [X] T027 [P] [US3] 仓库没有人物名单路由。在 `apps/api/src/modules/person/queries.ts`、`apps/api/src/modules/person/service.ts`、`apps/api/src/modules/person/router.ts` 增加 `GET /projects/:projectId/persons`，返回该项目人物，字段与现有 `getPersonForProject` 的单人视图一致，不新增业务字段。读取仍只走 `withTenantTransaction`
 
 **Checkpoint**: T018–T021 通过。一条租户请求的路径是路由校验 → `withTenantTransaction` → 返回，不经过隐藏装配
 
@@ -128,11 +128,11 @@
 
 ### Tests for User Story 4
 
-- [ ] T028 [P] [US4] 在 `tests/runtime/no-passthrough-layer.test.ts` 断言 `apps/api` 与 `packages` 下不存在 `*mapper*` 或 `*.repo.ts`。`apps/api/src/modules/person/router.ts` 仍用 `CreatePersonSchema` 校验后调用 `createPersonForProject`，中间没有第二份字段拷贝
+- [X] T028 [P] [US4] 在 `tests/runtime/no-passthrough-layer.test.ts` 断言 `apps/api` 与 `packages` 下不存在 `*mapper*` 或 `*.repo.ts`。`apps/api/src/modules/person/router.ts` 仍用 `CreatePersonSchema` 校验后调用 `createPersonForProject`，中间没有第二份字段拷贝
 
 ### Implementation for User Story 4
 
-- [ ] T029 [US4] 用最近 20 次非 merge、且改动 `apps/` 或 `packages/` 的提交复核 [research.md](research.md) 第 7 节。记录中的比例是 api+web 4/20、api+db 5/14、api+shared 5/14、web+db 4/11、web+shared 4/11、db+shared 4/6，api 模块两两都不是「每次触及一方时另一方也在」。比例若仍不是 20/20，就不要合并 `apps/api`、`apps/web`、`packages/db`、`packages/shared`，也不要合并 account、auth、organization、person、project。若某对变成总是同时修改，把那一对合并成一个目录并更新 `biome.json` 的依赖方向。不要把模块依赖图写进 `docs/`
+- [X] T029 [US4] 用最近 20 次非 merge、且改动 `apps/` 或 `packages/` 的提交复核 [research.md](research.md) 第 7 节。记录中的比例是 api+web 4/20、api+db 5/14、api+shared 5/14、web+db 4/11、web+shared 4/11、db+shared 4/6，api 模块两两都不是「每次触及一方时另一方也在」。比例若仍不是 20/20，就不要合并 `apps/api`、`apps/web`、`packages/db`、`packages/shared`，也不要合并 account、auth、organization、person、project。若某对变成总是同时修改，把那一对合并成一个目录并更新 `biome.json` 的依赖方向。不要把模块依赖图写进 `docs/`
 
 **Checkpoint**: 没有新的拷贝层，目录仍按测量结果分开
 
@@ -142,9 +142,9 @@
 
 **Purpose**: 把 quickstart 整页跑一遍，并确认旧的合法路径还在
 
-- [ ] T030 按 [quickstart.md](quickstart.md) 第 1–6 节逐条执行。性能一节使用 `YUNPU_PERF=1`。失败就回到对应故事的任务修，不要把执行计划文本写进 `docs/`
-- [ ] T031 [P] 跑已有合法路径：`tests/genealogy/person-crud.test.ts`、`tests/genealogy/relations.test.ts`、`tests/genealogy/subgraph.test.ts`、`tests/console/organization.test.ts`、`tests/console/projects.test.ts`、`tests/console/members.test.ts`。成功结果的可见字段保持原样
-- [ ] T032 [P] 确认没有改写 `specs/001-dev-test-environment/`、`specs/002-user-auth-default-org/`、`specs/003-workspace-console/`、`specs/004-backend-architecture/`。它们只作档案
+- [X] T030 按 [quickstart.md](quickstart.md) 第 1–6 节逐条执行。性能一节使用 `YUNPU_PERF=1`。失败就回到对应故事的任务修，不要把执行计划文本写进 `docs/`
+- [X] T031 [P] 跑已有合法路径：`tests/genealogy/person-crud.test.ts`、`tests/genealogy/relations.test.ts`、`tests/genealogy/subgraph.test.ts`、`tests/console/organization.test.ts`、`tests/console/projects.test.ts`、`tests/console/members.test.ts`。成功结果的可见字段保持原样
+- [X] T032 [P] 确认没有改写 `specs/001-dev-test-environment/`、`specs/002-user-auth-default-org/`、`specs/003-workspace-console/`、`specs/004-backend-architecture/`。它们只作档案
 
 ---
 

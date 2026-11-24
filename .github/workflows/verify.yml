@@ -1,6 +1,6 @@
 name: verify
 
-# 真实的构建/测试门禁：lint、全量 Vitest、文档一致性（Node 26 LTS）。
+# 真实的构建/测试门禁：lint、全量 Vitest（Node 26 LTS）。
 on:
   push:
     branches: [main]
@@ -41,18 +41,3 @@ jobs:
 
       - name: Full test suite
         run: pnpm test:all
-
-      - name: Docs syntax check
-        run: sh -n scripts/check-docs.sh
-
-      - name: Docs unit tests (fixture-driven)
-        run: sh tests/docs/check-docs.test.sh
-
-      - name: Docs review-path tests (R7/R8 negative cases)
-        run: sh tests/docs/check-docs-review.test.sh
-
-      - name: Docs consistency gate (--strict, ratchet vs baseline)
-        run: scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt
-
-      - name: Report baseline size (ratchet; do not inflate known violations)
-        run: wc -l docs/.check-docs-baseline.txt

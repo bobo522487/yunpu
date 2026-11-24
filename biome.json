@@ -80,11 +80,22 @@
               "options": {
                 "paths": {
                   "bun": "Bun runtime APIs are forbidden; use Node equivalents",
-                  "bun:test": "Use vitest instead of bun:test"
+                  "bun:test": "Use vitest instead of bun:test",
+                  "@yunpu/db": {
+                    "importNames": ["createDb"],
+                    "message": "Modules must not call createDb; use withTenantTransaction (FR-003/FR-016)"
+                  }
                 },
                 "patterns": [
                   {
-                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
+                    "group": [
+                      "**/db/pool",
+                      "**/db/pool.ts",
+                      "**/db/pool.js",
+                      "**/db/with-user",
+                      "**/db/with-user.ts",
+                      "**/db/with-user.js"
+                    ],
                     "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
                   },
                   {
@@ -134,7 +145,14 @@
                 },
                 "patterns": [
                   {
-                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
+                    "group": [
+                      "**/db/pool",
+                      "**/db/pool.ts",
+                      "**/db/pool.js",
+                      "**/db/with-user",
+                      "**/db/with-user.ts",
+                      "**/db/with-user.js"
+                    ],
                     "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
                   },
                   {
@@ -153,6 +171,37 @@
                       "../**/*.route.ts"
                     ],
                     "message": "Do not import another module's internal queries/repo/route files; call its service API instead"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/api/src/modules/auth/better-auth.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+                  "bun:test": "Use vitest instead of bun:test"
+                },
+                "patterns": [
+                  {
+                    "group": [
+                      "**/db/pool",
+                      "**/db/pool.ts",
+                      "**/db/pool.js",
+                      "**/db/with-user",
+                      "**/db/with-user.ts",
+                      "**/db/with-user.js"
+                    ],
+                    "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
                   }
                 ]
               }

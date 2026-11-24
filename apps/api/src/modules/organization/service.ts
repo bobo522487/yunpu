@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { MemberRole } from "@yunpu/shared";
-import { withUser } from "../../db/with-tenant-transaction";
+import { memberRole, requireMember } from "../../access";
+import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "../../lib/errors";
-import { conflict, forbidden, organizationNotFound } from "./errors";
+import { conflict, organizationNotFound } from "./errors";
 import {
   acceptInviteWithFunction,
   activateOrganization,
@@ -12,14 +13,12 @@ import {
   getMemberRecord,
   getOrganizationDetail,
   getOrganizationSummary,
-  hasRoleAtLeast,
   type InviteListItem,
   insertInviteRecord,
   listInvites,
   listMembers,
   listOrganizations,
   type MemberListItem,
-  membershipRole,
   type OrganizationDetail,
   type OrganizationListItem,
   type OrganizationSummary,
@@ -44,7 +43,7 @@ export async function createOrganization(
   name: string,
 ): Promise<OrganizationSummary> {
   try {
-    return await withUser(userId, async (db) => {
+    return await withTenantTransaction({ userId }, async (db) => {
       const organizationId = await createOrganizationWithFunction(db, name);
       const summary = await getOrganizationSummary(db, organizationId, userId);
       if (!summary) throw organizationNotFound();
@@ -59,7 +58,9 @@ export async function listMyOrganizations(
   userId: string,
 ): Promise<OrganizationListItem[]> {
   try {
-    return await withUser(userId, (db) => listOrganizations(db, userId));
+    return await withTenantTransaction({ userId }, (db) =>
+      listOrganizations(db, userId),
+    );
   } catch (error) {
     throw asAppError(error);
   }
@@ -71,7 +72,7 @@ export async function getOrganization(
   organizationId: string,
 ): Promise<OrganizationDetail | null> {
   try {
-    return await withUser(userId, (db) =>
+    return await withTenantTransaction({ userId }, (db) =>
       getOrganizationDetail(db, organizationId, userId),
     );
   } catch (error) {
@@ -83,7 +84,9 @@ export async function resolveDefaultOrganization(
   userId: string,
 ): Promise<OrganizationSummary | null> {
   try {
-    return await withUser(userId, (db) => findDefaultOrganization(db, userId));
+    return await withTenantTransaction({ userId }, (db) =>
+      findDefaultOrganization(db, userId),
+    );
   } catch (error) {
     throw asAppError(error);
   }
@@ -94,7 +97,7 @@ export async function activateOrganizationForUser(
   organizationId: string,
 ): Promise<OrganizationSummary> {
   try {
-    return await withUser(userId, async (db) => {
+    return await withTenantTransaction({ userId }, async (db) => {
       const activated = await activateOrganization(db, organizationId, userId);
       if (!activated) throw organizationNotFound();
       const summary = await getOrganizationSummary(db, organizationId, userId);
@@ -111,7 +114,7 @@ export async function acceptInvite(
   token: string,
 ): Promise<OrganizationSummary> {
   try {
-    return await withUser(userId, async (db) => {
+    return await withTenantTransaction({ userId }, async (db) => {
       const organizationId = await acceptInviteWithFunction(db, token);
       const summary = await getOrganizationSummary(db, organizationId, userId);
       if (!summary) throw organizationNotFound();
@@ -122,29 +125,14 @@ export async function acceptInvite(
   }
 }
 
-/**
- * 成员/邀请管理的统一前置：非成员 → 404（不泄漏存在性）；
- * `min` 角色不足 → 403。执行者：服务层 + C3 权限矩阵（DM-ORG-07）。
- */
-async function requireMembership(
-  db: Parameters<typeof membershipRole>[0],
-  organizationId: string,
-  userId: string,
-  min: "editor" | "admin" | null,
-): Promise<void> {
-  const role = await membershipRole(db, organizationId, userId);
-  if (role === null) throw organizationNotFound();
-  if (min !== null && !hasRoleAtLeast(role, min)) throw forbidden();
-}
-
 export async function listMembersForOrg(
   userId: string,
   organizationId: string,
   options: { cursor?: string; limit?: number },
 ): Promise<{ items: MemberListItem[]; nextCursor: string | null }> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, null);
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, null);
       return listMembers(db, organizationId, {
         cursor: options.cursor,
         limit: options.limit ?? 50,
@@ -162,8 +150,8 @@ export async function updateMemberRoleForOrg(
   role: MemberRole,
 ): Promise<MemberListItem> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
       const ownerId = await organizationOwnerId(db, organizationId);
       if (ownerId === targetUserId) {
         throw conflict("不能修改所有者角色");
@@ -190,8 +178,8 @@ export async function removeMemberFromOrg(
   targetUserId: string,
 ): Promise<void> {
   try {
-    await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
       // owner 行由 fk_organization_owner RESTRICT 兜底（23001 → 409）。
       const removed = await removeMemberRecord(
         db,
@@ -211,8 +199,8 @@ export async function listInvitesForOrg(
   options: { cursor?: string; limit?: number },
 ): Promise<{ items: InviteListItem[]; nextCursor: string | null }> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
       return listInvites(db, organizationId, {
         cursor: options.cursor,
         limit: options.limit ?? 50,
@@ -230,8 +218,8 @@ export async function createInviteForOrg(
   origin: string,
 ): Promise<{ invite: InviteListItem; inviteUrl: string }> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
 
       // DM-INV-01：≥32 字节 CSPRNG，库存 sha256，明文只在本响应返回一次。
       const token = randomBytes(32).toString("base64url");
@@ -256,8 +244,8 @@ export async function revokeInviteForOrg(
   inviteId: string,
 ): Promise<void> {
   try {
-    await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
       const existing = await getInviteRecord(db, organizationId, inviteId);
       if (!existing || existing.status !== "pending") {
         throw organizationNotFound();
@@ -275,9 +263,9 @@ export async function transferOwnerForOrg(
   newOwnerUserId: string,
 ): Promise<{ ownerUserId: string }> {
   try {
-    return await withUser(userId, async (db) => {
+    return await withTenantTransaction({ userId }, async (db) => {
       // 非成员先 404，避免受控函数的 GX006 泄漏组织存在性（FR-009）。
-      await requireMembership(db, organizationId, userId, null);
+      await requireMember(db, organizationId, userId, null);
       await transferOwnershipViaFunction(db, organizationId, newOwnerUserId);
       return { ownerUserId: newOwnerUserId };
     });
@@ -292,8 +280,8 @@ export async function updateOrganizationForUser(
   patch: { name?: string; status?: string },
 ): Promise<OrganizationDetail> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireMembership(db, organizationId, userId, "admin");
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "admin");
       if (patch.status !== undefined && patch.status !== "archived") {
         throw new AppError("VALIDATION", "仅支持归档操作", 400);
       }
@@ -316,8 +304,8 @@ export async function leaveOrganizationForUser(
   organizationId: string,
 ): Promise<void> {
   try {
-    await withUser(userId, async (db) => {
-      const role = await membershipRole(db, organizationId, userId);
+    await withTenantTransaction({ userId }, async (db) => {
+      const role = await memberRole(db, organizationId, userId);
       if (role === null) throw organizationNotFound();
       const ownerId = await organizationOwnerId(db, organizationId);
       if (ownerId === userId) {

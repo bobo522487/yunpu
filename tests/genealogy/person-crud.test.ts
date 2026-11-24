@@ -29,6 +29,14 @@ describe("person CRUD (genealogy)", () => {
       "张明德",
     );
 
+    const listed = await call(`/api/v1/projects/${projectId}/persons`, cookie);
+    expect(listed.status).toBe(200);
+    expect(
+      (listed.data?.persons as { id: string }[]).some(
+        (item) => item.id === person.id,
+      ),
+    ).toBe(true);
+
     const patched = await call(
       `/api/v1/projects/${projectId}/persons/${person.id}`,
       cookie,

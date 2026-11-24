@@ -201,6 +201,12 @@ S3_ACCESS_KEY_ID=$storage_access_key
 S3_SECRET_ACCESS_KEY=$storage_secret_key
 YUNPU_CAPABILITY_TOKEN=example-$name-capability-token
 EOF
+  # Repo-root copies are gitignored; Vitest loads `.env.test` in CI after
+  # `env.sh up test`, so the runtime file must be mirrored here.
+  case $name in
+    test) cp "$runtime_dir/.env" "$repo_root/.env.test" ;;
+    development) cp "$runtime_dir/.env" "$repo_root/.env.development" ;;
+  esac
 }
 
 bootstrap_db_roles() {
@@ -284,6 +290,8 @@ perform_up() {
     docker compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
   elif report_ready >/dev/null 2>&1; then
     # Same development project already running: stay on the existing volume.
+    # Still refresh the gitignored env mirrors Vitest / tooling read.
+    write_env_file
     report_ready
     return 0
   fi

@@ -13,7 +13,8 @@ function spawnSync(argv: string[]): { exitCode: number | null } {
 // environment starts from an empty baseline every time, and resetting one
 // environment leaves the other one's objects untouched.
 
-const devBase = "http://127.0.0.1:3000";
+// development API listens on 3001 (Vite owns 3000); see scripts/env.sh.
+const devBase = "http://127.0.0.1:3001";
 const testBase = "http://127.0.0.1:3010";
 const devToken =
   process.env.DEV_YUNPU_CAPABILITY_TOKEN ??
@@ -76,11 +77,10 @@ async function objectCount(storage: typeof devStorage): Promise<number> {
   url.searchParams.set("prefix", "media/");
   const host = url.host;
   const now = new Date();
-  const amzDate =
-    now
-      .toISOString()
-      .replace(/[:-]|\.\d{3}/g, "")
-      .slice(0, 15) + "Z";
+  const amzDate = `${now
+    .toISOString()
+    .replace(/[:-]|\.\d{3}/g, "")
+    .slice(0, 15)}Z`;
   const dateStamp = amzDate.slice(0, 8);
   const query = [...url.searchParams.entries()]
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))

@@ -2,23 +2,32 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
-function loadEnvTest(): Record<string, string> {
+function loadEnvFile(path: string): Record<string, string> {
   const env: Record<string, string> = {};
-  try {
-    const text = readFileSync(resolve(__dirname, ".env.test"), "utf8");
-    for (const rawLine of text.split("\n")) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith("#")) continue;
-      const eq = line.indexOf("=");
-      if (eq <= 0) continue;
-      const key = line.slice(0, eq).trim();
-      const value = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, "");
-      env[key] = value;
-    }
-  } catch {
-    // Caller may export variables directly.
+  const text = readFileSync(path, "utf8");
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, "");
+    env[key] = value;
   }
   return env;
+}
+
+function loadEnvTest(): Record<string, string> {
+  // Prefer the gitignored repo-root copy written by `env.sh up test`, then
+  // the runtime file under `.local/` (same contents) for CI/fresh checkouts.
+  for (const relative of [".env.test", ".local/runtime/test/.env"]) {
+    try {
+      return loadEnvFile(resolve(__dirname, relative));
+    } catch {
+      // try next candidate
+    }
+  }
+  return {};
 }
 
 export default defineConfig({

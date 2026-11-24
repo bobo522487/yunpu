@@ -32,4 +32,4 @@
 ## Notes
 
 - Validation pass (iteration 1): Spec frames outcomes around operators, tenants, genealogy editors, API consumers, and maintainers; concrete stack versions are confined to Assumptions as alignment notes, not as FR/SC mandates.
-- Ready for `/speckit-clarify` (optional) or `/speckit-plan`.
+- Re-validated after `/speckit-clarify` (2026-11-24): 5 clarifications integrated; all checklist items still pass. Ready for `/speckit-plan`.

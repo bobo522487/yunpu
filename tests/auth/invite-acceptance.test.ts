@@ -34,13 +34,17 @@ describe("US3 invite acceptance", () => {
 
     const registered = await signUp(invitee, { inviteToken: token });
     expect(registered.response.status).toBe(201);
-    expect((registered.json.data?.invite as { accepted: boolean }).accepted).toBe(true);
+    expect(
+      (registered.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(true);
     expect(
       (registered.json.data?.defaultOrganization as { id: string }).id,
     ).toBe(owner.organizationId);
 
     const organizations = await listOrganizations(registered.cookie);
-    expect((organizations.data?.organizations as { id: string }[]).length).toBe(1);
+    expect((organizations.data?.organizations as { id: string }[]).length).toBe(
+      1,
+    );
 
     const auditCount = await withAdminDb(async (client) => {
       const rows = await client.query<{ count: string }>(
@@ -66,8 +70,12 @@ describe("US3 invite acceptance", () => {
       inviteToken: token,
     });
     expect(registered.response.status).toBe(201);
-    expect((registered.json.data?.invite as { accepted: boolean }).accepted).toBe(false);
-    expect((registered.json.data?.invite as { reason: string }).reason).toBe("email_mismatch");
+    expect(
+      (registered.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(false);
+    expect((registered.json.data?.invite as { reason: string }).reason).toBe(
+      "email_mismatch",
+    );
     expect(
       (registered.json.data?.defaultOrganization as { id: string }).id,
     ).not.toBe(owner.organizationId);
@@ -87,8 +95,12 @@ describe("US3 invite acceptance", () => {
 
     const registered = await signUp(invitee, { inviteToken: token });
     expect(registered.response.status).toBe(201);
-    expect((registered.json.data?.invite as { accepted: boolean }).accepted).toBe(false);
-    expect((registered.json.data?.invite as { reason: string }).reason).toBe("expired");
+    expect(
+      (registered.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(false);
+    expect((registered.json.data?.invite as { reason: string }).reason).toBe(
+      "expired",
+    );
   });
 
   test("a consumed invite cannot be used again", async () => {
@@ -102,14 +114,20 @@ describe("US3 invite acceptance", () => {
       invitedBy: owner.userId,
     });
     const firstSignUp = await signUp(first, { inviteToken: token });
-    expect((firstSignUp.json.data?.invite as { accepted: boolean }).accepted).toBe(true);
+    expect(
+      (firstSignUp.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(true);
 
     const secondSignUp = await signUp(uniqueEmail("second"), {
       inviteToken: token,
     });
     expect(secondSignUp.response.status).toBe(201);
-    expect((secondSignUp.json.data?.invite as { accepted: boolean }).accepted).toBe(false);
-    expect((secondSignUp.json.data?.invite as { reason: string }).reason).toBe("already_used");
+    expect(
+      (secondSignUp.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(false);
+    expect((secondSignUp.json.data?.invite as { reason: string }).reason).toBe(
+      "already_used",
+    );
   });
 
   test("a logged-in user can accept an invite and switch default organization", async () => {
@@ -137,7 +155,9 @@ describe("US3 invite acceptance", () => {
     expect((session.data?.defaultOrganization as { id: string }).id).toBe(
       owner.organizationId,
     );
-    expect((session.data?.defaultOrganization as { id: string }).id).not.toBe(before.id);
+    expect((session.data?.defaultOrganization as { id: string }).id).not.toBe(
+      before.id,
+    );
   });
 
   test("concurrent acceptance succeeds once", async () => {
@@ -187,7 +207,10 @@ describe("US3 invite acceptance", () => {
       body: JSON.stringify({ token }),
     });
 
-    const activated = await activateOrganization(member.cookie, owner.organizationId);
+    const activated = await activateOrganization(
+      member.cookie,
+      owner.organizationId,
+    );
     expect(activated.response.status).toBe(200);
   });
 });

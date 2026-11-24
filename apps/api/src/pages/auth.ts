@@ -1,5 +1,10 @@
-import { Hono } from "hono";
+import {
+  CreateOrganizationSchema,
+  SignInSchema,
+  SignUpSchema,
+} from "@yunpu/shared";
 import type { Context } from "hono";
+import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { AppError } from "../lib/errors";
 import { appendSetCookie } from "../lib/http";
@@ -9,19 +14,19 @@ import {
   loginRateLimiter,
   sourceAddress,
 } from "../middleware/login-rate-limit";
-import type { ApiEnv } from "../types";
 import {
-  CreateOrganizationSchema,
-  SignInSchema,
-  SignUpSchema,
-} from "@yunpu/shared";
-import { getSessionView, register, signIn, signOut } from "../modules/auth/service";
+  getSessionView,
+  register,
+  signIn,
+  signOut,
+} from "../modules/auth/service";
 import {
   acceptInvite,
   activateOrganizationForUser,
   createOrganization,
   listMyOrganizations,
 } from "../modules/organization/service";
+import type { ApiEnv } from "../types";
 
 function escapeHtml(value: string): string {
   return value
@@ -63,7 +68,10 @@ function renderError(
   status = 400,
 ) {
   return c.html(
-    page(title, `<h1>${escapeHtml(title)}</h1><p class="error">${escapeHtml(message)}</p><p><a href="/sign-in">返回登录</a></p>`),
+    page(
+      title,
+      `<h1>${escapeHtml(title)}</h1><p class="error">${escapeHtml(message)}</p><p><a href="/sign-in">返回登录</a></p>`,
+    ),
     status as ContentfulStatusCode,
   );
 }
@@ -102,7 +110,12 @@ authPages.post("/sign-up", async (c) => {
     inviteToken: formValue(body, "inviteToken") || undefined,
   });
   if (!parsed.success) {
-    return renderError(c, "注册失败", "请检查邮箱与密码（密码至少 8 个字符）", 400);
+    return renderError(
+      c,
+      "注册失败",
+      "请检查邮箱与密码（密码至少 8 个字符）",
+      400,
+    );
   }
 
   try {
@@ -190,7 +203,9 @@ authPages.get("/app", async (c) => {
 
   const items = organizations
     .map(
-      (item) => `<li>${escapeHtml(item.name)}${item.isOwner ? "（owner）" : ""} · ${escapeHtml(item.role)}
+      (
+        item,
+      ) => `<li>${escapeHtml(item.name)}${item.isOwner ? "（owner）" : ""} · ${escapeHtml(item.role)}
         <form method="post" action="/app/activate" class="inline">
           <input type="hidden" name="organizationId" value="${escapeHtml(item.id)}" />
           <button type="submit">切换</button>
@@ -217,7 +232,10 @@ authPages.post("/app/activate", async (c) => {
 
   const body = await c.req.parseBody();
   try {
-    await activateOrganizationForUser(user.id, formValue(body, "organizationId"));
+    await activateOrganizationForUser(
+      user.id,
+      formValue(body, "organizationId"),
+    );
     return c.redirect("/app", 303);
   } catch (error) {
     return renderError(
@@ -263,12 +281,16 @@ authPages.post("/onboarding", async (c) => {
 
   try {
     if (action === "create") {
-      const parsed = CreateOrganizationSchema.safeParse({ name: formValue(body, "name") });
-      if (!parsed.success) return renderError(c, "创建组织失败", "组织名不能为空", 400);
+      const parsed = CreateOrganizationSchema.safeParse({
+        name: formValue(body, "name"),
+      });
+      if (!parsed.success)
+        return renderError(c, "创建组织失败", "组织名不能为空", 400);
       await createOrganization(user.id, parsed.data.name);
     } else if (action === "accept") {
       const token = formValue(body, "token");
-      if (!token) return renderError(c, "接受邀请失败", "邀请 token 不能为空", 400);
+      if (!token)
+        return renderError(c, "接受邀请失败", "邀请 token 不能为空", 400);
       await acceptInvite(user.id, token);
     } else {
       return renderError(c, "操作失败", "未知操作", 400);

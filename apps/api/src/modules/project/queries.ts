@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
 import { organization, organizationMember, project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-user";
 
 export type ProjectRecord = {
@@ -68,7 +68,10 @@ export async function listProjects(
   const last = rows[rows.length - 1];
   return {
     items: rows,
-    nextCursor: rows.length === options.limit && last ? `${last.updatedAt}|${last.id}` : null,
+    nextCursor:
+      rows.length === options.limit && last
+        ? `${last.updatedAt}|${last.id}`
+        : null,
   };
 }
 
@@ -167,7 +170,12 @@ export async function deleteProject(
 ): Promise<boolean> {
   const rows = await db
     .delete(project)
-    .where(and(eq(project.id, projectId), eq(project.organizationId, organizationId)))
+    .where(
+      and(
+        eq(project.id, projectId),
+        eq(project.organizationId, organizationId),
+      ),
+    )
     .returning({ id: project.id });
   return rows.length > 0;
 }

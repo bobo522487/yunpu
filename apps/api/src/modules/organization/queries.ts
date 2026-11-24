@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { authUser, invite, organization, organizationMember } from "@yunpu/db";
 import type { InviteStatus, MemberRole } from "@yunpu/shared";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-user";
 
 export type OrganizationSummary = {
@@ -28,8 +28,16 @@ export async function findDefaultOrganization(
   const rows = await db
     .select(summaryColumns)
     .from(organizationMember)
-    .innerJoin(organization, eq(organization.id, organizationMember.organizationId))
-    .where(and(eq(organizationMember.userId, userId), eq(organization.status, "active")))
+    .innerJoin(
+      organization,
+      eq(organization.id, organizationMember.organizationId),
+    )
+    .where(
+      and(
+        eq(organizationMember.userId, userId),
+        eq(organization.status, "active"),
+      ),
+    )
     .orderBy(
       sql`${organizationMember.lastUsedAt} DESC NULLS LAST`,
       asc(organizationMember.createdAt),
@@ -47,8 +55,16 @@ export async function listOrganizations(
   return db
     .select({ ...summaryColumns, lastUsedAt: organizationMember.lastUsedAt })
     .from(organizationMember)
-    .innerJoin(organization, eq(organization.id, organizationMember.organizationId))
-    .where(and(eq(organizationMember.userId, userId), eq(organization.status, "active")))
+    .innerJoin(
+      organization,
+      eq(organization.id, organizationMember.organizationId),
+    )
+    .where(
+      and(
+        eq(organizationMember.userId, userId),
+        eq(organization.status, "active"),
+      ),
+    )
     .orderBy(
       sql`${organizationMember.lastUsedAt} DESC NULLS LAST`,
       asc(organizationMember.createdAt),
@@ -64,8 +80,16 @@ export async function getOrganizationSummary(
   const rows = await db
     .select(summaryColumns)
     .from(organizationMember)
-    .innerJoin(organization, eq(organization.id, organizationMember.organizationId))
-    .where(and(eq(organization.id, organizationId), eq(organizationMember.userId, userId)))
+    .innerJoin(
+      organization,
+      eq(organization.id, organizationMember.organizationId),
+    )
+    .where(
+      and(
+        eq(organization.id, organizationId),
+        eq(organizationMember.userId, userId),
+      ),
+    )
     .limit(1);
 
   return rows[0] ?? null;
@@ -253,7 +277,10 @@ export async function listMembers(
       eq(organization.id, organizationMember.organizationId),
     )
     .where(and(...conditions))
-    .orderBy(desc(organizationMember.createdAt), desc(organizationMember.userId))
+    .orderBy(
+      desc(organizationMember.createdAt),
+      desc(organizationMember.userId),
+    )
     .limit(options.limit);
 
   const last = rows[rows.length - 1];
@@ -411,7 +438,9 @@ export async function listInvites(
   return {
     items: rows,
     nextCursor:
-      rows.length === options.limit && last ? `${last.createdAt}|${last.id}` : null,
+      rows.length === options.limit && last
+        ? `${last.createdAt}|${last.id}`
+        : null,
   };
 }
 

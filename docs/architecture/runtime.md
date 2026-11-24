@@ -1,6 +1,8 @@
 # 运行时与 API 层
 
-> 本文件是「Hono/Bun 运行时、中间件链、依赖注入与错误映射落地」的唯一权威；其他主题见 `docs/README.md` 导航，同一主题不复制表格。
+> 本文件是「Hono / Node 26 运行时、中间件链、依赖注入与错误映射落地」的唯一权威；其他主题见 `docs/README.md` 导航，同一主题不复制表格。
+>
+> **运行时收口（004）**：业务进程由 `@hono/node-server` 的 `serve()` 启动（`apps/api/src/index.ts`）；SIGTERM/SIGINT 停收 → 排空 → `closePools` → exit 0。Bun 不再作为业务启动/迁移/测试运行时（见 [`stack.md`](stack.md) §2）。
 
 ## 8. API 层
 

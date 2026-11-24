@@ -1,8 +1,8 @@
 import { serve } from "@hono/node-server";
 import app from "./app";
-import { initStorage } from "./storage";
 import { config } from "./config";
 import { closePools } from "./db/pool";
+import { initStorage } from "./storage";
 
 const env = config();
 

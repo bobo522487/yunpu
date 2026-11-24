@@ -113,8 +113,7 @@ export const UpdateProjectSchema = z
     expectedUpdatedAt: z.iso.datetime(),
   })
   .refine(
-    (value) =>
-      Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
+    (value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
     { message: "至少提供一个要修改的字段" },
   );
 export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
@@ -134,15 +133,26 @@ export const UpdatePersonSchema = z
     displayName: z.string().trim().min(1, "显示名不能为空").max(120).optional(),
     sex: z.enum(PERSON_SEXES).optional(),
     surname: optionalNonBlank(50).nullable().optional(),
-    birthYear: z.coerce.number().int().min(-5000).max(9999).nullable().optional(),
-    deathYear: z.coerce.number().int().min(-5000).max(9999).nullable().optional(),
+    birthYear: z.coerce
+      .number()
+      .int()
+      .min(-5000)
+      .max(9999)
+      .nullable()
+      .optional(),
+    deathYear: z.coerce
+      .number()
+      .int()
+      .min(-5000)
+      .max(9999)
+      .nullable()
+      .optional(),
     isLiving: z.boolean().optional(),
     version: z.coerce.number().int().positive(),
   })
-  .refine(
-    (value) => Object.keys(value).some((key) => key !== "version"),
-    { message: "至少提供一个要修改的字段" },
-  );
+  .refine((value) => Object.keys(value).some((key) => key !== "version"), {
+    message: "至少提供一个要修改的字段",
+  });
 export type UpdatePersonInput = z.infer<typeof UpdatePersonSchema>;
 
 export const CreateRelationSchema = z

@@ -170,7 +170,7 @@
 | `ARCH-OPS-01`  | 回滚 = 恢复备份，不是 down migration                 | §15.3, §15.5     |
 | `ARCH-PERM-01` | 同一授权规则不允许写两遍                             | §7.5, §10        |
 | `ARCH-PUB-01`  | 出版同步起步，有明确上限，不留白                     | §11.6            |
-| `ARCH-TST-03`  | 测试分层：`bun test` + Playwright，均可跑在 Bun 1.4 上 | [`stack.md`](architecture/stack.md) |
+| `ARCH-TST-03`  | 测试分层：Vitest（Node 26）+ Playwright；业务路径禁用 Bun | [`stack.md`](architecture/stack.md) |
 | `ARCH-TST-04`  | 路由测试用 `app.request()` 官方调用约定              | §14.1            |
 
 **编号规则**：`ARCH-<域>-<序号>`。域代码含义——`AR` 架构原则 / `API` 接口分页 / `AUD` 审计 / `BLD` 构建 / `CC` 并发控制 / `ERR` 错误 / `FE` 前端 / `GOV` 治理 / `HONO` Hono 官方实践 / `IDX` 索引 / `MOD` 模块 / `OPS` 运维 / `PERM` 权限 / `PUB` 出版 / `TST` 测试。
@@ -226,6 +226,9 @@
 | `DM-ORG-06` | `organization_member.role` 无 `owner` 值 | §5.2 |
 | `DM-ORG-07` | 成员增删改的角色授权（软约束） | §7.2 |
 | `DM-PER-01` | `surname` 的三条硬规则 | §5.6 |
+| `DM-PER-02` | `person.version` 乐观锁 | [`schema.md`](architecture/data/schema.md) |
+| `DM-PER-03` | 生卒/在世便利字段（非 event 真相源） | [`schema.md`](architecture/data/schema.md)；软约束见 [`invariants.md`](architecture/data/invariants.md) |
+| `DM-PROJ-01` | `lineage_projection` 派生加速、非真相源 | [`schema.md`](architecture/data/schema.md)；软约束见 [`invariants.md`](architecture/data/invariants.md) |
 | `DM-NAM-01` | 每人最多一个主姓名 | §5.7, §7.1 #7 |
 | `DM-NAM-02` | 同人同类型同值唯一 | §5.7 |
 | `DM-REL-01` | 世系父边反向二元环被拒 | §5.8 |
@@ -240,6 +243,7 @@
 | `DM-REL-10` | 非世系关系不参与环检查 | §5.8, §7.1 #12 |
 | `DM-REL-11` | 世系写锁不阻塞同 Project 其他写入 | §5.8, §7.1 #50 |
 | `DM-REL-12` | `kind` 取值单一来源 | §5.8, §7.1 #49 |
+| `DM-REL-13` | 父母类边同 kind 对 `to` 端 ≤ 2（软约束） | [`schema.md`](architecture/data/schema.md)；[`invariants.md`](architecture/data/invariants.md) |
 | `DM-EVT-01` | Event 至少有一项非空白内容 | §5.9, §7.1 #16 |
 | `DM-EVT-02` | Event 恰好关联 Person 或 Relation | §5.9, §7.1 #13 |
 | `DM-EVT-03` | Event 类型属于对应域 | §5.9, §7.1 #14 |

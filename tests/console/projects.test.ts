@@ -1,14 +1,18 @@
 import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
-type Envelope = { status: number; json: JsonResponse; data?: Record<string, unknown> };
+type Envelope = {
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+};
 
 async function call(
   path: string,
@@ -61,7 +65,11 @@ describe("project CRUD (console)", () => {
     const created = await createOrganization(owner.cookie, "谱项目组织");
     const organizationId = (created.data?.organization as { id: string }).id;
 
-    const createdProject = await createProject(owner.cookie, organizationId, "李氏家谱");
+    const createdProject = await createProject(
+      owner.cookie,
+      organizationId,
+      "李氏家谱",
+    );
     expect(createdProject.status).toBe(201);
     expect(createdProject.json.ok).toBe(true);
     const project = createdProject.data?.project as Record<string, unknown>;
@@ -87,7 +95,9 @@ describe("project CRUD (console)", () => {
       }),
     });
     expect(patched.status).toBe(200);
-    expect((patched.data?.project as { name: string }).name).toBe("李氏家谱（修订）");
+    expect((patched.data?.project as { name: string }).name).toBe(
+      "李氏家谱（修订）",
+    );
     expect((patched.data?.project as { updatedAt: string }).updatedAt).not.toBe(
       project.updatedAt,
     );
@@ -125,7 +135,8 @@ describe("project CRUD (console)", () => {
 
     const stranger = await signUp(uniqueEmail("proj-tenant-b"));
     const otherOrg = await createOrganization(stranger.cookie, "租户B组织");
-    const otherOrganizationId = (otherOrg.data?.organization as { id: string }).id;
+    const otherOrganizationId = (otherOrg.data?.organization as { id: string })
+      .id;
 
     const list = await call(
       `/api/v1/organizations/${otherOrganizationId}/projects`,
@@ -135,10 +146,20 @@ describe("project CRUD (console)", () => {
 
     for (const init of [
       {},
-      { method: "PATCH", body: JSON.stringify({ name: "偷改", expectedUpdatedAt: new Date().toISOString() }) },
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "偷改",
+          expectedUpdatedAt: new Date().toISOString(),
+        }),
+      },
       { method: "DELETE" },
     ]) {
-      const result = await call(`/api/v1/projects/${project}`, stranger.cookie, init);
+      const result = await call(
+        `/api/v1/projects/${project}`,
+        stranger.cookie,
+        init,
+      );
       expect(result.status).toBe(404);
       expect(result.json.code).toBe("NOT_FOUND");
     }
@@ -155,7 +176,10 @@ describe("project CRUD (console)", () => {
 
     const first = await call(`/api/v1/projects/${project}`, owner.cookie, {
       method: "PATCH",
-      body: JSON.stringify({ name: "第一次修改", expectedUpdatedAt: new Date(0).toISOString() }),
+      body: JSON.stringify({
+        name: "第一次修改",
+        expectedUpdatedAt: new Date(0).toISOString(),
+      }),
     });
     expect(first.status).toBe(409);
     expect(first.json.code).toBe("CONFLICT");
@@ -172,22 +196,41 @@ describe("project CRUD (console)", () => {
 
     const viewerEmail = uniqueEmail("proj-viewer");
     const viewerCookie = await addMember(organizationId, viewerEmail, "viewer");
-    const viewerCreate = await createProject(viewerCookie, organizationId, " viewer 项目");
+    const viewerCreate = await createProject(
+      viewerCookie,
+      organizationId,
+      " viewer 项目",
+    );
     expect(viewerCreate.status).toBe(403);
     expect(viewerCreate.json.code).toBe("FORBIDDEN");
-    const viewerPatch = await call(`/api/v1/projects/${project}`, viewerCookie, {
-      method: "PATCH",
-      body: JSON.stringify({ name: "viewer 改", expectedUpdatedAt: new Date().toISOString() }),
-    });
+    const viewerPatch = await call(
+      `/api/v1/projects/${project}`,
+      viewerCookie,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "viewer 改",
+          expectedUpdatedAt: new Date().toISOString(),
+        }),
+      },
+    );
     expect(viewerPatch.status).toBe(403);
-    const viewerDelete = await call(`/api/v1/projects/${project}`, viewerCookie, {
-      method: "DELETE",
-    });
+    const viewerDelete = await call(
+      `/api/v1/projects/${project}`,
+      viewerCookie,
+      {
+        method: "DELETE",
+      },
+    );
     expect(viewerDelete.status).toBe(403);
 
     const editorEmail = uniqueEmail("proj-editor");
     const editorCookie = await addMember(organizationId, editorEmail, "editor");
-    const editorCreate = await createProject(editorCookie, organizationId, "editor 项目");
+    const editorCreate = await createProject(
+      editorCookie,
+      organizationId,
+      "editor 项目",
+    );
     expect(editorCreate.status).toBe(201);
     const editorPatch = await call(
       `/api/v1/projects/${(editorCreate.data?.project as { id: string }).id}`,
@@ -196,14 +239,20 @@ describe("project CRUD (console)", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "editor 改名",
-          expectedUpdatedAt: (editorCreate.data?.project as { updatedAt: string }).updatedAt,
+          expectedUpdatedAt: (
+            editorCreate.data?.project as { updatedAt: string }
+          ).updatedAt,
         }),
       },
     );
     expect(editorPatch.status).toBe(200);
-    const editorDelete = await call(`/api/v1/projects/${project}`, editorCookie, {
-      method: "DELETE",
-    });
+    const editorDelete = await call(
+      `/api/v1/projects/${project}`,
+      editorCookie,
+      {
+        method: "DELETE",
+      },
+    );
     expect(editorDelete.status).toBe(403);
     expect(editorDelete.json.code).toBe("FORBIDDEN");
   });

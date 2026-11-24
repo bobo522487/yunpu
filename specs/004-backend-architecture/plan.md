@@ -121,6 +121,8 @@ tests/                       # vitest：RLS / 防环 / 回滚 / FORCE RLS 断言
 
 ## Complexity Tracking
 
+> **T054**：下表两项仍成立。合并说明直接引用本节取舍即可，**不另建** PR-facing note 文件。
+
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
 | 落库 `lineage_projection`（派生加速，触碰 Article IV） | 澄清确认本批次必做；支撑 `SC-004` 五千人子图 P95&lt;200ms | 纯递归 CTE 扫 `person_relation`：在目标规模下难以稳定达到 P95，且每次视口查询成本随深度指数上升 |

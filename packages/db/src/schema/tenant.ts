@@ -1,3 +1,10 @@
+import {
+  INVITE_STATUSES,
+  MEMBER_ROLES,
+  ORGANIZATION_STATUSES,
+  PROJECT_COLOR_THEMES,
+  PROJECT_STATUSES,
+} from "@yunpu/shared";
 import { sql } from "drizzle-orm";
 import {
   customType,
@@ -11,7 +18,6 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { ORGANIZATION_STATUSES, INVITE_STATUSES, MEMBER_ROLES, PROJECT_COLOR_THEMES, PROJECT_STATUSES } from "@yunpu/shared";
 import { authUser } from "./auth";
 
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({
@@ -20,15 +26,21 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   },
 });
 
-const createdAt = timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
-const updatedAt = timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+const createdAt = timestamp("created_at", { withTimezone: true })
+  .notNull()
+  .defaultNow();
+const updatedAt = timestamp("updated_at", { withTimezone: true })
+  .notNull()
+  .defaultNow();
 
 export const organization = pgTable(
   "organization",
   {
     id: uuid("id").primaryKey().default(sql`uuidv7()`),
     name: text("name").notNull(),
-    status: text("status", { enum: ORGANIZATION_STATUSES }).notNull().default("active"),
+    status: text("status", { enum: ORGANIZATION_STATUSES })
+      .notNull()
+      .default("active"),
     ownerUserId: uuid("owner_user_id").notNull(),
     createdAt,
     updatedAt,
@@ -66,7 +78,9 @@ export const invite = pgTable(
     email: text("email").notNull(),
     role: text("role", { enum: MEMBER_ROLES }).notNull(),
     tokenHash: bytea("token_hash").notNull(),
-    status: text("status", { enum: INVITE_STATUSES }).notNull().default("pending"),
+    status: text("status", { enum: INVITE_STATUSES })
+      .notNull()
+      .default("pending"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
@@ -94,7 +108,9 @@ export const project = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
-    status: text("status", { enum: PROJECT_STATUSES }).notNull().default("planning"),
+    status: text("status", { enum: PROJECT_STATUSES })
+      .notNull()
+      .default("planning"),
     surname: text("surname"),
     hallName: text("hall_name"),
     originText: text("origin_text"),
@@ -123,11 +139,20 @@ export const auditLog = pgTable(
     entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id"),
     payload: jsonb("payload").notNull().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
-    index("idx_audit_log_org_created").on(table.organizationId, table.createdAt),
+    index("idx_audit_log_org_created").on(
+      table.organizationId,
+      table.createdAt,
+    ),
     index("idx_audit_log_project_created").on(table.projectId, table.createdAt),
-    index("idx_audit_log_entity").on(table.organizationId, table.entityType, table.entityId),
+    index("idx_audit_log_entity").on(
+      table.organizationId,
+      table.entityType,
+      table.entityId,
+    ),
   ],
 );

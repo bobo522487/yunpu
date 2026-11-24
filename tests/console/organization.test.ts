@@ -2,11 +2,11 @@ import { describe, expect, test } from "vitest";
 import {
   createOrganization,
   insertInvite,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
 async function getDetail(
@@ -16,7 +16,10 @@ async function getDetail(
   const response = await request(`/api/v1/organizations/${organizationId}`, {
     headers: cookie ? { cookie } : {},
   });
-  return { status: response.status, json: (await response.json()) as JsonResponse };
+  return {
+    status: response.status,
+    json: (await response.json()) as JsonResponse,
+  };
 }
 
 describe("GET /api/v1/organizations/:id (console org detail)", () => {
@@ -50,7 +53,7 @@ describe("GET /api/v1/organizations/:id (console org detail)", () => {
          ON CONFLICT DO NOTHING`,
         [organizationId, userRow.rows[0].id],
       );
-      await client.query("SELECT 1 FROM auth.\"user\" WHERE id = $1", [ownerId]);
+      await client.query('SELECT 1 FROM auth."user" WHERE id = $1', [ownerId]);
     });
 
     await insertInvite({

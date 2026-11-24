@@ -42,7 +42,10 @@ async function signedBucketRequest(config: {
   const hostHeader = `${parts.host}${parts.port === "80" || parts.port === "443" ? "" : `:${parts.port}`}`;
   const url = `${parts.protocol}://${hostHeader}/${config.bucket}`;
   const now = new Date();
-  const amzDate = `${now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15)}Z`;
+  const amzDate = `${now
+    .toISOString()
+    .replace(/[:-]|\.\d{3}/g, "")
+    .slice(0, 15)}Z`;
   const dateStamp = amzDate.slice(0, 8);
   const payloadHash = sha256Hex("");
   const canonicalHeaders =
@@ -59,12 +62,22 @@ async function signedBucketRequest(config: {
     payloadHash,
   ].join("\n");
   const scope = `${dateStamp}/${config.region}/s3/aws4_request`;
-  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, sha256Hex(canonicalRequest)].join("\n");
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    scope,
+    sha256Hex(canonicalRequest),
+  ].join("\n");
   const signingKey = hmac(
-    hmac(hmac(hmac(`AWS4${config.secretAccessKey}`, dateStamp), config.region), "s3"),
+    hmac(
+      hmac(hmac(`AWS4${config.secretAccessKey}`, dateStamp), config.region),
+      "s3",
+    ),
     "aws4_request",
   );
-  const signature = createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+  const signature = createHmac("sha256", signingKey)
+    .update(stringToSign)
+    .digest("hex");
 
   return fetch(url, {
     method: config.method,
@@ -112,9 +125,17 @@ export async function initStorage(config: StorageConfig): Promise<void> {
   } catch (error) {
     // Fallback to signed helpers for MinIO quirks
     try {
-      const head = await signedBucketRequest({ ...config, region, method: "HEAD" });
+      const head = await signedBucketRequest({
+        ...config,
+        region,
+        method: "HEAD",
+      });
       if (head.status === 404) {
-        const create = await signedBucketRequest({ ...config, region, method: "PUT" });
+        const create = await signedBucketRequest({
+          ...config,
+          region,
+          method: "PUT",
+        });
         if (create.status !== 200) {
           throw new Error(`CreateBucket returned ${create.status}`);
         }
@@ -124,7 +145,9 @@ export async function initStorage(config: StorageConfig): Promise<void> {
     } catch (fallbackError) {
       console.error(
         `storage init failed: ${error instanceof Error ? error.message : String(error)}; fallback: ${
-          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : String(fallbackError)
         }`,
       );
       process.exit(1);
@@ -155,12 +178,22 @@ export async function checkStorage(): Promise<StorageCheck> {
   }
 
   try {
-    const head = await signedBucketRequest({ ...config, region, method: "HEAD" });
+    const head = await signedBucketRequest({
+      ...config,
+      region,
+      method: "HEAD",
+    });
     if (head.status !== 200) {
-      return { up: false, reason: "bucket not accessible with environment credentials" };
+      return {
+        up: false,
+        reason: "bucket not accessible with environment credentials",
+      };
     }
   } catch {
-    return { up: false, reason: "bucket not accessible with environment credentials" };
+    return {
+      up: false,
+      reason: "bucket not accessible with environment credentials",
+    };
   }
 
   return { up: true };

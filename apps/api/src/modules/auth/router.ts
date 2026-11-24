@@ -1,15 +1,15 @@
 import { Hono } from "hono";
 import { AppError } from "../../lib/errors";
 import { appendSetCookie } from "../../lib/http";
-import type { ApiEnv } from "../../types";
 import {
   assertLoginAllowed,
   loginKey,
   loginRateLimiter,
   sourceAddress,
 } from "../../middleware/login-rate-limit";
-import { SignInSchema, SignUpSchema } from "./schema";
+import type { ApiEnv } from "../../types";
 import { unauthorized } from "./errors";
+import { SignInSchema, SignUpSchema } from "./schema";
 import { getSessionView, register, signIn, signOut } from "./service";
 
 function validationError(details: Record<string, unknown>): AppError {

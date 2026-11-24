@@ -1,10 +1,10 @@
-import { AppError } from "../lib/errors";
-import { authPool } from "./index";
+import { AppError } from "../../lib/errors";
 import {
   acceptInvite,
   createOrganization,
   type OrganizationSummary,
-} from "../modules/organization/service";
+} from "../organization/service";
+import { authPool } from "./better-auth";
 
 export type InviteOutcome = {
   organization: OrganizationSummary;

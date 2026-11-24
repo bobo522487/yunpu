@@ -13,7 +13,10 @@ export type TenantTxOptions = {
   orgId?: string;
 };
 
-const RETRYABLE = new Set(["ECONNRESET", "40001", "40P01"]);
+/** Transient codes eligible for withTenantTransaction retry (max 3 attempts). */
+export const RETRYABLE_ERROR_CODES = ["ECONNRESET", "40001", "40P01"] as const;
+
+const RETRYABLE = new Set<string>(RETRYABLE_ERROR_CODES);
 
 function errorCode(error: unknown): string | undefined {
   if (typeof error !== "object" || error === null) return undefined;
@@ -21,16 +24,17 @@ function errorCode(error: unknown): string | undefined {
   return typeof code === "string" ? code : undefined;
 }
 
-function isRetryable(error: unknown): boolean {
+/** Exported for unit tests / classification docs (contracts/runtime-hardening.md §2). */
+export function isRetryableTenantError(error: unknown): boolean {
   const code = errorCode(error);
   if (code && RETRYABLE.has(code)) return true;
   if (error instanceof Error && /ECONNRESET/i.test(error.message)) return true;
   return false;
 }
 
-function isNonRetryableConflict(error: unknown): boolean {
-  const code = errorCode(error);
-  return code === "23505";
+/** Unique-key conflicts must surface as 409 and must not be retried. */
+export function isNonRetryableConflictError(error: unknown): boolean {
+  return errorCode(error) === "23505";
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -45,12 +49,18 @@ async function runOnce<T>(
   try {
     await client.query("BEGIN");
     await client.query("SET LOCAL ROLE genealogy_app");
-    await client.query("SELECT set_config('app.user_id', $1, true)", [options.userId]);
+    await client.query("SELECT set_config('app.user_id', $1, true)", [
+      options.userId,
+    ]);
     if (options.orgId) {
-      await client.query("SELECT set_config('app.current_org_id', $1, true)", [options.orgId]);
+      await client.query("SELECT set_config('app.current_org_id', $1, true)", [
+        options.orgId,
+      ]);
     }
 
-    const who = await client.query<{ current_user: string }>("SELECT current_user");
+    const who = await client.query<{ current_user: string }>(
+      "SELECT current_user",
+    );
     if (who.rows[0]?.current_user !== "genealogy_app") {
       throw new Error("database role assertion failed: expected genealogy_app");
     }
@@ -60,7 +70,11 @@ async function runOnce<T>(
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original business/SQL error (e.g. deferred GX001 on COMMIT).
+    }
     throw error;
   } finally {
     client.release();
@@ -78,7 +92,11 @@ export async function withTenantTransaction<T>(
       return await runOnce(options, fn);
     } catch (error) {
       lastError = error;
-      if (isNonRetryableConflict(error) || !isRetryable(error) || attempt === 2) {
+      if (
+        isNonRetryableConflictError(error) ||
+        !isRetryableTenantError(error) ||
+        attempt === 2
+      ) {
         throw error;
       }
       await sleep(25 * 2 ** attempt);

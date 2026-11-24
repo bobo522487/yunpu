@@ -1,5 +1,9 @@
 import { apiRequest } from '../../lib/api';
 
+// T044: keep hand-written DTOs — apps/web has no @yunpu/api / hc wiring yet;
+// switching to AppType would pull the full API graph into the Vite bundle.
+// Revisit when a shared typed client entry exists.
+
 export type AuthUser = {
   id: string;
   email: string;

@@ -1,21 +1,28 @@
+import { createHash, randomBytes } from "node:crypto";
+import type { MemberRole } from "@yunpu/shared";
+import { withUser } from "../../db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "../../lib/errors";
-import { withTenantTransaction, withUser } from "../../db/with-tenant-transaction";
 import { conflict, forbidden, organizationNotFound } from "./errors";
 import {
   acceptInviteWithFunction,
   activateOrganization,
   createOrganizationWithFunction,
   findDefaultOrganization,
-  getOrganizationDetail,
-  getOrganizationSummary,
   getInviteRecord,
   getMemberRecord,
+  getOrganizationDetail,
+  getOrganizationSummary,
   hasRoleAtLeast,
+  type InviteListItem,
   insertInviteRecord,
   listInvites,
   listMembers,
   listOrganizations,
+  type MemberListItem,
   membershipRole,
+  type OrganizationDetail,
+  type OrganizationListItem,
+  type OrganizationSummary,
   organizationOwnerId,
   organizationStatus,
   removeMemberRecord,
@@ -23,14 +30,7 @@ import {
   transferOwnershipViaFunction,
   updateMemberRoleRecord,
   updateOrganizationRecord,
-  type InviteListItem,
-  type MemberListItem,
-  type OrganizationDetail,
-  type OrganizationListItem,
-  type OrganizationSummary,
 } from "./queries";
-import { createHash, randomBytes } from "node:crypto";
-import type { MemberRole } from "@yunpu/shared";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -55,7 +55,9 @@ export async function createOrganization(
   }
 }
 
-export async function listMyOrganizations(userId: string): Promise<OrganizationListItem[]> {
+export async function listMyOrganizations(
+  userId: string,
+): Promise<OrganizationListItem[]> {
   try {
     return await withUser(userId, (db) => listOrganizations(db, userId));
   } catch (error) {
@@ -191,7 +193,11 @@ export async function removeMemberFromOrg(
     await withUser(userId, async (db) => {
       await requireMembership(db, organizationId, userId, "admin");
       // owner 行由 fk_organization_owner RESTRICT 兜底（23001 → 409）。
-      const removed = await removeMemberRecord(db, organizationId, targetUserId);
+      const removed = await removeMemberRecord(
+        db,
+        organizationId,
+        targetUserId,
+      );
       if (!removed) throw organizationNotFound();
     });
   } catch (error) {

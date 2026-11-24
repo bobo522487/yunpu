@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { AppError } from "../../lib/errors";
 import { config } from "../../config";
+import { AppError } from "../../lib/errors";
 import type { ApiEnv } from "../../types";
 import {
   AcceptInviteSchema,
@@ -60,7 +60,10 @@ organizationRouter.get("/organizations/:organizationId", async (c) => {
   if (!parsed.success) {
     throw validationError(parsed.error.flatten().fieldErrors);
   }
-  const organization = await getOrganization(user.id, parsed.data.organizationId);
+  const organization = await getOrganization(
+    user.id,
+    parsed.data.organizationId,
+  );
   if (!organization) {
     throw new AppError("NOT_FOUND", "目标不存在或已失效", 404);
   }
@@ -107,15 +110,21 @@ organizationRouter.post("/organizations", async (c) => {
   return c.json({ ok: true, data: { organization } }, 201);
 });
 
-organizationRouter.post("/organizations/:organizationId/activate", async (c) => {
-  const user = requireUser(c.get("user"));
-  const parsed = OrganizationIdParamsSchema.safeParse(c.req.param());
-  if (!parsed.success) {
-    throw validationError(parsed.error.flatten().fieldErrors);
-  }
-  const organization = await activateOrganizationForUser(user.id, parsed.data.organizationId);
-  return c.json({ ok: true, data: { organization } });
-});
+organizationRouter.post(
+  "/organizations/:organizationId/activate",
+  async (c) => {
+    const user = requireUser(c.get("user"));
+    const parsed = OrganizationIdParamsSchema.safeParse(c.req.param());
+    if (!parsed.success) {
+      throw validationError(parsed.error.flatten().fieldErrors);
+    }
+    const organization = await activateOrganizationForUser(
+      user.id,
+      parsed.data.organizationId,
+    );
+    return c.json({ ok: true, data: { organization } });
+  },
+);
 
 organizationRouter.post("/invites/accept", async (c) => {
   const user = requireUser(c.get("user"));
@@ -125,7 +134,10 @@ organizationRouter.post("/invites/accept", async (c) => {
     throw validationError(parsed.error.flatten().fieldErrors);
   }
   const organization = await acceptInvite(user.id, parsed.data.token);
-  return c.json({ ok: true, data: { organization, defaultOrganizationChanged: true } });
+  return c.json({
+    ok: true,
+    data: { organization, defaultOrganizationChanged: true },
+  });
 });
 
 // ---- 控制台：成员 ----
@@ -142,7 +154,11 @@ organizationRouter.get("/organizations/:organizationId/members", async (c) => {
   if (!query.success) {
     throw validationError(query.error.flatten().fieldErrors);
   }
-  const page = await listMembersForOrg(user.id, params.data.organizationId, query.data);
+  const page = await listMembersForOrg(
+    user.id,
+    params.data.organizationId,
+    query.data,
+  );
   return c.json({ ok: true, data: page });
 });
 
@@ -177,7 +193,11 @@ organizationRouter.delete(
     if (!params.success) {
       throw validationError(params.error.flatten().fieldErrors);
     }
-    await removeMemberFromOrg(user.id, params.data.organizationId, params.data.userId);
+    await removeMemberFromOrg(
+      user.id,
+      params.data.organizationId,
+      params.data.userId,
+    );
     return c.json({ ok: true, data: { removed: true } });
   },
 );
@@ -194,7 +214,11 @@ organizationRouter.get("/organizations/:organizationId/invites", async (c) => {
   if (!query.success) {
     throw validationError(query.error.flatten().fieldErrors);
   }
-  const page = await listInvitesForOrg(user.id, params.data.organizationId, query.data);
+  const page = await listInvitesForOrg(
+    user.id,
+    params.data.organizationId,
+    query.data,
+  );
   return c.json({ ok: true, data: page });
 });
 
@@ -228,7 +252,11 @@ organizationRouter.delete(
     if (!params.success) {
       throw validationError(params.error.flatten().fieldErrors);
     }
-    await revokeInviteForOrg(user.id, params.data.organizationId, params.data.inviteId);
+    await revokeInviteForOrg(
+      user.id,
+      params.data.organizationId,
+      params.data.inviteId,
+    );
     return c.json({ ok: true, data: { revoked: true } });
   },
 );

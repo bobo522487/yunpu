@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { withAdminDb } from "./fixtures";
 
 describe("database foundation", () => {
-  test("contains only the auth schema and four business tables", async () => {
+  test("contains auth schema and expected public business tables", async () => {
     const tables = await withAdminDb(async (client) => {
       const result = await client.query<{ tablename: string }>(
         "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename",
@@ -13,14 +13,18 @@ describe("database foundation", () => {
     expect(tables).toEqual([
       "audit_log",
       "invite",
+      "lineage_projection",
       "organization",
       "organization_member",
+      "person",
+      "person_name",
+      "person_relation",
       "project",
       "schema_migrations",
     ]);
   });
 
-  test("five tenant tables have enabled and forced RLS", async () => {
+  test("tenant tables have enabled and forced RLS", async () => {
     const rows = await withAdminDb(async (client) => {
       const result = await client.query<{
         relname: string;
@@ -39,8 +43,12 @@ describe("database foundation", () => {
     expect(rows.map((row) => row.relname)).toEqual([
       "audit_log",
       "invite",
+      "lineage_projection",
       "organization",
       "organization_member",
+      "person",
+      "person_name",
+      "person_relation",
       "project",
     ]);
     for (const row of rows) {
@@ -51,7 +59,10 @@ describe("database foundation", () => {
 
   test("organization_member exposes last_used_at", async () => {
     const column = await withAdminDb(async (client) => {
-      const result = await client.query<{ data_type: string; is_nullable: string }>(
+      const result = await client.query<{
+        data_type: string;
+        is_nullable: string;
+      }>(
         `SELECT data_type, is_nullable
          FROM information_schema.columns
          WHERE table_schema = 'public'

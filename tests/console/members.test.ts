@@ -1,18 +1,22 @@
 import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
 async function call(
   path: string,
   cookie: string | null,
   init: RequestInit = {},
-): Promise<{ status: number; json: JsonResponse; data?: Record<string, unknown> }> {
+): Promise<{
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+}> {
   const response = await request(path, {
     ...init,
     headers: {
@@ -52,7 +56,11 @@ describe("organization members (console)", () => {
     const owner = await signUp(uniqueEmail("mem-owner"));
     const created = await createOrganization(owner.cookie, "成员组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const second = await addMember(organizationId, uniqueEmail("mem-b"), "editor");
+    const second = await addMember(
+      organizationId,
+      uniqueEmail("mem-b"),
+      "editor",
+    );
 
     const list = await call(
       `/api/v1/organizations/${organizationId}/members`,
@@ -76,7 +84,11 @@ describe("organization members (console)", () => {
     const owner = await signUp(uniqueEmail("mem-role-o"));
     const created = await createOrganization(owner.cookie, "角色组织2");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const target = await addMember(organizationId, uniqueEmail("mem-role-t"), "viewer");
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("mem-role-t"),
+      "viewer",
+    );
 
     const changed = await call(
       `/api/v1/organizations/${organizationId}/members/${target.userId}`,
@@ -90,9 +102,9 @@ describe("organization members (console)", () => {
       `/api/v1/organizations/${organizationId}/members`,
       owner.cookie,
     );
-    const ownerMember = (ownerRow.data?.items as Record<string, unknown>[]).find(
-      (item) => item.isOwner === true,
-    );
+    const ownerMember = (
+      ownerRow.data?.items as Record<string, unknown>[]
+    ).find((item) => item.isOwner === true);
     const ownerMemberId = ownerMember?.userId as string;
 
     const changeOwner = await call(
@@ -108,8 +120,16 @@ describe("organization members (console)", () => {
     const owner = await signUp(uniqueEmail("mem-v-o"));
     const created = await createOrganization(owner.cookie, "只读组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const viewer = await addMember(organizationId, uniqueEmail("mem-v-t"), "viewer");
-    const other = await addMember(organizationId, uniqueEmail("mem-v-x"), "editor");
+    const viewer = await addMember(
+      organizationId,
+      uniqueEmail("mem-v-t"),
+      "viewer",
+    );
+    const other = await addMember(
+      organizationId,
+      uniqueEmail("mem-v-x"),
+      "editor",
+    );
 
     const patch = await call(
       `/api/v1/organizations/${organizationId}/members/${other.userId}`,
@@ -138,7 +158,11 @@ describe("organization members (console)", () => {
     const owner = await signUp(uniqueEmail("mem-del-o"));
     const created = await createOrganization(owner.cookie, "移除组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const target = await addMember(organizationId, uniqueEmail("mem-del-t"), "editor");
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("mem-del-t"),
+      "editor",
+    );
 
     const removed = await call(
       `/api/v1/organizations/${organizationId}/members/${target.userId}`,
@@ -169,7 +193,11 @@ describe("organization members (console)", () => {
     const owner = await signUp(uniqueEmail("mem-x-o"));
     const created = await createOrganization(owner.cookie, "跨租户组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const target = await addMember(organizationId, uniqueEmail("mem-x-t"), "editor");
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("mem-x-t"),
+      "editor",
+    );
 
     const stranger = await signUp(uniqueEmail("mem-x-s"));
     const list = await call(

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
-  PASSWORD,
   cookieFrom,
+  PASSWORD,
   readSession,
   request,
   signIn,
@@ -14,7 +14,9 @@ describe("US2 login and session", () => {
   test("signs in and returns the default organization", async () => {
     const email = uniqueEmail("login");
     const registered = await signUp(email);
-    const defaultOrganization = registered.json.data?.defaultOrganization as { id: string };
+    const defaultOrganization = registered.json.data?.defaultOrganization as {
+      id: string;
+    };
 
     const signedIn = await signIn(email);
     expect(signedIn.response.status).toBe(200);

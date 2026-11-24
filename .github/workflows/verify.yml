@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Biome import-boundary check
+        run: pnpm exec biome check .
+
       - name: Start development environment
         run: scripts/env.sh up development
 

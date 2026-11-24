@@ -1,10 +1,9 @@
 import { expect, test, vi } from "vitest";
-import { auth } from "../src/auth";
 import { AppError } from "../src/lib/errors";
 import { loginRateLimiter } from "../src/middleware/login-rate-limit";
 import * as orgService from "../src/modules/organization/service";
+import { auth, provisionWithInvite } from "../src/modules/auth";
 import { signIn } from "../src/modules/auth/service";
-import { provisionWithInvite } from "../src/auth/provisioning";
 import app from "../src/app";
 
 

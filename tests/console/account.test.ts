@@ -1,11 +1,21 @@
 import { describe, expect, test } from "vitest";
-import { request, signIn, signUp, uniqueEmail, type JsonResponse } from "../auth/fixtures";
+import {
+  type JsonResponse,
+  request,
+  signIn,
+  signUp,
+  uniqueEmail,
+} from "../auth/fixtures";
 
 async function call(
   path: string,
   cookie: string | null,
   init: RequestInit = {},
-): Promise<{ status: number; json: JsonResponse; data?: Record<string, unknown> }> {
+): Promise<{
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+}> {
   const response = await request(path, {
     ...init,
     headers: {
@@ -57,14 +67,20 @@ describe("account settings (console)", () => {
 
     const wrong = await call("/api/v1/account/password", user.cookie, {
       method: "POST",
-      body: JSON.stringify({ currentPassword: "wrong-password", newPassword: "brand-new-pass" }),
+      body: JSON.stringify({
+        currentPassword: "wrong-password",
+        newPassword: "brand-new-pass",
+      }),
     });
     expect(wrong.status).toBe(400);
     expect(wrong.json.code).toBe("VALIDATION");
 
     const changed = await call("/api/v1/account/password", user.cookie, {
       method: "POST",
-      body: JSON.stringify({ currentPassword: "correct-horse", newPassword: "brand-new-pass" }),
+      body: JSON.stringify({
+        currentPassword: "correct-horse",
+        newPassword: "brand-new-pass",
+      }),
     });
     expect(changed.status).toBe(200);
     expect(changed.data?.changed).toBe(true);

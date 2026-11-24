@@ -16,10 +16,11 @@
 scripts/env.sh up development
 scripts/env.sh up test
 
-node packages/db/src/migrate.ts
-node packages/db/src/migrate.ts --env test
+pnpm db:migrate
+pnpm db:migrate -- --env test
+# 等价：node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts
 
-node apps/api/src/index.ts
+pnpm start:api
 # 预期：就绪探针成功；进程可被 SIGTERM 优雅退出
 ```
 
@@ -28,14 +29,18 @@ node apps/api/src/index.ts
 ## 3. 自动化测试
 
 ```bash
+# Node 26 + Vitest（根 package.json；无 bun test）
 pnpm test
-# 或分套：Vitest 集成套件（真实 yunpu_test）
+# 或：pnpm test:auth / pnpm exec vitest run --config vitest.config.ts <path>
 
 # 依赖方向
 pnpm exec biome check .
 
 # 文档（若改了 schema/错误映射）
 scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt
+
+# 子图性能（默认跳过；显式开启）
+YUNPU_PERF=1 pnpm exec vitest run --config vitest.config.ts tests/genealogy/subgraph-perf.test.ts
 ```
 
 必过断言：
@@ -50,7 +55,7 @@ scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.
 | 删人物 | 边与投影一并消失 |
 | 事务失败 | 完整回滚 |
 | 子图默认 | 深度/上限生效；`hasMore*` 正确 |
-| 子图性能 | ~5k 人 P95 &lt; 200ms |
+| 子图性能 | ~5k 人 P95 &lt; 200ms（仅 `YUNPU_PERF=1`） |
 
 ## 4. 手动冒烟
 

@@ -1,24 +1,25 @@
-import { Hono } from "hono";
+import { PG_OPTIONS } from "@yunpu/db";
+import { ERROR_STATUS } from "@yunpu/shared";
 import type { Context } from "hono";
+import { Hono } from "hono";
 import { compress } from "hono/compress";
 import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
-import { Client } from "pg";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { ERROR_STATUS } from "@yunpu/shared";
-import { PG_OPTIONS } from "@yunpu/db";
+import { Client } from "pg";
 import { config } from "./config";
 import { AppError, mapDatabaseError } from "./lib/errors";
 import { logEvent } from "./lib/logger";
-import { authMiddleware } from "./middleware/auth";
-import { authPages } from "./pages/auth";
-import { authRouter } from "./modules/auth/router";
-import { organizationRouter } from "./modules/organization/router";
-import { projectRouter } from "./modules/project/router";
-import { accountRouter } from "./modules/account/router";
-import { checkStorage } from "./storage";
 import media from "./media";
+import { authMiddleware } from "./middleware/auth";
+import { accountRouter } from "./modules/account/router";
+import { authRouter } from "./modules/auth";
+import { organizationRouter } from "./modules/organization/router";
+import { personRouter } from "./modules/person/router";
+import { projectRouter } from "./modules/project/router";
+import { authPages } from "./pages/auth";
+import { checkStorage } from "./storage";
 import type { ApiEnv } from "./types";
 
 const app = new Hono<ApiEnv>();
@@ -33,7 +34,10 @@ function healthPayload(database: "up" | "down") {
   };
 }
 
-export async function probeDatabase(): Promise<{ up: boolean; version?: string }> {
+export async function probeDatabase(): Promise<{
+  up: boolean;
+  version?: string;
+}> {
   const databaseUrl = config().DATABASE_URL;
   if (!databaseUrl) {
     return { up: false };
@@ -92,8 +96,9 @@ export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
 
   if (error instanceof HTTPException) {
     const code =
-      Object.entries(ERROR_STATUS).find(([, status]) => status === error.status)?.[0] ??
-      "INTERNAL";
+      Object.entries(ERROR_STATUS).find(
+        ([, status]) => status === error.status,
+      )?.[0] ?? "INTERNAL";
     return c.json(
       {
         ok: false,
@@ -129,11 +134,17 @@ app.notFound((c) =>
 
 app.get("/api/health", async (c) => {
   const database = await probeDatabase();
-  return c.json(healthPayload(database.up ? "up" : "down"), database.up ? 200 : 503);
+  return c.json(
+    healthPayload(database.up ? "up" : "down"),
+    database.up ? 200 : 503,
+  );
 });
 
 app.get("/api/ready", async (c) => {
-  const [database, storage] = await Promise.all([probeDatabase(), checkStorage()]);
+  const [database, storage] = await Promise.all([
+    probeDatabase(),
+    checkStorage(),
+  ]);
 
   const versionOk = database.version?.includes("PostgreSQL 18") ?? false;
   const checks: Record<string, "up" | "down"> = {
@@ -155,7 +166,9 @@ app.get("/api/ready", async (c) => {
   if (!database.up) {
     reasons.push("database: connection failed");
   } else if (!versionOk) {
-    reasons.push(`database: version mismatch, expected PostgreSQL 18, got ${database.version}`);
+    reasons.push(
+      `database: version mismatch, expected PostgreSQL 18, got ${database.version}`,
+    );
   }
   if (!storage.up && storage.reason) {
     reasons.push(`storage: ${storage.reason}`);
@@ -193,11 +206,16 @@ app.get("/", (c) => {
   return c.html(emptyPage());
 });
 
-app.route("/api/v1/auth", authRouter);
-app.route("/api/v1", organizationRouter);
-app.route("/api/v1", projectRouter);
-app.route("/api/v1", accountRouter);
+const apiRoutes = new Hono<ApiEnv>()
+  .route("/auth", authRouter)
+  .route("/", organizationRouter)
+  .route("/", projectRouter)
+  .route("/", accountRouter)
+  .route("/", personRouter);
+
+app.route("/api/v1", apiRoutes);
 app.route("/", authPages);
 app.route("/", media);
 
+export type AppType = typeof apiRoutes;
 export default app;

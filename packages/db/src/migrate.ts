@@ -22,7 +22,10 @@ async function loadEnvFile(env: string): Promise<void> {
       const eq = line.indexOf("=");
       if (eq <= 0) continue;
       const key = line.slice(0, eq).trim();
-      const value = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, "");
+      const value = line
+        .slice(eq + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
       if (process.env[key] === undefined) process.env[key] = value;
     }
   } catch {
@@ -34,9 +37,12 @@ async function main(): Promise<void> {
   const env = requestedEnv(process.argv);
   await loadEnvFile(env);
 
-  const connectionString = process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL;
+  const connectionString =
+    process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("MIGRATE_DATABASE_URL or DATABASE_URL is required for migrations");
+    throw new Error(
+      "MIGRATE_DATABASE_URL or DATABASE_URL is required for migrations",
+    );
   }
 
   const client = new Client({ connectionString, options: PG_OPTIONS });
@@ -61,7 +67,10 @@ async function main(): Promise<void> {
       await client.query("BEGIN");
       try {
         await client.query(sql);
-        await client.query("INSERT INTO public.schema_migrations (version) VALUES ($1)", [file]);
+        await client.query(
+          "INSERT INTO public.schema_migrations (version) VALUES ($1)",
+          [file],
+        );
         await client.query("COMMIT");
         console.log(`applied ${file}`);
       } catch (error) {

@@ -26,7 +26,7 @@
 
 | 结论                                                         | 官方来源                                                     | 本项目的具体用法                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Hono 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件为洋葱模型 | [Middleware Guide](https://hono.dev/docs/guides/middleware) · [RPC Guide](https://hono.dev/docs/guides/rpc) | 选 Hono 而非 Express/Nest：一份代码同时服务 Bun 运行时，RPC 类型从后端 `AppType` 推导，**不手写请求路径**（`ARCH-HONO-12`） |
+| Hono 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件为洋葱模型 | [Middleware Guide](https://hono.dev/docs/guides/middleware) · [RPC Guide](https://hono.dev/docs/guides/rpc) | 选 Hono 而非 Express/Nest：一份代码跑在 Node 26；RPC 类型从后端 `AppType` 推导，**不手写请求路径**（`ARCH-HONO-12`） |
 | 中间件在 `next()` **之前**按注册顺序执行，**之后**按注册顺序的**逆序**执行 | [Middleware Guide](https://hono.dev/docs/guides/middleware)  | 中间件链固定为 `requestId → secureHeaders → compress → requestContext → authMiddleware → rateLimit`；`requestId` 必须最先注册，否则后续日志拿不到 requestId（`ARCH-HONO-02`） |
 | `c.error` 在 `await next()` **之后**可读                     | [Context API](https://hono.dev/docs/api/context)             | 日志中间件在 `await next()` 后读 `c.error` 补记路由与用户维度，**不需要在每个 handler 里写 try/catch**（§13） |
 | 官方 `createFactory({ initApp })` 可为 `createApp()` 产出的 app 注册中间件并注入运行时依赖 | [Factory Helper](https://hono.dev/docs/helpers/factory) | 本项目按 `ARCH-HONO-01` 选 `Hono<AppEnv>` + `c.get()`：装配集中在 `app.ts`、测试用 `app.request(input, init, env)` 注入 mock；`createMiddleware` 仍用于共享中间件以自动带上 `AppEnv` 类型（`ARCH-HONO-05`）。这是取舍，不是「官方不支持」，逐字引文见第 6.1 节 |
@@ -39,24 +39,24 @@
 | `app.request(input, requestInit?, env?, executionCtx?)` 是官方测试约定 | [Hono API](https://hono.dev/docs/api/hono)                   | 路由/集成测试用第三个参数 `env` 注入 `Bindings`（`db` / `services` / `logger` / `storage`）的 mock，**不需要额外的 DI 框架**（`ARCH-TST-04`、§14.1） |
 | `@hono/zod-openapi` 提供 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/20aab4e020e3/examples/zod-openapi.md) | 用**官方** `@hono/zod-openapi` 而非第三方 `rhinobase/hono-openapi`；`createRoute` 的请求/响应 schema 与 `zValidator` 是**同一份 Zod 对象**；Scalar 挂在 `/api/docs`（`ARCH-HONO-06`、§8.8） |
 
-### 1.2 与 Bun 相关的 Hono 行为
+### 1.2 静态资源与运行时适配
 
 | 结论                                        | 官方来源                                                     | 本项目的具体用法                                             |
 | ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| `serveStatic` 存在大小写 / 8.3 短名绕过风险 | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) | 静态目录**不放需授权的文件**；媒体必须走 API 鉴权代理（§17 决策摘要「静态资源」行） |
-| Bun 默认导出 `{ port, fetch }` 启动方式     | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) | 单个 Bun 进程同时提供 Hono API 与前端静态页（overview「技术栈」） |
+| `serveStatic` 存在大小写 / 8.3 短名绕过风险 | [Hono Getting Started](https://hono.dev/docs/getting-started) | 静态目录**不放需授权的文件**；媒体必须走 API 鉴权代理（§17 决策摘要「静态资源」行） |
+| Node 入口用 `@hono/node-server` 的 `serve()` | [Node.js Getting Started](https://hono.dev/docs/getting-started/nodejs) | 单 Node 26 进程提供 Hono API；优雅关闭由应用处理 `SIGTERM`/`SIGINT` |
 
 > `ARCH-HONO-11`：升级 Hono 大版本前，先用 Context7 重新拉一遍 §18 官方实践表对应条目，逐条核对本文表述是否仍成立。**框架语义会变，本项目对框架的断言必须跟着变。**
 
 ---
 
-## 2. Bun（1.4.4，锁定）
+## 2. Node.js（≥26.13 LTS，锁定）
 
 | 结论                                           | 官方来源                                                     | 本项目的具体用法                                             |
 | ---------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Bun 冷启动快、`bun test` 开箱即用、安装快      | [Bun 1.4](https://bun.sh/blog/bun-v1.4)（逐字引文见第 6.1 节，抓取日期：2026-11-13） | 运行时锁定 Bun 1.4.4；单元 / 路由 / 集成测试统一用 `bun test`（`ARCH-TST-03`） |
-| Playwright now runs on Bun（官方逐字引文） | [Bun 1.4](https://bun.sh/blog/bun-v1.4) · [Playwright release notes](https://playwright.dev/docs/release-notes)（抓取日期：2026-11-13） | E2E 用 Playwright 1.65.0，可在 Bun 1.4.4 上运行；应用镜像与 E2E job 的运行时按部署需要选择，不再以「不兼容」为由强制拆分 |
-| `serveStatic` 在 Bun 上的大小写 / 短名绕过风险 | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) | 见 §1.2；媒体走 API 鉴权代理                                 |
+| Node 26 LTS 原生类型擦除可直接跑 TS 入口       | [Node.js releases](https://nodejs.org/en/about/previous-releases) | 业务启动 / 迁移 / 测试统一 Node 26；入口 `@hono/node-server`（`ARCH-TST-03`） |
+| Vitest 5.x 作单元 / 路由 / 集成 runner         | [Vitest](https://vitest.dev/)（抓取日期：2026-11-24） | 根 `package.json` 的 `test*` 走 `vitest run`；禁止业务路径 `bun test` |
+| Bun 废弃于业务路径                             | 规格 `004-backend-architecture` FR-001 / SC-002              | **Bun 不再作为** API 启动、迁移或集成测试运行时；历史 Bun 适配文档仅作考古，不以之为准 |
 
 ---
 
@@ -87,7 +87,7 @@
 | 结论                                                         | 官方来源                                                     | 本项目的具体用法                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Drizzle SQL 原生，适合递归 CTE、`ltree`、RLS；无冷启动引擎 | [Drizzle 文档](https://orm.drizzle.team/docs/schemas)（抓取日期：2026-11-13） | 选 Drizzle 而非 Prisma：递归 CTE（祖先/后代查询、环检查）、`ltree`、RLS 都需要直写 SQL |
-| 生产驱动用 `drizzle-orm/node-postgres`（`pg`）：在 Bun 的 Node 兼容层下可用，被 PgBouncer 长期验证 | [node-postgres](https://node-postgres.com/)（抓取日期：2026-11-13） | 生产用 `pg` 驱动，**不用** `drizzle-orm/bun-sql`（ORM 的查询构建与结果映射会吃掉驱动层性能优势，连接池行为也与 `pg` 不同）；**先用 `pg`，等实测证明连接池是瓶颈再换** |
+| 生产驱动用 `drizzle-orm/node-postgres`（`pg`）：被 PgBouncer 长期验证 | [node-postgres](https://node-postgres.com/)（抓取日期：2026-11-13） | 生产用 `pg` 驱动，**不用** `drizzle-orm/bun-sql`；**先用 `pg`，等实测证明连接池是瓶颈再换** |
 | `generatedAlwaysAs(sql, { mode: 'stored' \| 'virtual' })`    | [Generated Columns](https://orm.drizzle.team/docs/column-types/pg)（抓取日期：2026-11-13） | `node.parent_path` 等生成列一律**显式**写 `mode: 'stored'`（`DM-ADR-11`、`DM-GEN-20`）；`drizzle-orm@0.45.4` 源码第 28 行的默认值**待验证**，登记见 [`../verification/README.md`](../verification/README.md)，故不依赖默认值 |
 | `customType` 定义 `ltree`                                    | [Custom Types](https://orm.drizzle.team/docs/custom-types)（抓取日期：2026-11-13） | `node.path` / `book_catalog.path` 用 `ltree` 自定义类型      |
 | `index().using('gist' \| 'gin', ...)`、`uniqueIndex().on().where()` | [SQL schema declaration](https://orm.drizzle.team/docs/sql-schema-declaration)（抓取日期：2026-11-13） | GiST 复合索引 `node_path_gist` / `book_catalog_path_gist`；部分唯一索引（`uq_invite_pending_email`、`uq_person_name_primary`、`uq_node_one_primary` 等） |
@@ -174,7 +174,8 @@
 | `drizzle-kit` | 0.31.11 | npm latest |
 | `@biomejs/biome` | 2.6.7 | npm latest |
 | `pnpm` | 12.18.0 | npm latest |
-| `Bun` | 1.4.4（tag `bun-v1.4.4`） | [Bun 1.4 release](https://bun.sh/blog/bun-v1.4) |
+| `Node.js` | ≥26.13.0（`engines.node`） | [Node.js releases](https://nodejs.org/en/about/previous-releases) |
+| `vitest` | 5.1.0 | npm latest（2026-11-24 锁定） |
 | `PostgreSQL` | 18（待验证；本机无 `psql`，未实测） | 复现登记见 [`../verification/README.md`](../verification/README.md) |
 
 > 项目锁定 `zod@4.6.7`。`@hono/zod-validator@0.9.1` 的 peer 范围是 `^3.25.0 || ^4.0.0`，`@hono/zod-openapi@1.6.3` 要求 `^4.0.0`；这两个上游声明只说明兼容性，不是本项目允许的版本区间，因此不允许 Zod 3.25。
@@ -204,7 +205,7 @@
 
 | 层         | 选型                         | 版本                  | 为什么是它                                                   |
 | ---------- | ---------------------------- | --------------------- | ------------------------------------------------------------ |
-| 运行时     | **Bun**                      | 1.4.4                 | 冷启动快、`bun test` 开箱即用、安装快；Playwright 1.65.0 可在 Bun 1.4 上运行 |
+| 运行时     | **Node.js**                  | ≥26.13                | 单一业务运行时；原生类型擦除对齐迁移/入口；Bun 已从业务路径废弃 |
 | Web 框架   | **Hono**                     | 4.13.18               | 基于 Web Standard，不绑定运行时；RPC 模式免 codegen；中间件洋葱模型 |
 | 前端构建   | **Vite**                     | 8.3.8                 | 冷启动毫秒级；Hono 路由可在 dev 下热重载                     |
 | UI         | React                        | 19.3.1                | 生态与人才池最大                                             |
@@ -220,7 +221,7 @@
 | 富文本     | TipTap                       | 3.34.0                | ProseMirror 系，正文存 JSON                                  |
 | 认证       | Better Auth                  | 1.7.23                | Drizzle adapter、数据库会话、自定义 access control           |
 | API 文档   | `@hono/zod-openapi` + Scalar | 1.6.3 / 0.12.20      | 契约从代码生成，不手写 YAML；官方维护的 `@hono/zod-openapi` 而非第三方 `hono-openapi`（`ARCH-HONO-06`） |
-| 测试       | `bun test` + Playwright      | 1.65.0                | 单元/路由/集成用 Bun；E2E 用 Playwright，官方已确认可在 Bun 1.4 上运行（`ARCH-TST-03`） |
+| 测试       | **Vitest** + Playwright      | 5.1.0 / 1.65.0        | 单元/路由/集成用 Vitest（Node 26）；E2E 用 Playwright（`ARCH-TST-03`） |
 | 质量       | Biome                        | 2.6.7                 | lint + format + 依赖方向规则                                 |
 | 包管理     | **pnpm**                     | 12.18.0               | workspace 与依赖隔离可控；**全仓库唯一包管理器**（`ARCH-BLD-01`） |
 
@@ -250,17 +251,13 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 
 ### 10.2 Drizzle 驱动
 
-生产用 `drizzle-orm/node-postgres`（`pg`）。它在 Bun 的 Node 兼容层下可用，并被 PgBouncer 长期验证。`drizzle-orm/bun-sql` 是官方路径，但 ORM 的查询构建与结果映射会吃掉驱动层的性能优势，连接池行为也与 `pg` 不同。**先用 `pg`，等实测证明连接池是瓶颈再换。**
+生产用 `drizzle-orm/node-postgres`（`pg`），在 Node 26 上运行并被 PgBouncer 长期验证。**不用** `drizzle-orm/bun-sql`。**先用 `pg`，等实测证明连接池是瓶颈再换。**
 
-### 10.3 Bun 与 Playwright
+### 10.3 测试分层（`ARCH-TST-03`）
 
-官方 [Bun 1.4](https://bun.sh/blog/bun-v1.4) 的逐字引文：`Playwright now runs on Bun: drive a browser with connectOverCDP(), run your suite with playwright test`；[Playwright release notes](https://playwright.dev/docs/release-notes) 亦写明 `🥟 Run tests with Bun` 与 `Bun transpiles your TypeScript test files itself, so Playwright does not use Babel or its compilation cache.`（抓取日期：2026-11-13）。
-
-因此（`ARCH-TST-03`）：
-
-- Playwright 1.65.0 可在 Bun 1.4.4 上运行，单元 / 路由 / 集成与 E2E 不再因「运行时不兼容」被强制拆到两套 runner；
-- 是否把 E2E job 与应用镜像放在同一运行时，由部署隔离需求决定，不是框架限制；
-- `bun build --compile` 是否使用按打包收益单独评估，不再以 Playwright 兼容性为由禁用。
+- 单元 / 路由 / 集成：Vitest 5.1，跑在 Node 26；根脚本与 CI 禁止业务侧 `bun test`。
+- E2E：Playwright 1.65.0，独立 job；与 API 镜像共用 Node 运行时，不引入第二套业务 runner。
+- 子图性能套件（~5k）默认跳过，仅 `YUNPU_PERF=1` 时执行，避免拖慢 CI。
 
 ---
 
@@ -279,8 +276,8 @@ Hono 自带一批经过审计的内置中间件。**先用内置的，不要自�
 | `zValidator` hook 可短路请求；上游 peer 范围只作兼容说明 | [@hono/zod-validator](https://github.com/honojs/middleware/tree/8d656de46d87/packages/zod-validator) |
 | `HTTPException.getResponse()` 不感知 `Context` 的 header     | [Exception API](https://hono.dev/docs/api/exception)         |
 | 内置中间件清单与默认行为                                     | [Secure Headers](https://hono.dev/docs/middleware/builtin/secure-headers) · [Body Limit](https://hono.dev/docs/middleware/builtin/body-limit) |
-| `serveStatic` 的大小写 / 8.3 短名绕过风险                    | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
-| Bun 默认导出 `{ port, fetch }` 启动方式                      | [Bun Getting Started](https://hono.dev/docs/getting-started/bun) |
+| `serveStatic` 的大小写 / 8.3 短名绕过风险                    | [Hono Getting Started](https://hono.dev/docs/getting-started) |
+| Node 入口 `@hono/node-server` `serve()`                      | [Node.js Getting Started](https://hono.dev/docs/getting-started/nodejs) |
 | `app.request(input, requestInit?, env?, executionCtx?)` 测试约定 | [Hono API](https://hono.dev/docs/api/hono)                   |
 | `@hono/zod-openapi` 的 `createRoute` / `OpenAPIHono` / `app.doc()` | [zod-openapi 示例](https://github.com/honojs/website/blob/20aab4e020e3/examples/zod-openapi.md) |
 

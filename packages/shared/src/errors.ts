@@ -26,13 +26,20 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
 };
 
 export class AppError extends Error {
+  readonly code: ErrorCode;
+  readonly status: number;
+  readonly details?: Record<string, unknown>;
+
   constructor(
-    readonly code: ErrorCode,
+    code: ErrorCode,
     message: string,
-    readonly status: number,
-    readonly details?: Record<string, unknown>,
+    status: number,
+    details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "AppError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
   }
 }

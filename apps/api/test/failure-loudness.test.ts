@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { Hono } from "hono";
 import { requestId } from "hono/request-id";
-import { auth } from "../src/auth";
+import { auth } from "../src/modules/auth";
 import { getObject } from "../src/storage";
 import { onApiError, probeDatabase } from "../src/app";
 import { logEvent, redact } from "../src/lib/logger";

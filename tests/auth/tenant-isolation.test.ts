@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
 import { Client } from "pg";
+import { describe, expect, test } from "vitest";
 import {
   activateOrganization,
   listOrganizations,
@@ -15,7 +15,9 @@ describe("US4 tenant isolation", () => {
     const orgB = (userB.json.data?.defaultOrganization as { id: string }).id;
 
     const listed = await listOrganizations(userA.cookie);
-    const ids = (listed.data?.organizations as { id: string }[]).map((item) => item.id);
+    const ids = (listed.data?.organizations as { id: string }[]).map(
+      (item) => item.id,
+    );
     expect(ids).toContain(orgA);
     expect(ids).not.toContain(orgB);
 
@@ -35,8 +37,12 @@ describe("US4 tenant isolation", () => {
     try {
       await client.query("BEGIN");
       await client.query("SET LOCAL ROLE genealogy_app");
-      await client.query("SELECT set_config('app.user_id', $1, true)", [userId]);
-      const result = await client.query<{ id: string }>("SELECT id FROM organization");
+      await client.query("SELECT set_config('app.user_id', $1, true)", [
+        userId,
+      ]);
+      const result = await client.query<{ id: string }>(
+        "SELECT id FROM organization",
+      );
       expect(result.rows.map((row) => row.id)).toEqual([orgId]);
       await client.query("COMMIT");
     } finally {

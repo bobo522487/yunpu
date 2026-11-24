@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
 import { Client } from "pg";
+import { describe, expect, test } from "vitest";
 import { withAdminDb } from "../auth/fixtures";
 
 async function businessClient(): Promise<Client> {
@@ -44,7 +44,9 @@ describe("console foundation (project table)", () => {
   test("project RLS is fail-closed without app.user_id", async () => {
     const client = await businessClient();
     try {
-      const result = await client.query("SELECT count(*)::int AS count FROM project");
+      const result = await client.query(
+        "SELECT count(*)::int AS count FROM project",
+      );
       expect(result.rows[0]?.count).toBe(0);
     } finally {
       await client.end();
@@ -58,7 +60,9 @@ describe("console foundation (project table)", () => {
       await client.query(
         "SELECT set_config('app.user_id', '00000000-0000-7000-8000-000000000001', true)",
       );
-      const result = await client.query("SELECT count(*)::int AS count FROM project");
+      const result = await client.query(
+        "SELECT count(*)::int AS count FROM project",
+      );
       expect(result.rows[0]?.count).toBe(0);
       await client.query("ROLLBACK");
     } finally {

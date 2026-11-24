@@ -1,6 +1,6 @@
 import { spawnSync as nodeSpawnSync } from "node:child_process";
-import { expect, test } from "vitest";
 import { createHash, createHmac } from "node:crypto";
+import { expect, test } from "vitest";
 
 function spawnSync(argv: string[]): { exitCode: number | null } {
   const [cmd, ...args] = argv;
@@ -15,8 +15,11 @@ function spawnSync(argv: string[]): { exitCode: number | null } {
 
 const devBase = "http://127.0.0.1:3000";
 const testBase = "http://127.0.0.1:3010";
-const devToken = process.env.DEV_YUNPU_CAPABILITY_TOKEN ?? "example-development-capability-token";
-const testToken = process.env.YUNPU_CAPABILITY_TOKEN ?? "example-test-capability-token";
+const devToken =
+  process.env.DEV_YUNPU_CAPABILITY_TOKEN ??
+  "example-development-capability-token";
+const testToken =
+  process.env.YUNPU_CAPABILITY_TOKEN ?? "example-test-capability-token";
 const envsh = new URL("../../scripts/env.sh", import.meta.url).pathname;
 
 // Count objects directly in one environment's bucket. The storage account
@@ -30,7 +33,10 @@ function envValue(name: string, fallback: string): string {
 const devStorage = {
   endpoint: envValue("DEV_S3_ENDPOINT", "http://127.0.0.1:9000"),
   accessKeyId: envValue("DEV_S3_ACCESS_KEY_ID", "example-development-access"),
-  secretAccessKey: envValue("DEV_S3_SECRET_ACCESS_KEY", "example-development-secret"),
+  secretAccessKey: envValue(
+    "DEV_S3_SECRET_ACCESS_KEY",
+    "example-development-secret",
+  ),
   bucket: envValue("DEV_S3_BUCKET", "yunpu-development"),
 };
 
@@ -58,7 +64,10 @@ function hmac(key: string | Uint8Array, data: string): Buffer {
 function uriEncode(value: string): string {
   // AWS canonical-query encoding: keep A-Za-z0-9-_.~, percent-encode the
   // rest (including "/", which must stay %2F inside the prefix value).
-  return value.replace(/[^A-Za-z0-9-_.~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
+  return value.replace(
+    /[^A-Za-z0-9-_.~]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`,
+  );
 }
 
 async function objectCount(storage: typeof devStorage): Promise<number> {
@@ -67,7 +76,11 @@ async function objectCount(storage: typeof devStorage): Promise<number> {
   url.searchParams.set("prefix", "media/");
   const host = url.host;
   const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 15) + "Z";
+  const amzDate =
+    now
+      .toISOString()
+      .replace(/[:-]|\.\d{3}/g, "")
+      .slice(0, 15) + "Z";
   const dateStamp = amzDate.slice(0, 8);
   const query = [...url.searchParams.entries()]
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
@@ -76,11 +89,28 @@ async function objectCount(storage: typeof devStorage): Promise<number> {
   const payloadHash = "UNSIGNED-PAYLOAD";
   const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
   const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
-  const canonicalRequest = ["GET", `/${storage.bucket}`, query, canonicalHeaders, signedHeaders, payloadHash].join("\n");
+  const canonicalRequest = [
+    "GET",
+    `/${storage.bucket}`,
+    query,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
   const scope = `${dateStamp}/${region}/s3/aws4_request`;
-  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, scope, sha256Hex(canonicalRequest)].join("\n");
-  const signingKey = hmac(hmac(hmac(hmac(`AWS4${storage.secretAccessKey}`, dateStamp), region), "s3"), "aws4_request");
-  const signature = createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    scope,
+    sha256Hex(canonicalRequest),
+  ].join("\n");
+  const signingKey = hmac(
+    hmac(hmac(hmac(`AWS4${storage.secretAccessKey}`, dateStamp), region), "s3"),
+    "aws4_request",
+  );
+  const signature = createHmac("sha256", signingKey)
+    .update(stringToSign)
+    .digest("hex");
 
   const response = await fetch(url, {
     method: "GET",
@@ -94,7 +124,9 @@ async function objectCount(storage: typeof devStorage): Promise<number> {
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) {
-    throw new Error(`ListObjectsV2 failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `ListObjectsV2 failed: ${response.status} ${await response.text()}`,
+    );
   }
   const xml = await response.text();
   return (xml.match(/<Key>/g) ?? []).length;
@@ -103,7 +135,11 @@ async function objectCount(storage: typeof devStorage): Promise<number> {
 // Each lifecycle test restarts an environment, so the application socket goes
 // away and comes back. Close the connection every time to avoid reusing a
 // dead keep-alive socket from a previous environment instance.
-async function mediaWrite(base: string, token: string, body: string): Promise<string> {
+async function mediaWrite(
+  base: string,
+  token: string,
+  body: string,
+): Promise<string> {
   const response = await fetch(`${base}/api/media`, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, connection: "close" },
@@ -114,7 +150,11 @@ async function mediaWrite(base: string, token: string, body: string): Promise<st
   return key;
 }
 
-async function mediaRead(base: string, token: string, key: string): Promise<Response> {
+async function mediaRead(
+  base: string,
+  token: string,
+  key: string,
+): Promise<Response> {
   return fetch(`${base}/api/media/${key}`, {
     headers: { authorization: `Bearer ${token}`, connection: "close" },
   });

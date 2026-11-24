@@ -1,17 +1,17 @@
 import type { SignInInput, SignUpInput } from "@yunpu/shared";
-import { auth } from "../../auth";
 import { AppError } from "../../lib/errors";
 import { logEvent } from "../../lib/logger";
 import type { SessionUser } from "../../types";
 import {
+  type OrganizationSummary,
+  resolveDefaultOrganization,
+} from "../organization/service";
+import { auth } from "./better-auth";
+import {
   deleteAuthUser,
   provisionDefaultOrganization,
   provisionWithInvite,
-} from "../../auth/provisioning";
-import {
-  resolveDefaultOrganization,
-  type OrganizationSummary,
-} from "../organization/service";
+} from "./provisioning";
 
 export type InviteResult = {
   accepted: boolean;
@@ -79,7 +79,11 @@ export async function register(
 
   try {
     if (input.inviteToken) {
-      const outcome = await provisionWithInvite(user.id, input.email, input.inviteToken);
+      const outcome = await provisionWithInvite(
+        user.id,
+        input.email,
+        input.inviteToken,
+      );
       logEvent({
         event: "auth.registered",
         request_id: requestId,
@@ -97,7 +101,10 @@ export async function register(
       };
     }
 
-    const organization = await provisionDefaultOrganization(user.id, input.email);
+    const organization = await provisionDefaultOrganization(
+      user.id,
+      input.email,
+    );
     logEvent({
       event: "auth.registered",
       request_id: requestId,
@@ -121,7 +128,8 @@ export async function register(
         request_id: requestId,
         user_id: user.id,
         result: "failed",
-        reason: cleanupError instanceof Error ? cleanupError.message : "unknown",
+        reason:
+          cleanupError instanceof Error ? cleanupError.message : "unknown",
       });
     }
     logEvent({
@@ -131,7 +139,9 @@ export async function register(
       result: "failed",
       reason: error instanceof AppError ? error.code : "unknown",
     });
-    throw error instanceof AppError ? error : new AppError("INTERNAL", "注册失败", 500);
+    throw error instanceof AppError
+      ? error
+      : new AppError("INTERNAL", "注册失败", 500);
   }
 }
 
@@ -191,7 +201,9 @@ export async function signOut(headers: Headers): Promise<Headers> {
   return result.headers;
 }
 
-export async function getSessionView(headers: Headers): Promise<AuthView | null> {
+export async function getSessionView(
+  headers: Headers,
+): Promise<AuthView | null> {
   const session = await auth.api.getSession({ headers });
   if (!session?.user) return null;
 

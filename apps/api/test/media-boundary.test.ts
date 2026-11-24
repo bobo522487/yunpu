@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import app from "../src/app";
-import { auth } from "../src/auth";
+import { auth } from "../src/modules/auth";
 import { config } from "../src/config";
 import { isAllowedMediaKey } from "../src/media";
 import * as storage from "../src/storage";

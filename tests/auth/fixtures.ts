@@ -15,7 +15,10 @@ export type JsonResponse = {
   details?: Record<string, unknown>;
 };
 
-export async function request(path: string, init?: RequestInit): Promise<Response> {
+export async function request(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   return app.request(path, init);
 }
 
@@ -85,7 +88,9 @@ export async function createOrganization(
 }
 
 export async function listOrganizations(cookie: string): Promise<JsonResponse> {
-  const response = await request("/api/v1/organizations", { headers: { cookie } });
+  const response = await request("/api/v1/organizations", {
+    headers: { cookie },
+  });
   return (await response.json()) as JsonResponse;
 }
 
@@ -93,15 +98,22 @@ export async function activateOrganization(
   cookie: string,
   organizationId: string,
 ): Promise<{ response: Response; json: JsonResponse }> {
-  const response = await request(`/api/v1/organizations/${organizationId}/activate`, {
-    method: "POST",
-    headers: { cookie },
-  });
+  const response = await request(
+    `/api/v1/organizations/${organizationId}/activate`,
+    {
+      method: "POST",
+      headers: { cookie },
+    },
+  );
   return { response, json: (await response.json()) as JsonResponse };
 }
 
-export async function withAdminDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: process.env.MIGRATE_DATABASE_URL });
+export async function withAdminDb<T>(
+  fn: (client: Client) => Promise<T>,
+): Promise<T> {
+  const client = new Client({
+    connectionString: process.env.MIGRATE_DATABASE_URL,
+  });
   await client.connect();
   try {
     return await fn(client);
@@ -154,7 +166,9 @@ export async function setOrganizationStatus(
   });
 }
 
-export async function findUserIdByEmail(email: string): Promise<string | undefined> {
+export async function findUserIdByEmail(
+  email: string,
+): Promise<string | undefined> {
   return withAdminDb(async (client) => {
     const result = await client.query<{ id: string }>(
       'SELECT id FROM auth."user" WHERE email = $1',
@@ -183,7 +197,10 @@ async function cli(): Promise<void> {
   if (command === "create-invite") {
     const organizationId = argValue("--org");
     const email = argValue("--email");
-    const role = (argValue("--role") ?? "editor") as "admin" | "editor" | "viewer";
+    const role = (argValue("--role") ?? "editor") as
+      | "admin"
+      | "editor"
+      | "viewer";
     if (!organizationId || !email) {
       throw new Error("create-invite requires --org and --email");
     }
@@ -204,7 +221,9 @@ async function cli(): Promise<void> {
     return;
   }
 
-  throw new Error("usage: fixtures.ts archive-org --id <uuid> | create-invite --org <uuid> --email <email> [--role editor]");
+  throw new Error(
+    "usage: fixtures.ts archive-org --id <uuid> | create-invite --org <uuid> --email <email> [--role editor]",
+  );
 }
 
 if (import.meta.main) {

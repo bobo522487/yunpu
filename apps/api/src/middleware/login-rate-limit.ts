@@ -1,5 +1,4 @@
 import type { Context } from "hono";
-import { getConnInfo } from "hono/bun";
 import { AppError } from "../lib/errors";
 
 type Entry = {
@@ -21,7 +20,9 @@ export type LoginRateLimiter = {
   clear: (key: string) => void;
 };
 
-export function createLoginRateLimiter(options: LoginRateLimiterOptions = {}): LoginRateLimiter {
+export function createLoginRateLimiter(
+  options: LoginRateLimiterOptions = {},
+): LoginRateLimiter {
   const now = options.now ?? Date.now;
   const windowMs = options.windowMs ?? 15 * 60 * 1000;
   const maxFailures = options.maxFailures ?? 5;
@@ -79,13 +80,6 @@ export function loginKey(email: string, sourceAddress: string): string {
 }
 
 export function sourceAddress(c: Context): string {
-  try {
-    const info = getConnInfo(c);
-    if (info.remote.address) return info.remote.address;
-  } catch {
-    // app.request() has no socket; fall through to the proxy header.
-  }
-
   const forwarded = c.req.header("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
   return "unknown";

@@ -105,11 +105,3 @@ export async function withTenantTransaction<T>(
   }
   throw lastError;
 }
-
-/** @deprecated Prefer withTenantTransaction({ userId, orgId }, fn) for tenant data. */
-export async function withUser<T>(
-  userId: string,
-  fn: (db: TxDatabase) => Promise<T>,
-): Promise<T> {
-  return withTenantTransaction({ userId }, fn);
-}

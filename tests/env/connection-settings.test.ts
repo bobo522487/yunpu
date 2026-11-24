@@ -1,7 +1,10 @@
 import { Client } from "pg";
 import { afterAll, expect, test } from "vitest";
 import { config } from "../../apps/api/src/config";
-import { businessPool, withUser } from "../../apps/api/src/db/with-user";
+import {
+  businessPool,
+  withTenantTransaction,
+} from "../../apps/api/src/db/with-user";
 import { createDb, PG_OPTIONS } from "../../packages/db/src/client";
 
 afterAll(async () => {
@@ -39,8 +42,8 @@ test("SET LOCAL does not leak across pooled users", async () => {
   const u1 = "00000000-0000-0000-0000-000000000001";
   const u2 = "00000000-0000-0000-0000-000000000002";
   const read = (id: string) =>
-    withUser(
-      id,
+    withTenantTransaction(
+      { userId: id },
       async (db) =>
         (await db.execute("select app.current_user_id() as uid")).rows[0] as {
           uid: string;

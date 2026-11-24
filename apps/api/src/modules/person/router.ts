@@ -15,6 +15,7 @@ import {
   deleteRelationForProject,
   getPersonForProject,
   getSubgraphForProject,
+  listPersonsForProject,
   updatePersonForProject,
 } from "./service";
 
@@ -37,6 +38,15 @@ personRouter.post("/projects/:projectId/persons", async (c) => {
   if (!parsed.success) throw zodError(parsed.error);
   const person = await createPersonForProject(user.id, projectId, parsed.data);
   return c.json({ ok: true, data: { person } }, 201);
+});
+
+personRouter.get("/projects/:projectId/persons", async (c) => {
+  const user = requireUser(c.get("user"));
+  const persons = await listPersonsForProject(
+    user.id,
+    c.req.param("projectId"),
+  );
+  return c.json({ ok: true, data: { persons } });
 });
 
 personRouter.get("/projects/:projectId/persons/:personId", async (c) => {

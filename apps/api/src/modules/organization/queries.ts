@@ -1,7 +1,7 @@
 import { authUser, invite, organization, organizationMember } from "@yunpu/db";
 import type { InviteStatus, MemberRole } from "@yunpu/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
-import type { TxDatabase } from "../../db/with-user";
+import type { TxDatabase } from "../../db/with-tenant-transaction";
 
 export type OrganizationSummary = {
   id: string;
@@ -206,34 +206,6 @@ export async function activateOrganization(
 /** 与项目模块同一序列化口径：UTC 微秒精度，避免乐观锁/展示的精度截断。 */
 const timestamp = (column: unknown) =>
   sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
-
-export const ROLE_RANK = { viewer: 0, editor: 1, admin: 2 } as const;
-
-export function hasRoleAtLeast(
-  role: MemberRole | null,
-  min: "editor" | "admin",
-): boolean {
-  return role !== null && ROLE_RANK[role] >= ROLE_RANK[min];
-}
-
-/** 当前用户在组织内的角色；非成员返回 null（→ 404「不存在或无权」）。 */
-export async function membershipRole(
-  db: TxDatabase,
-  organizationId: string,
-  userId: string,
-): Promise<MemberRole | null> {
-  const rows = await db
-    .select({ role: organizationMember.role })
-    .from(organizationMember)
-    .where(
-      and(
-        eq(organizationMember.organizationId, organizationId),
-        eq(organizationMember.userId, userId),
-      ),
-    )
-    .limit(1);
-  return rows[0]?.role ?? null;
-}
 
 export type MemberListItem = {
   userId: string;

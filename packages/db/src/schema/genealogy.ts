@@ -61,6 +61,11 @@ export const person = pgTable(
       sql`${table.surname} IS NULL OR btrim(${table.surname}) <> ''`,
     ),
     check("ck_person_version_positive", sql`${table.version} > 0`),
+    check(
+      "ck_person_life_years",
+      sql`(${table.deathYear} IS NULL OR ${table.isLiving} = false) AND (${table.birthYear} IS NULL OR ${table.deathYear} IS NULL OR ${table.deathYear} >= ${table.birthYear})`,
+    ),
+    index("idx_person_org_project").on(table.organizationId, table.projectId),
     index("idx_person_project_surname")
       .on(table.projectId, table.surname)
       .where(sql`surname IS NOT NULL`),
@@ -109,6 +114,10 @@ export const personName = pgTable(
       sql`${table.kind} IN ('formal', 'courtesy', 'art', 'milk', 'genealogy', 'posthumous', 'other')`,
     ),
     check("ck_person_name_value_not_blank", sql`btrim(${table.value}) <> ''`),
+    index("idx_person_name_org_project").on(
+      table.organizationId,
+      table.projectId,
+    ),
     index("idx_person_name_person").on(table.projectId, table.personId),
   ],
 );
@@ -182,6 +191,10 @@ export const personRelation = pgTable(
       "ck_person_relation_sort_order",
       sql`${table.sortOrder} IS NULL OR ${table.sortOrder} >= 0`,
     ),
+    index("idx_person_relation_org_project").on(
+      table.organizationId,
+      table.projectId,
+    ),
     index("idx_person_relation_from").on(
       table.projectId,
       table.fromPersonId,
@@ -223,6 +236,10 @@ export const lineageProjection = pgTable(
       name: "fk_lineage_projection_person",
     }).onDelete("cascade"),
     // GiST on (project_id, primary_path) is created in SQL migration 0012.
+    index("idx_lineage_projection_org_project").on(
+      table.organizationId,
+      table.projectId,
+    ),
     index("idx_lineage_projection_person").on(table.personId),
   ],
 );

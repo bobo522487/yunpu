@@ -86,6 +86,9 @@ export async function seedLargeTree(input: {
     );
 
     await client.query("COMMIT");
+    await client.query(
+      "ANALYZE person, person_name, person_relation, lineage_projection",
+    );
     return {
       projectId: input.projectId,
       organizationId: input.organizationId,

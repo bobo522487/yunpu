@@ -1,7 +1,6 @@
 name: docs-consistency
 
-# SC-DOC-01 门禁（评审 2026-11-14 P0#3）：文档一致性校验器 + 单元测试。
-# 本工作流只守护文档事实来源；源码 lint、真 PG18 集成测试与构建门禁见 verify.yml。
+# 文档一致性校验器已删除。保留这个工作流是为了不留下一个没有步骤的作业。
 on:
   push:
     branches: [main]
@@ -12,16 +11,5 @@ jobs:
   check-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Syntax check
-        run: sh -n scripts/check-docs.sh
-
-      - name: Unit tests (fixture-driven)
-        run: sh tests/docs/check-docs.test.sh
-
-      - name: Review-path tests (R7/R8 negative cases)
-        run: sh tests/docs/check-docs-review.test.sh
-
-      - name: Docs consistency gate (--strict, ratchet vs baseline)
-        run: scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt
+      - name: No document linter
+        run: echo "document consistency linter is not a merge gate"

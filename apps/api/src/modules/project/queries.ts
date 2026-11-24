@@ -1,7 +1,7 @@
-import { organization, organizationMember, project } from "@yunpu/db";
+import { project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { TxDatabase } from "../../db/with-user";
+import type { TxDatabase } from "../../db/with-tenant-transaction";
 
 export type ProjectRecord = {
   id: string;
@@ -178,47 +178,6 @@ export async function deleteProject(
     )
     .returning({ id: project.id });
   return rows.length > 0;
-}
-
-/** 成员角色（RLS 内）：非成员返回 null → 路由映射 404「不存在或无权」。 */
-export async function membershipRole(
-  db: TxDatabase,
-  organizationId: string,
-  userId: string,
-): Promise<"admin" | "editor" | "viewer" | null> {
-  const rows = await db
-    .select({ role: organizationMember.role })
-    .from(organizationMember)
-    .where(
-      and(
-        eq(organizationMember.organizationId, organizationId),
-        eq(organizationMember.userId, userId),
-      ),
-    )
-    .limit(1);
-  return rows[0]?.role ?? null;
-}
-
-/** 组织状态（RLS 内）：不可见组织返回 null。 */
-export async function organizationStatus(
-  db: TxDatabase,
-  organizationId: string,
-): Promise<"active" | "suspended" | "archived" | null> {
-  const rows = await db
-    .select({ status: organization.status })
-    .from(organization)
-    .where(eq(organization.id, organizationId))
-    .limit(1);
-  return rows[0]?.status ?? null;
-}
-
-export const ROLE_RANK = { viewer: 0, editor: 1, admin: 2 } as const;
-
-export function hasRole(
-  role: "admin" | "editor" | "viewer" | null,
-  min: "editor" | "admin",
-): boolean {
-  return role !== null && ROLE_RANK[role] >= ROLE_RANK[min];
 }
 
 export const defaultListLimit = 50;

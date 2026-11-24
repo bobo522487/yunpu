@@ -5,6 +5,7 @@
 .worktrees/
 # local secrets, test env, runtime state, and bun's lockfile
 .env
+.env.*
 .env.local
 .env.test
 .local/
@@ -13,6 +14,7 @@ bun.lock
 node_modules/
 # build output & logs
 dist/
+build/
 coverage/
 *.log
 .DS_Store

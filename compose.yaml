@@ -35,7 +35,13 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      # MinIO images may lack curl; hit the live probe with the busybox-style
+      # wget shipped in recent quay.io/minio/minio builds, falling back to mc.
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:9000/minio/health/live || curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -14,12 +14,6 @@ function asDatabaseError(error: unknown): DatabaseError | undefined {
         message?: unknown;
       };
       if (candidate.code) return candidate;
-      if (
-        typeof candidate.message === "string" &&
-        /\bGX001\b/.test(candidate.message)
-      ) {
-        return { code: "GX001" };
-      }
       current = candidate.cause;
       continue;
     }

@@ -16,6 +16,16 @@ test("GX001 maps to CYCLE_DETECTED", () => {
   expect(e.status).toBe(409);
 });
 
+test("GX001 is read from SQLSTATE, not from message text", () => {
+  const fromText = mapDatabaseError({ message: "would form a cycle GX001" });
+  expect(fromText.code).toBe("INTERNAL");
+  const fromCause = mapDatabaseError({
+    message: "wrapped GX001",
+    cause: { code: "GX001" },
+  });
+  expect(fromCause.code).toBe("CYCLE_DETECTED");
+});
+
 test("23001 and 23503 are distinct", () => {
   const restrict = mapDatabaseError({ code: "23001" });
   const fk = mapDatabaseError({ code: "23503" });

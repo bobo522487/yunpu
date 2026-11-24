@@ -79,4 +79,125 @@ describe("write role backstop", () => {
     expect(removed.status).toBe(403);
     expect(removed.json.code).toBe("FORBIDDEN");
   });
+
+  test("viewer content writes, self member columns, and admin-only org writes", async () => {
+    const { cookie, organizationId, projectId } =
+      await seedOwnerProject("write-matrix");
+    const child = await createPerson(cookie, projectId, { displayName: "子" });
+    const parent = await createPerson(cookie, projectId, { displayName: "父" });
+    expect(child.status).toBe(201);
+    expect(parent.status).toBe(201);
+    const childId = (child.data?.person as { id: string }).id;
+    const parentId = (parent.data?.person as { id: string }).id;
+    const viewer = await addMember(organizationId, "viewer");
+    const editor = await addMember(organizationId, "editor");
+    const owner = await withAdminDb((client) =>
+      client.query<{ user_id: string }>(
+        `SELECT owner_user_id AS user_id FROM organization WHERE id = $1`,
+        [organizationId],
+      ),
+    );
+    const ownerUserId = owner.rows[0].user_id;
+
+    const denied = [
+      `insert into person_name (organization_id, project_id, person_id, kind, value, is_primary)
+       values ('${organizationId}'::uuid, '${projectId}'::uuid, '${childId}'::uuid, 'formal', '旁支', false)`,
+      `insert into person_relation (organization_id, project_id, from_person_id, to_person_id, kind)
+       values ('${organizationId}'::uuid, '${projectId}'::uuid, '${parentId}'::uuid, '${childId}'::uuid, 'biological_parent')`,
+      `insert into lineage_projection (organization_id, project_id, person_id, primary_path, generation)
+       values ('${organizationId}'::uuid, '${projectId}'::uuid, '${childId}'::uuid, 'viewer', 1)`,
+    ];
+    for (const statement of denied) {
+      await expect(
+        withTenantTransaction({ userId: viewer.userId }, (db) =>
+          db.execute(statement),
+        ),
+      ).rejects.toMatchObject({ cause: { code: "42501" } });
+    }
+
+    await withTenantTransaction({ userId: viewer.userId }, (db) =>
+      db.execute(
+        `update organization_member
+            set last_used_at = now()
+          where organization_id = '${organizationId}'::uuid
+            and user_id = '${viewer.userId}'::uuid`,
+      ),
+    );
+    const touched = await withAdminDb((client) =>
+      client.query<{ last_used_at: Date | null }>(
+        `SELECT last_used_at FROM organization_member
+          WHERE organization_id = $1 AND user_id = $2`,
+        [organizationId, viewer.userId],
+      ),
+    );
+    expect(touched.rows[0].last_used_at).not.toBeNull();
+
+    await expect(
+      withTenantTransaction({ userId: viewer.userId }, (db) =>
+        db.execute(
+          `update organization_member
+              set role = 'admin'
+            where organization_id = '${organizationId}'::uuid
+              and user_id = '${viewer.userId}'::uuid`,
+        ),
+      ),
+    ).rejects.toMatchObject({ cause: { code: "42501" } });
+
+    await expect(
+      withTenantTransaction({ userId: editor.userId }, (db) =>
+        db.execute(
+          `insert into invite
+             (organization_id, email, role, token_hash, expires_at, invited_by)
+           values ('${organizationId}'::uuid, 'editor-invite@example.com', 'viewer', decode(repeat('bb', 32), 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
+        ),
+      ),
+    ).rejects.toMatchObject({ cause: { code: "42501" } });
+    await expect(
+      withTenantTransaction({ userId: editor.userId }, (db) =>
+        db.execute(
+          `update organization
+              set name = 'editor-renamed'
+            where id = '${organizationId}'::uuid`,
+        ),
+      ),
+    ).resolves.toMatchObject({ rowCount: 0 });
+
+    await withTenantTransaction({ userId: ownerUserId }, (db) =>
+      db.execute(
+        `update organization
+            set name = 'admin-renamed'
+          where id = '${organizationId}'::uuid`,
+      ),
+    );
+    await withTenantTransaction({ userId: ownerUserId }, (db) =>
+      db.execute(
+        `insert into invite
+           (organization_id, email, role, token_hash, expires_at, invited_by)
+         values ('${organizationId}'::uuid, 'admin-invite@example.com', 'viewer', decode(repeat('cc', 32), 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
+      ),
+    );
+    const renamed = await withAdminDb((client) =>
+      client.query<{ name: string }>(
+        `SELECT name FROM organization WHERE id = $1`,
+        [organizationId],
+      ),
+    );
+    expect(renamed.rows[0].name).toBe("admin-renamed");
+
+    const left = await call(
+      `/api/v1/organizations/${organizationId}/leave`,
+      viewer.cookie,
+      { method: "POST" },
+    );
+    expect(left.status).toBe(200);
+    expect(left.json.ok).toBe(true);
+    const gone = await withAdminDb((client) =>
+      client.query(
+        `SELECT 1 FROM organization_member
+          WHERE organization_id = $1 AND user_id = $2`,
+        [organizationId, viewer.userId],
+      ),
+    );
+    expect(gone.rows).toHaveLength(0);
+  });
 });

@@ -17,6 +17,26 @@ describe("archived organization writes", () => {
     const personId = (person.data?.person as { id: string }).id;
     const otherId = (other.data?.person as { id: string }).id;
 
+    await withAdminDb(async (client) => {
+      await client.query(
+        `INSERT INTO person_relation (
+           organization_id, project_id, from_person_id, to_person_id, kind
+         ) VALUES ($1, $2, $3, $4, 'ritual_heir')`,
+        [organizationId, projectId, otherId, personId],
+      );
+      const owner = await client.query<{ user_id: string }>(
+        `SELECT user_id FROM organization_member
+          WHERE organization_id = $1 AND role = 'admin' LIMIT 1`,
+        [organizationId],
+      );
+      await client.query(
+        `INSERT INTO invite
+           (organization_id, email, role, token_hash, status, expires_at, invited_by)
+         VALUES ($1, 'before-archive@example.com', 'viewer', decode(repeat('aa', 32), 'hex'), 'pending', now() + interval '1 day', $2)`,
+        [organizationId, owner.rows[0].user_id],
+      );
+    });
+
     const archived = await call(
       `/api/v1/organizations/${organizationId}`,
       cookie,
@@ -95,5 +115,79 @@ describe("archived organization writes", () => {
         );
       }),
     ).rejects.toMatchObject({ code: "GX012" });
+
+    const updates = [
+      [`UPDATE project SET name = '改名' WHERE id = $1`, [projectId]],
+      [
+        `UPDATE person SET surname = '改' WHERE project_id = $1 AND id = $2`,
+        [projectId, personId],
+      ],
+      [
+        `UPDATE person_name SET value = '改名' WHERE project_id = $1 AND person_id = $2`,
+        [projectId, personId],
+      ],
+      [
+        `UPDATE person_relation SET note = '改' WHERE project_id = $1`,
+        [projectId],
+      ],
+      [
+        `UPDATE lineage_projection SET generation = 9 WHERE project_id = $1 AND person_id = $2`,
+        [projectId, personId],
+      ],
+      [
+        `UPDATE organization_member SET last_used_at = now() WHERE organization_id = $1`,
+        [organizationId],
+      ],
+      [
+        `UPDATE invite SET status = 'revoked' WHERE organization_id = $1`,
+        [organizationId],
+      ],
+    ] as const;
+    for (const [statement, params] of updates) {
+      await expect(
+        withAdminDb((client) => client.query(statement, [...params])),
+      ).rejects.toMatchObject({ code: "GX012" });
+    }
+
+    const deletes = [
+      [`DELETE FROM person_relation WHERE project_id = $1`, [projectId]],
+      [
+        `DELETE FROM person_name WHERE project_id = $1 AND person_id = $2`,
+        [projectId, personId],
+      ],
+      [
+        `DELETE FROM lineage_projection WHERE project_id = $1 AND person_id = $2`,
+        [projectId, personId],
+      ],
+      [`DELETE FROM invite WHERE organization_id = $1`, [organizationId]],
+      [
+        `DELETE FROM organization_member WHERE organization_id = $1 AND role = 'admin'`,
+        [organizationId],
+      ],
+      [
+        `DELETE FROM person WHERE project_id = $1 AND id = $2`,
+        [projectId, personId],
+      ],
+      [`DELETE FROM project WHERE id = $1`, [projectId]],
+    ] as const;
+    for (const [statement, params] of deletes) {
+      await expect(
+        withAdminDb((client) => client.query(statement, [...params])),
+      ).rejects.toMatchObject({ code: "GX012" });
+    }
+
+    const kept = await withAdminDb((client) =>
+      client.query<{ name: string }>(`SELECT name FROM project WHERE id = $1`, [
+        projectId,
+      ]),
+    );
+    expect(kept.rows).toHaveLength(1);
+
+    const rejected = await createPerson(cookie, projectId, {
+      displayName: "归档后不该写入",
+    });
+    expect(rejected.status).toBe(409);
+    expect(rejected.json.code).toBe("CONFLICT");
+    expect(rejected.json.message).toBe("组织已归档，无法写入");
   });
 });

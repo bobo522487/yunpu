@@ -1,12 +1,7 @@
-import { auth } from "../../auth";
 import { AppError } from "../../lib/errors";
 import { logEvent } from "../../lib/logger";
-
-type BetterAuthUser = {
-  id: string;
-  email: string;
-  name: string;
-};
+import type { SessionUser } from "../../types";
+import { auth, requireAuth } from "../auth";
 
 export type AccountRecord = {
   id: string;
@@ -14,20 +9,12 @@ export type AccountRecord = {
   name: string;
 };
 
-function toAccount(user: BetterAuthUser): AccountRecord {
+function toAccount(user: SessionUser): AccountRecord {
   return {
     id: user.id,
-    email: String(user.email ?? ""),
-    name: String(user.name ?? ""),
+    email: user.email,
+    name: user.name,
   };
-}
-
-async function requireSessionUser(headers: Headers): Promise<BetterAuthUser> {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) {
-    throw new AppError("UNAUTHORIZED", "需要登录", 401);
-  }
-  return session.user as BetterAuthUser;
 }
 
 function mapBetterAuthError(error: unknown, fallback: string): AppError {
@@ -58,14 +45,14 @@ export async function updateAccount(
   headers: Headers,
   name: string,
 ): Promise<AccountRecord> {
-  const sessionUser = await requireSessionUser(headers);
+  const sessionUser = await requireAuth(headers);
   try {
     await auth.api.updateUser({ body: { name }, headers });
   } catch (error) {
     throw mapBetterAuthError(error, "修改资料失败");
   }
   // 以会话回读为准，避免依赖 Better Auth 各版本的返回体形状。
-  const refreshed = await requireSessionUser(headers);
+  const refreshed = await requireAuth(headers);
   logEvent({
     event: "account.updated",
     user_id: sessionUser.id,
@@ -80,7 +67,7 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  const sessionUser = await requireSessionUser(headers);
+  const sessionUser = await requireAuth(headers);
   try {
     await auth.api.changePassword({
       body: { currentPassword, newPassword },

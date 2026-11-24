@@ -1,18 +1,22 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
 async function call(
   path: string,
   cookie: string | null,
   init: RequestInit = {},
-): Promise<{ status: number; json: JsonResponse; data?: Record<string, unknown> }> {
+): Promise<{
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+}> {
   const response = await request(path, {
     ...init,
     headers: {
@@ -54,7 +58,9 @@ describe("organization settings (console)", () => {
       { method: "PATCH", body: JSON.stringify({ name: "新名字" }) },
     );
     expect(renamed.status).toBe(200);
-    expect((renamed.data?.organization as { name: string }).name).toBe("新名字");
+    expect((renamed.data?.organization as { name: string }).name).toBe(
+      "新名字",
+    );
 
     const blank = await call(
       `/api/v1/organizations/${organizationId}`,
@@ -69,7 +75,11 @@ describe("organization settings (console)", () => {
     const owner = await signUp(uniqueEmail("set-v-o"));
     const created = await createOrganization(owner.cookie, "只读设置组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const viewerCookie = await addMember(organizationId, uniqueEmail("set-v-t"), "viewer");
+    const viewerCookie = await addMember(
+      organizationId,
+      uniqueEmail("set-v-t"),
+      "viewer",
+    );
 
     const rename = await call(
       `/api/v1/organizations/${organizationId}`,
@@ -90,7 +100,9 @@ describe("organization settings (console)", () => {
       `/api/v1/organizations/${organizationId}`,
       owner.cookie,
     );
-    expect((detail.data?.organization as { status: string }).status).toBe("active");
+    expect((detail.data?.organization as { status: string }).status).toBe(
+      "active",
+    );
   });
 
   test("archived organization leaves the active list and rejects writes", async () => {
@@ -104,10 +116,14 @@ describe("organization settings (console)", () => {
       { method: "PATCH", body: JSON.stringify({ status: "archived" }) },
     );
     expect(archived.status).toBe(200);
-    expect((archived.data?.organization as { status: string }).status).toBe("archived");
+    expect((archived.data?.organization as { status: string }).status).toBe(
+      "archived",
+    );
 
     const list = await call("/api/v1/organizations", owner.cookie);
-    const ids = (list.data?.organizations as { id: string }[]).map((org) => org.id);
+    const ids = (list.data?.organizations as { id: string }[]).map(
+      (org) => org.id,
+    );
     expect(ids).not.toContain(organizationId);
 
     const activate = await call(
@@ -164,7 +180,9 @@ describe("organization settings (console)", () => {
     expect(leave.status).toBe(200);
 
     const list = await call("/api/v1/organizations", memberCookie);
-    const ids = (list.data?.organizations as { id: string }[]).map((org) => org.id);
+    const ids = (list.data?.organizations as { id: string }[]).map(
+      (org) => org.id,
+    );
     expect(ids).not.toContain(organizationId);
 
     const detail = await call(
@@ -179,11 +197,10 @@ describe("organization settings (console)", () => {
     const created = await createOrganization(owner.cookie, "未登录设置组织");
     const organizationId = (created.data?.organization as { id: string }).id;
 
-    const result = await call(
-      `/api/v1/organizations/${organizationId}`,
-      null,
-      { method: "PATCH", body: JSON.stringify({ name: "未登录改名" }) },
-    );
+    const result = await call(`/api/v1/organizations/${organizationId}`, null, {
+      method: "PATCH",
+      body: JSON.stringify({ name: "未登录改名" }),
+    });
     expect(result.status).toBe(401);
   });
 });

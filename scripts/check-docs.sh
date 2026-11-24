@@ -342,7 +342,19 @@ LC_ALL=C sort -o "$TMP/warns" "$TMP/warns"
 
 # 归一化：剥离违规位置的行号（file:NN → file），使基线按"规则+文件+内容"比对，
 # 文档行号漂移不触发误报。键 = "<rule> <file> <detail>"。
-norm_awk='{loc=$2; sub(/:[0-9]+$/,"",loc); rest=""; for(i=3;i<=NF;i++) rest=rest (i>3?" ":"") $i; print $1, loc, rest}'
+# emit 格式为 `R# <name> <file>:<line> <detail>`（规则名可含空格，如 `R4 dangling`），
+# 因此定位字段是「第一个匹配 path:digits 的字段」，不能写死 $2。
+norm_awk='{
+  rule=""; loc=""; rest=""; loc_i=0
+  for (i=1; i<=NF; i++) {
+    if ($i ~ /^[^ ]+:[0-9]+$/) { loc=$i; loc_i=i; break }
+    rule = rule (rule=="" ? "" : " ") $i
+  }
+  if (loc_i == 0) { print $0; next }
+  sub(/:[0-9]+$/, "", loc)
+  for (i=loc_i+1; i<=NF; i++) rest = rest (rest=="" ? "" : " ") $i
+  print rule, loc, rest
+}'
 
 # ---- --write-baseline：把当前归一化违规落盘并退出 0（初始化棘轮基线）----
 if [ -n "$WRITE_BASELINE" ]; then

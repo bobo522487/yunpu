@@ -1,15 +1,14 @@
-import { expect, spyOn, test } from "bun:test";
-import { auth } from "../src/auth";
+import { expect, test, vi } from "vitest";
 import { AppError } from "../src/lib/errors";
 import { loginRateLimiter } from "../src/middleware/login-rate-limit";
 import * as orgService from "../src/modules/organization/service";
+import { auth, provisionWithInvite } from "../src/modules/auth";
 import { signIn } from "../src/modules/auth/service";
-import { provisionWithInvite } from "../src/auth/provisioning";
 import app from "../src/app";
 
 
 test("db outage is rethrown, not disguised as 401", async () => {
-  const spy = spyOn(auth.api, "signInEmail").mockRejectedValue(new Error("ECONNREFUSED"));
+  const spy = vi.spyOn(auth.api, "signInEmail").mockRejectedValue(new Error("ECONNREFUSED"));
   try {
     await expect(signIn({ email: "a@example.com", password: "secret123" }))
       .rejects.toThrow("ECONNREFUSED");
@@ -17,7 +16,7 @@ test("db outage is rethrown, not disguised as 401", async () => {
 });
 
 test("credential 4xx is still a 401", async () => {
-  const spy = spyOn(auth.api, "signInEmail")
+  const spy = vi.spyOn(auth.api, "signInEmail")
     .mockRejectedValue({ statusCode: 401, message: "invalid password" });
   try {
     await expect(signIn({ email: "a@example.com", password: "bad" }))
@@ -26,9 +25,9 @@ test("credential 4xx is still a 401", async () => {
 });
 
 test("invite provisioning only absorbs known GX sqlstates", async () => {
-  const accept = spyOn(orgService, "acceptInvite")
+  const accept = vi.spyOn(orgService, "acceptInvite")
     .mockRejectedValue(new AppError("UNAVAILABLE", "db down", 503));
-  const create = spyOn(orgService, "createOrganization")
+  const create = vi.spyOn(orgService, "createOrganization")
     .mockRejectedValue(new Error("NO_DB_IN_TEST"));
   try {
     await expect(provisionWithInvite("u1", "a@example.com", "tok"))
@@ -38,8 +37,8 @@ test("invite provisioning only absorbs known GX sqlstates", async () => {
 });
 
 test("a database failure is not counted as a login failure", async () => {
-  const rec = spyOn(loginRateLimiter, "recordFailure");
-  const spy = spyOn(auth.api, "signInEmail").mockRejectedValue(new Error("ECONNREFUSED"));
+  const rec = vi.spyOn(loginRateLimiter, "recordFailure");
+  const spy = vi.spyOn(auth.api, "signInEmail").mockRejectedValue(new Error("ECONNREFUSED"));
   try {
     const r = await app.request("/api/v1/auth/sign-in", {
       method: "POST", headers: { "content-type": "application/json" },

@@ -1,18 +1,22 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
 async function call(
   path: string,
   cookie: string | null,
   init: RequestInit = {},
-): Promise<{ status: number; json: JsonResponse; data?: Record<string, unknown> }> {
+): Promise<{
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+}> {
   const response = await request(path, {
     ...init,
     headers: {
@@ -52,12 +56,19 @@ describe("ownership transfer (console)", () => {
     const owner = await signUp(uniqueEmail("own-o"));
     const created = await createOrganization(owner.cookie, "转移组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const target = await addMember(organizationId, uniqueEmail("own-t"), "admin");
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("own-t"),
+      "admin",
+    );
 
     const transferred = await call(
       `/api/v1/organizations/${organizationId}/owner`,
       owner.cookie,
-      { method: "PUT", body: JSON.stringify({ newOwnerUserId: target.userId }) },
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: target.userId }),
+      },
     );
     expect(transferred.status).toBe(200);
     expect(transferred.data?.ownerUserId).toBe(target.userId);
@@ -66,10 +77,12 @@ describe("ownership transfer (console)", () => {
       `/api/v1/organizations/${organizationId}`,
       owner.cookie,
     );
-    expect((detail.data?.organization as { isOwner: boolean }).isOwner).toBe(false);
-    expect((detail.data?.organization as { ownerUserId: string }).ownerUserId).toBe(
-      target.userId,
+    expect((detail.data?.organization as { isOwner: boolean }).isOwner).toBe(
+      false,
     );
+    expect(
+      (detail.data?.organization as { ownerUserId: string }).ownerUserId,
+    ).toBe(target.userId);
 
     const audits = await withAdminDb(async (client) => {
       const result = await client.query<{ action: string }>(
@@ -86,7 +99,10 @@ describe("ownership transfer (console)", () => {
     const again = await call(
       `/api/v1/organizations/${organizationId}/owner`,
       owner.cookie,
-      { method: "PUT", body: JSON.stringify({ newOwnerUserId: target.userId }) },
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: target.userId }),
+      },
     );
     expect(again.status).toBe(403);
     expect(again.json.code).toBe("FORBIDDEN");
@@ -96,12 +112,19 @@ describe("ownership transfer (console)", () => {
     const owner = await signUp(uniqueEmail("own-n-o"));
     const created = await createOrganization(owner.cookie, "非所有者组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const editor = await addMember(organizationId, uniqueEmail("own-n-e"), "admin");
+    const editor = await addMember(
+      organizationId,
+      uniqueEmail("own-n-e"),
+      "admin",
+    );
 
     const result = await call(
       `/api/v1/organizations/${organizationId}/owner`,
       editor.cookie,
-      { method: "PUT", body: JSON.stringify({ newOwnerUserId: editor.userId }) },
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: editor.userId }),
+      },
     );
     expect(result.status).toBe(403);
     expect(result.json.code).toBe("FORBIDDEN");
@@ -125,7 +148,10 @@ describe("ownership transfer (console)", () => {
     const result = await call(
       `/api/v1/organizations/${organizationId}/owner`,
       owner.cookie,
-      { method: "PUT", body: JSON.stringify({ newOwnerUserId: outsiderUserId }) },
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: outsiderUserId }),
+      },
     );
     expect(result.status).toBe(403);
     expect(result.json.code).toBe("FORBIDDEN");
@@ -166,13 +192,20 @@ describe("ownership transfer (console)", () => {
     const owner = await signUp(uniqueEmail("own-x-o"));
     const created = await createOrganization(owner.cookie, "跨租户转移组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const target = await addMember(organizationId, uniqueEmail("own-x-t"), "admin");
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("own-x-t"),
+      "admin",
+    );
 
     const stranger = await signUp(uniqueEmail("own-x-s"));
     const result = await call(
       `/api/v1/organizations/${organizationId}/owner`,
       stranger.cookie,
-      { method: "PUT", body: JSON.stringify({ newOwnerUserId: target.userId }) },
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: target.userId }),
+      },
     );
     expect(result.status).toBe(404);
     expect(result.json.code).toBe("NOT_FOUND");

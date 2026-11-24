@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
-import { auth } from "../auth";
-import type { ApiEnv, SessionUser } from "../types";
+import { getSession } from "../modules/auth";
+import type { ApiEnv } from "../types";
 
 // The media endpoints are an infrastructure proof guarded by a capability
 // token, not by a user session. Skipping the session lookup keeps them usable
@@ -18,14 +18,7 @@ export function authMiddleware(): MiddlewareHandler<ApiEnv> {
       await next();
       return;
     }
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    const user: SessionUser | null = session?.user
-      ? {
-          id: session.user.id,
-          email: String(session.user.email ?? ""),
-          name: String(session.user.name ?? ""),
-        }
-      : null;
+    const user = await getSession(c.req.raw.headers);
     c.set("user", user);
     await next();
   };

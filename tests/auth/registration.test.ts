@@ -1,7 +1,7 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
-  PASSWORD,
   findUserIdByEmail,
+  PASSWORD,
   readSession,
   signUp,
   uniqueEmail,
@@ -31,7 +31,8 @@ describe("US1 registration", () => {
     );
 
     const auditCount = await withAdminDb(async (client) => {
-      const orgId = (result.json.data?.defaultOrganization as { id: string }).id;
+      const orgId = (result.json.data?.defaultOrganization as { id: string })
+        .id;
       const rows = await client.query<{ count: string }>(
         "SELECT count(*)::text AS count FROM audit_log WHERE organization_id = $1 AND action = 'organization.created' AND project_id IS NULL",
         [orgId],
@@ -60,7 +61,9 @@ describe("US1 registration", () => {
   test("compensates the auth user when default organization creation fails", async () => {
     const email = uniqueEmail("compensate");
     await withAdminDb((client) =>
-      client.query("REVOKE EXECUTE ON FUNCTION app.create_organization(text) FROM genealogy_app"),
+      client.query(
+        "REVOKE EXECUTE ON FUNCTION app.create_organization(text) FROM genealogy_app",
+      ),
     );
 
     try {
@@ -69,7 +72,9 @@ describe("US1 registration", () => {
       expect(await findUserIdByEmail(email)).toBeUndefined();
     } finally {
       await withAdminDb((client) =>
-        client.query("GRANT EXECUTE ON FUNCTION app.create_organization(text) TO genealogy_app"),
+        client.query(
+          "GRANT EXECUTE ON FUNCTION app.create_organization(text) TO genealogy_app",
+        ),
       );
     }
   });
@@ -77,7 +82,9 @@ describe("US1 registration", () => {
   test("the default organization name is readable", async () => {
     const email = uniqueEmail("named");
     const result = await signUp(email);
-    const organization = result.json.data?.defaultOrganization as { name: string };
+    const organization = result.json.data?.defaultOrganization as {
+      name: string;
+    };
     expect(organization.name.length).toBeGreaterThan(0);
     expect(organization.name).toContain("的组织");
   });

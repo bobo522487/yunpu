@@ -22,9 +22,12 @@ services:
       start_period: 10s
 
   minio:
-    image: quay.io/minio/minio
-    # The official image runs as root; pinning user keeps the fresh data
-    # volume writable regardless of which image entrypoint provides it.
+    # Upstream MinIO stopped publishing public quay/Docker Hub images (401 /
+    # pull denied). pgsty/silo is a maintained MinIO-compatible drop-in that
+    # keeps MINIO_* env, path-style S3, and GET /minio/health/live.
+    image: docker.io/pgsty/silo:RELEASE.2026-11-12T00-00-00Z
+    # The image runs as root; pinning user keeps the fresh data volume
+    # writable regardless of which image entrypoint provides it.
     user: "0:0"
     command: ["server", "/data"]
     environment:
@@ -35,7 +38,12 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      # Prefer wget (busybox); curl is a fallback when the image ships it.
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:9000/minio/health/live || curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10

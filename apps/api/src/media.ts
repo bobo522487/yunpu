@@ -1,5 +1,5 @@
-import { Hono, type Context } from "hono";
 import { AppError } from "@yunpu/shared";
+import { type Context, Hono } from "hono";
 import { config } from "./config";
 import { getObject, putObject } from "./storage";
 
@@ -37,7 +37,10 @@ function authorized(request: Request): boolean {
 }
 
 function unauthorized(c: Context) {
-  return c.json({ ok: false, reason: "missing or invalid capability token" }, 401);
+  return c.json(
+    { ok: false, reason: "missing or invalid capability token" },
+    401,
+  );
 }
 
 function randomKey(): string {

@@ -69,7 +69,7 @@
 | Schema | `public` 业务表 / `app` 函数与视图 / `auth` Better Auth | `auth` 表由 `0001_auth_tenant.sql` 认证段创建；业务迁移只建 `public` 表 |
 | 认证     | Better Auth                                     | `auth.user` 由认证层持有；业务表只加外键                                 |
 
-**迁移前置条件**：`auth` schema 与 `auth.user` 由 `packages/db/migrations/0001_auth_tenant.sql` 创建；业务迁移只建 `public` 表。`ltree` 与 `btree_gist` 扩展不在本批次范围内。
+**迁移前置条件**：`auth` schema 与 `auth.user` 由 `packages/db/migrations/0001_auth_tenant.sql` 创建；业务迁移只建 `public` 表。`ltree` 与 `btree_gist` 由 `0011_extensions_ltree.sql` 启用（`lineage_projection` / `node` 依赖）。
 
 **不使用的特性**：`pgEnum`（改值需 DDL 锁，错误信息不友好）、`hstore`、`xml`、继承表、规则系统、软删除列、通用 `entity_type/entity_id` 业务外键。
 
@@ -123,6 +123,7 @@ erDiagram
   person ||--o{ person_name : has
   person ||--o{ person_relation : from
   person ||--o{ person_relation : to
+  person ||--o| lineage_projection : projected
   person ||--o{ event : subject
   person ||--o{ node : placed_at
   person ||--o{ person_media : has
@@ -147,7 +148,7 @@ erDiagram
   lineage ||--o{ book_catalog : referenced
 ```
 
-### 3.1 表清单（22 张，由 `src/domain/enums.ts` 的 `TABLE_NAMES` 生成）
+### 3.1 表清单（23 张，由 `src/domain/enums.ts` 的 `TABLE_NAMES` 生成）
 
 | 层  | 表                     | 主键                                              | 归属模块             |
 | -- | --------------------- | ----------------------------------------------- | ---------------- |
@@ -160,6 +161,7 @@ erDiagram
 | 人物 | `person_name`         | `(project_id, id)`                              | genealogy        |
 | 人物 | `person_relation`     | `(project_id, id)`                              | genealogy        |
 | 人物 | `event`               | `(project_id, id)`                              | genealogy        |
+| 谱系 | `lineage_projection`  | `(project_id, person_id)`                       | genealogy        |
 | 谱系 | `lineage`             | `(project_id, id)`                              | genealogy        |
 | 谱系 | `node`                | `(project_id, id)`                              | genealogy        |
 | 资料 | `source`              | `(project_id, id)`                              | source           |
@@ -230,6 +232,7 @@ erDiagram
 | `invite` | 有 | 有（status 变更） |
 | `project` / `folder` | 有 | 有 |
 | `person` / `person_name` / `person_relation` / `event` | 有 | 有 |
+| `lineage_projection` | 无 | 有 |
 | `lineage` / `node` | 有 | 有 |
 | `source` / `source_citation` | 有 | 有 |
 | `article` / `article_page` | 有 | 有 |
@@ -268,7 +271,7 @@ export const LINEAGE_PARENT_KINDS = [
 
 export const SYMMETRIC_RELATION_KINDS = ['spouse', 'partner'] as const;
 export const MEMBER_ROLES = ['admin', 'editor', 'viewer'] as const;
-export const TABLE_NAMES = [/* 22 张表 */] as const;
+export const TABLE_NAMES = [/* 23 张表 */] as const;
 export const AUDIT_ENTITY_TYPES = [/* 由 TABLE_NAMES 派生 */] as const;
 ```
 
@@ -442,16 +445,24 @@ FOREIGN KEY (project_id, folder_id)
 | `project_id` | `uuid` | 否 | | 复合外键的一部分 |
 | `sex` | `text` | 否 | `'unknown'` | `male` / `female` / `unknown` / `other` |
 | `surname` | `text` | 是 | | **宗族姓氏归属**；有值时非空白 |
+| `birth_year` | `integer` | 是 | | 公历年便利字段（完整权威在 `event`，本批次未落地） |
+| `death_year` | `integer` | 是 | | 公历年便利字段 |
+| `is_living` | `boolean` | 否 | `true` | 在世标记；与生卒一致性为服务层软约束 |
+| `version` | `integer` | 否 | `1` | `> 0`；乐观锁（`ck_person_version_positive`） |
 | `created_at` | `timestamptz` | 否 | `now()` | |
 | `updated_at` | `timestamptz` | 否 | `now()` | 触发器维护 |
 
-- `PRIMARY KEY (project_id, id)`；`fk_person_project`；`ck_person_sex`、`ck_person_surname_not_blank`。
+- `PRIMARY KEY (project_id, id)`；`fk_person_project`；`ck_person_sex`、`ck_person_surname_not_blank`、`ck_person_version_positive`。
+- `UNIQUE (organization_id, id)`（`uq_person_org_id`）：租户外壳复合键惯例。
 
 **`surname` 的三条硬规则**（`DM-PER-01`）：
 
 1. **独立事实。** 表达「此人属于哪个宗族」，不由 `person_name` 派生；迁移、触发器、生成列都不得把两者自动同步。
 2. **不自动裁剪。** `person_name.value` 以 `surname` 开头时，数据库不改任何一边；应用层可以提示，但不能静默修正。
 3. **冲突可选留痕。** 编者可创建 `source_citation` 说明存疑，但不列为不变量。
+
+- `DM-PER-02` **version 乐观锁**：更新走 `UPDATE … WHERE project_id = ? AND id = ? AND version = ?`，成功后 `version = version + 1`；未命中映射 `VERSION_CONFLICT` → 409。
+- 生卒便利字段 `birth_year` / `death_year` / `is_living` 是本批次 CRUD 便利列，**不是**事件域真相源；与完整 `event` 模型的收敛留给后续批次。与 `is_living` 的一致性由服务层软约束保证（`DM-PER-03`，见 [`invariants.md`](./invariants.md)）。
 
 > `surname` 与 `project.surname` 不互相约束：Project 内可以有外来联姻、旁支、史料人物。
 
@@ -540,6 +551,7 @@ UNIQUE (project_id, from_person_id, to_person_id, kind)
 - `DM-REL-08` **两端同 Project 且不同人物**：`(project_id, from_person_id)` 与 `(project_id, to_person_id)` 两个复合外键 + `CHECK (from <> to)`。
 - `DM-REL-09` **同一对人物同一 kind 不重复**：`UNIQUE (project_id, from, to, kind)`。
 - `DM-REL-12` **`kind` 取值单一来源**：由 `src/domain/enums.ts` 的 `RELATION_KINDS` 生成 `ck_person_relation_kind`。
+- 父母基数（软约束，`DM-REL-13`）：对 `to` 端，同一父母类 `kind`（`biological_parent` / `adoptive_parent`）边数 ≤ 2；超出由服务层返回 `PARENT_LIMIT` → 409（见 [`invariants.md`](./invariants.md)）。
 - 不同 `kind` 可以并存于同一对人物（如既是 `spouse` 又是 `biological_parent` 的罕见情况由数据决定）。
 - `from_role_label` / `to_role_label` 各管一端，解决「嫡妻」和「长子」不能塞进同一列的问题。
 - `DM-REL-04` **排序不唯一**：`sort_order` 是编者排版提示，不是事实，**不建唯一索引**。理由：(a) 唯一索引使任何中间插入都需要 O(n) 重排兄弟，而 `node` 路径用步长 10 恰恰是为了避免重排，两套相反解法只留一套；(b) 对称关系里 `from` 是 UUID 较小者，「给我的配偶们排序」在 `from_person_id` 维度上根本聚不拢，唯一索引连语义都是歪的。查询统一按 `(sort_order NULLS LAST, id)` 排序，平局用 `id` 打破。
@@ -597,6 +609,24 @@ PERFORM pg_advisory_xact_lock(hashtextextended('yunpu:relation:' || NEW.project_
 > 另一条配套要求：Drizzle 连接必须设 `prepare: false`。服务端 prepared statement 与 `SET LOCAL ROLE` / `SET LOCAL` 组合时，语句在池化复用下会带着上一个会话的角色执行。
 
 > `DM-REL-07` 并发正确性必须在目标仓库的真实 PostgreSQL 18 上实测（验收清单 #9、#10），文档描述不替代验证。
+
+### 5.8.1 `lineage_projection` — 世系派生加速
+
+> 本表是 **004 批次增量**：支撑受控子图性能（约 5k 人视口 P95），**不是**完整 `lineage` / `node` 编纂模型。Complexity Tracking 见 `specs/004-backend-architecture/plan.md`。
+
+| 字段 | 类型 | 空 | 默认 | 约束 / 说明 |
+|---|---|---|---|---|
+| `organization_id` | `uuid` | 否 | | 复合外键的一部分 |
+| `project_id` | `uuid` | 否 | | 复合外键的一部分 |
+| `person_id` | `uuid` | 否 | | 与 `person` 对齐 |
+| `primary_path` | `ltree` | 否 | | 主路径加速 |
+| `generation` | `integer` | 否 | | 可由 path 导出；显式存储便于过滤 |
+| `updated_at` | `timestamptz` | 否 | `now()` | 刷新时推进 |
+
+- `PRIMARY KEY (project_id, person_id)`；`fk_lineage_projection_project`；`fk_lineage_projection_person` → `person`，`ON DELETE CASCADE`。
+- GiST：`idx_lineage_projection_path USING gist (project_id, primary_path)`（需 `ltree` + `btree_gist`）。
+- RLS：`ENABLE` + `FORCE`，谓词同业务表。
+- 永不单独作为真相源（软约束，`DM-PROJ-01`）：仅父母类边写/删同事务刷新；配偶边不改 path。读路径可结合投影过滤，写路径以 `person_relation` 为准（见 [`invariants.md`](./invariants.md)）。
 
 ### 5.9 `event` — 事件
 

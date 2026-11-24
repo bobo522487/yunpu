@@ -13,4 +13,11 @@ bun.lock
 node_modules/
 # build output & logs
 dist/
+coverage/
 *.log
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

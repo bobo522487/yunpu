@@ -1,9 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createLoginRateLimiter } from "../../apps/api/src/middleware/login-rate-limit";
 
 describe("US2 login rate limit", () => {
   test("locks the email + source key after five failures", () => {
-    let now = 1_000;
+    const now = 1_000;
     const limiter = createLoginRateLimiter({
       now: () => now,
       windowMs: 15 * 60 * 1000,

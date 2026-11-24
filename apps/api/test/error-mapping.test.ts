@@ -1,10 +1,19 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { ERROR_STATUS } from "@yunpu/shared";
 import { mapDatabaseError } from "../src/lib/errors";
 
-test("ERROR_STATUS covers exactly eight codes", () => {
+test("ERROR_STATUS covers genealogy conflict codes", () => {
   expect(ERROR_STATUS.UNAVAILABLE).toBe(503);
-  expect(Object.keys(ERROR_STATUS)).toHaveLength(8);
+  expect(ERROR_STATUS.CYCLE_DETECTED).toBe(409);
+  expect(ERROR_STATUS.PARENT_LIMIT).toBe(409);
+  expect(ERROR_STATUS.VERSION_CONFLICT).toBe(409);
+  expect(Object.keys(ERROR_STATUS)).toHaveLength(11);
+});
+
+test("GX001 maps to CYCLE_DETECTED", () => {
+  const e = mapDatabaseError({ code: "GX001" });
+  expect(e.code).toBe("CYCLE_DETECTED");
+  expect(e.status).toBe(409);
 });
 
 test("23001 and 23503 are distinct", () => {

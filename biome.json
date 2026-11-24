@@ -1,0 +1,170 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.2.6/schema.json",
+  "files": {
+    "includes": ["apps/api/src/**", "packages/**/src/**", "tests/**"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+              "bun:test": "Use vitest instead of bun:test"
+            },
+            "patterns": [
+              {
+                "group": [
+                  "**/modules/*/queries",
+                  "**/modules/*/queries.ts",
+                  "../**/queries",
+                  "../**/queries.ts",
+                  "**/*.repo",
+                  "**/*.repo.ts",
+                  "**/*.route",
+                  "**/*.route.ts",
+                  "../**/*.repo",
+                  "../**/*.repo.ts",
+                  "../**/*.route",
+                  "../**/*.route.ts"
+                ],
+                "message": "Do not import another module's internal queries/repo/route files; call its service API instead"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/shared/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+                  "bun:test": "Use vitest instead of bun:test"
+                },
+                "patterns": [
+                  {
+                    "group": [
+                      "**/apps/**",
+                      "apps/**",
+                      "**/modules/**",
+                      "../../apps/**",
+                      "../apps/**"
+                    ],
+                    "message": "packages/shared must not import apps or modules (dependency direction)"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/api/src/modules/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+                  "bun:test": "Use vitest instead of bun:test"
+                },
+                "patterns": [
+                  {
+                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
+                    "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
+                  },
+                  {
+                    "group": [
+                      "**/modules/*/queries",
+                      "**/modules/*/queries.ts",
+                      "../**/queries",
+                      "../**/queries.ts",
+                      "**/*.repo",
+                      "**/*.repo.ts",
+                      "**/*.route",
+                      "**/*.route.ts",
+                      "../**/*.repo",
+                      "../**/*.repo.ts",
+                      "../**/*.route",
+                      "../**/*.route.ts"
+                    ],
+                    "message": "Do not import another module's internal queries/repo/route files; call its service API instead"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/api/src/modules/person/**",
+        "apps/api/src/modules/organization/**",
+        "apps/api/src/modules/project/**",
+        "apps/api/src/modules/account/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+                  "bun:test": "Use vitest instead of bun:test",
+                  "@yunpu/db": {
+                    "importNames": ["createDb"],
+                    "message": "Modules must not call createDb; use withTenantTransaction (FR-003/FR-016)"
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
+                    "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
+                  },
+                  {
+                    "group": [
+                      "**/modules/*/queries",
+                      "**/modules/*/queries.ts",
+                      "../**/queries",
+                      "../**/queries.ts",
+                      "**/*.repo",
+                      "**/*.repo.ts",
+                      "**/*.route",
+                      "**/*.route.ts",
+                      "../**/*.repo",
+                      "../**/*.repo.ts",
+                      "../**/*.route",
+                      "../**/*.route.ts"
+                    ],
+                    "message": "Do not import another module's internal queries/repo/route files; call its service API instead"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  }
+}

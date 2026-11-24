@@ -22,7 +22,9 @@ const envFields = [
   "YUNPU_CAPABILITY_TOKEN",
 ] as const;
 
-function databaseTarget(databaseUrl: string): { user: string; name: string } | undefined {
+function databaseTarget(
+  databaseUrl: string,
+): { user: string; name: string } | undefined {
   let url: URL;
   try {
     url = new URL(databaseUrl);
@@ -38,7 +40,9 @@ function databaseTarget(databaseUrl: string): { user: string; name: string } | u
   let name: string;
   try {
     user = decodeURIComponent(url.username);
-    name = decodeURIComponent(url.pathname.replace(/^\/+/, "").split("/")[0] ?? "");
+    name = decodeURIComponent(
+      url.pathname.replace(/^\/+/, "").split("/")[0] ?? "",
+    );
   } catch {
     return undefined;
   }
@@ -50,7 +54,10 @@ function databaseTarget(databaseUrl: string): { user: string; name: string } | u
   return { user, name };
 }
 
-function databaseUrlAllowed(databaseUrl: string, expectedUser: string): boolean {
+function databaseUrlAllowed(
+  databaseUrl: string,
+  expectedUser: string,
+): boolean {
   const target = databaseTarget(databaseUrl);
   if (!target || target.name === "yunpu_prod" || target.user !== expectedUser) {
     return false;
@@ -66,22 +73,30 @@ function databaseUrlAllowed(databaseUrl: string, expectedUser: string): boolean 
 
 const envSchema = z.object({
   YUNPU_ENV: z.enum(["development", "test"]),
-  DATABASE_URL: z.string().min(1).superRefine((databaseUrl, ctx) => {
-    if (!databaseUrlAllowed(databaseUrl, appDatabaseUser)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "DATABASE_URL must use user genealogy_app and the database paired with YUNPU_ENV",
-      });
-    }
-  }),
-  AUTH_DATABASE_URL: z.string().min(1).superRefine((databaseUrl, ctx) => {
-    if (!databaseUrlAllowed(databaseUrl, authDatabaseUser)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "AUTH_DATABASE_URL must use user auth_runtime and the database paired with YUNPU_ENV",
-      });
-    }
-  }),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .superRefine((databaseUrl, ctx) => {
+      if (!databaseUrlAllowed(databaseUrl, appDatabaseUser)) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "DATABASE_URL must use user genealogy_app and the database paired with YUNPU_ENV",
+        });
+      }
+    }),
+  AUTH_DATABASE_URL: z
+    .string()
+    .min(1)
+    .superRefine((databaseUrl, ctx) => {
+      if (!databaseUrlAllowed(databaseUrl, authDatabaseUser)) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "AUTH_DATABASE_URL must use user auth_runtime and the database paired with YUNPU_ENV",
+        });
+      }
+    }),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
   PORT: z.coerce.number().int().min(1).max(65535),

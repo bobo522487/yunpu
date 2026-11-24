@@ -9,6 +9,5 @@ export const forbidden = (message = "无权执行该操作"): AppError =>
 export const conflict = (message: string): AppError =>
   new AppError("CONFLICT", message, 409);
 
-export const validationError = (
-  details: Record<string, unknown>,
-): AppError => new AppError("VALIDATION", "请求参数不合法", 400, details);
+export const validationError = (details: Record<string, unknown>): AppError =>
+  new AppError("VALIDATION", "请求参数不合法", 400, details);

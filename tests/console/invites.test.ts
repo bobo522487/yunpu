@@ -1,18 +1,22 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  type JsonResponse,
   request,
   signUp,
   uniqueEmail,
   withAdminDb,
-  type JsonResponse,
 } from "../auth/fixtures";
 
 async function call(
   path: string,
   cookie: string | null,
   init: RequestInit = {},
-): Promise<{ status: number; json: JsonResponse; data?: Record<string, unknown> }> {
+): Promise<{
+  status: number;
+  json: JsonResponse;
+  data?: Record<string, unknown>;
+}> {
   const response = await request(path, {
     ...init,
     headers: {
@@ -52,7 +56,10 @@ describe("organization invites (console)", () => {
     const createdInvite = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: invitee, role: "editor" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: invitee, role: "editor" }),
+      },
     );
     expect(createdInvite.status).toBe(201);
     const inviteUrl = createdInvite.data?.inviteUrl as string;
@@ -86,14 +93,20 @@ describe("organization invites (console)", () => {
     const first = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: invitee, role: "viewer" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: invitee, role: "viewer" }),
+      },
     );
     expect(first.status).toBe(201);
 
     const second = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: invitee, role: "admin" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: invitee, role: "admin" }),
+      },
     );
     expect(second.status).toBe(409);
     expect(second.json.code).toBe("CONFLICT");
@@ -103,7 +116,11 @@ describe("organization invites (console)", () => {
     const owner = await signUp(uniqueEmail("inv-v-o"));
     const created = await createOrganization(owner.cookie, "只读邀请组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const viewerCookie = await addMember(organizationId, uniqueEmail("inv-v-t"), "viewer");
+    const viewerCookie = await addMember(
+      organizationId,
+      uniqueEmail("inv-v-t"),
+      "viewer",
+    );
 
     const list = await call(
       `/api/v1/organizations/${organizationId}/invites`,
@@ -114,7 +131,10 @@ describe("organization invites (console)", () => {
     const create = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       viewerCookie,
-      { method: "POST", body: JSON.stringify({ email: uniqueEmail("inv-v-x"), role: "viewer" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: uniqueEmail("inv-v-x"), role: "viewer" }),
+      },
     );
     expect(create.status).toBe(403);
     expect(create.json.code).toBe("FORBIDDEN");
@@ -128,7 +148,10 @@ describe("organization invites (console)", () => {
     const createdInvite = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: uniqueEmail("inv-r-t"), role: "editor" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: uniqueEmail("inv-r-t"), role: "editor" }),
+      },
     );
     const inviteId = (createdInvite.data?.invite as { id: string }).id;
 
@@ -161,12 +184,19 @@ describe("organization invites (console)", () => {
     const owner = await signUp(uniqueEmail("inv-p-o"));
     const created = await createOrganization(owner.cookie, "权限邀请组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const editorCookie = await addMember(organizationId, uniqueEmail("inv-p-e"), "editor");
+    const editorCookie = await addMember(
+      organizationId,
+      uniqueEmail("inv-p-e"),
+      "editor",
+    );
 
     const createdInvite = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: uniqueEmail("inv-p-t"), role: "viewer" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: uniqueEmail("inv-p-t"), role: "viewer" }),
+      },
     );
     const inviteId = (createdInvite.data?.invite as { id: string }).id;
 
@@ -205,7 +235,10 @@ describe("organization invites (console)", () => {
     const matched = await call(
       `/api/v1/organizations/${organizationId}/invites`,
       owner.cookie,
-      { method: "POST", body: JSON.stringify({ email: inviteeEmail, role: "editor" }) },
+      {
+        method: "POST",
+        body: JSON.stringify({ email: inviteeEmail, role: "editor" }),
+      },
     );
     expect(matched.status).toBe(201);
     const inviteId = (matched.data?.invite as { id: string }).id;

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import app from "../src/app";
 
 describe("auth router contract", () => {

@@ -1,8 +1,5 @@
+import { CreateProjectSchema, UpdateProjectSchema } from "@yunpu/shared";
 import { z } from "zod";
-import {
-  CreateProjectSchema,
-  UpdateProjectSchema,
-} from "@yunpu/shared";
 
 export { CreateProjectSchema, UpdateProjectSchema };
 

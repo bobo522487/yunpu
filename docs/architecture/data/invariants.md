@@ -71,6 +71,9 @@
 |---|---|---|---|---|
 | `DM-ORG-05` | 组织归档后禁止新写入 | 需要跨表查 `organization.status`，放触发器会让每次写入都多一次锁与查表；且归档是低频事件 | Use Case 层检查 | #38 |
 | `DM-ORG-07` | 成员增删改的角色授权；`last_used_at` 只由当前用户自己的成员行更新 | 「谁能改成员」与「谁在切换自己的默认组织」是业务规则，不是结构规则 | Service 层角色矩阵（单一来源）+ `user_id = app.current_user_id()` 条件更新 | #41 |
+| `DM-PER-03` | `is_living` 与 `birth_year`/`death_year` 语义一致 | 完整权威在未落地的 `event`；便利字段不做跨列 CHECK | Service 层 + 集成测试 | 004 US3 |
+| `DM-REL-13` | 同 kind 父母类边对 `to` 端 ≤ 2（`PARENT_LIMIT`） | 基数是产品规则，非结构约束；CHECK 无法表达「同终点计数」 | Service 层计数 + `relations` 集成测试 | 004 US3 |
+| `DM-PROJ-01` | `lineage_projection` 与父母边同事务一致；非真相源 | 派生加速表，写入编排属服务层 | 写路径刷新 + 回滚测试 | 004 US4 |
 | `DM-EVT-05` | Relation 类型与 Event 类型匹配（`marriage` 只挂 `spouse`/`partner`） | 跨表语义推断 | Use Case + 测试 | #42 |
 | `DM-NOD-07` | `placement_relation_id` 的语义正确性 | 跨表语义推断 | Use Case + 测试 | #39 |
 | `DM-PURGE-01` | Person 物理清除（GDPR） | V1 不做 | 独立运维流程 + 审计 | — |
@@ -96,7 +99,7 @@
 | 删除 Folder | 只把 `article/lineage/book.folder_id` 置 NULL；`project_id` 不动 | `ON DELETE SET NULL (folder_id)` |
 | 删除 Lineage | 级联删除 `node`；`book_catalog` 引用时拒绝；Person / Relation / Event / Source 不受影响 | `fk_node_lineage` `CASCADE`；`fk_article_lineage`、`fk_book_catalog_lineage` `RESTRICT` |
 | 删除 Node | 删除子树（显式事务）；不删除 Person / Relation / Event / PersonName | `fk_node_parent` 自引用 `NO ACTION`（延迟） |
-| 删除 Person | 先清理 Relation / Node / Event / SourceCitation / Article 引用；`person_name` / `person_media` 随人物级联；有 citation 的姓名会阻止 | `fk_person_name_person`、`fk_person_media_person` `CASCADE`；其余 `RESTRICT` |
+| 删除 Person | 先清理 Relation / Node / Event / SourceCitation / Article 引用；`person_name` / `person_media` / `lineage_projection` 随人物级联；有 citation 的姓名会阻止 | `fk_person_name_person`、`fk_person_media_person`、`fk_lineage_projection_person` `CASCADE`；其余 `RESTRICT` |
 | 删除 PersonName | 被 Citation 引用时拒绝 | `fk_source_citation_pname` `RESTRICT` |
 | 删除 PersonRelation | 被 Event / SourceCitation / Node 编排依据引用时拒绝；不删除两端 Person | `fk_event_relation`、`fk_source_citation_relation`、`fk_node_placement_relation` 均 `RESTRICT` |
 | 删除 Event | 被 Citation 引用时拒绝 | `fk_source_citation_event` `RESTRICT` |

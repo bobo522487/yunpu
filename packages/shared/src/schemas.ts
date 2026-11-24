@@ -1,8 +1,10 @@
 import { z } from "zod";
 import {
+  API_RELATION_KINDS,
   INVITE_STATUSES,
   MEMBER_ROLES,
   ORGANIZATION_STATUSES,
+  PERSON_SEXES,
   PROJECT_COLOR_THEMES,
   PROJECT_STATUSES,
 } from "./enums";
@@ -111,8 +113,65 @@ export const UpdateProjectSchema = z
     expectedUpdatedAt: z.iso.datetime(),
   })
   .refine(
-    (value) =>
-      Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
+    (value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
     { message: "至少提供一个要修改的字段" },
   );
 export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
+
+export const CreatePersonSchema = z.object({
+  displayName: z.string().trim().min(1, "显示名不能为空").max(120),
+  sex: z.enum(PERSON_SEXES).optional(),
+  surname: optionalNonBlank(50),
+  birthYear: z.coerce.number().int().min(-5000).max(9999).optional(),
+  deathYear: z.coerce.number().int().min(-5000).max(9999).optional(),
+  isLiving: z.boolean().optional(),
+});
+export type CreatePersonInput = z.infer<typeof CreatePersonSchema>;
+
+export const UpdatePersonSchema = z
+  .object({
+    displayName: z.string().trim().min(1, "显示名不能为空").max(120).optional(),
+    sex: z.enum(PERSON_SEXES).optional(),
+    surname: optionalNonBlank(50).nullable().optional(),
+    birthYear: z.coerce
+      .number()
+      .int()
+      .min(-5000)
+      .max(9999)
+      .nullable()
+      .optional(),
+    deathYear: z.coerce
+      .number()
+      .int()
+      .min(-5000)
+      .max(9999)
+      .nullable()
+      .optional(),
+    isLiving: z.boolean().optional(),
+    version: z.coerce.number().int().positive(),
+  })
+  .refine((value) => Object.keys(value).some((key) => key !== "version"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type UpdatePersonInput = z.infer<typeof UpdatePersonSchema>;
+
+export const CreateRelationSchema = z
+  .object({
+    fromPersonId: z.uuid(),
+    toPersonId: z.uuid(),
+    kind: z.enum(API_RELATION_KINDS),
+    meta: z.record(z.string(), z.unknown()).optional(),
+  })
+  .refine((value) => value.fromPersonId !== value.toPersonId, {
+    message: "关系两端不能是同一人",
+    path: ["toPersonId"],
+  });
+export type CreateRelationInput = z.infer<typeof CreateRelationSchema>;
+
+export const SubgraphQuerySchema = z.object({
+  rootPersonId: z.uuid(),
+  upDepth: z.coerce.number().int().min(0).max(10).optional(),
+  downDepth: z.coerce.number().int().min(0).max(20).optional(),
+  limit: z.coerce.number().int().min(1).max(1000).optional(),
+});
+export type SubgraphQueryInput = z.infer<typeof SubgraphQuerySchema>;

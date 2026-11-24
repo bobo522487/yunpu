@@ -1,7 +1,7 @@
-import { expect, spyOn, test } from "bun:test";
+import { expect, test, vi } from "vitest";
 import { Hono } from "hono";
 import { requestId } from "hono/request-id";
-import { auth } from "../src/auth";
+import { auth } from "../src/modules/auth";
 import { getObject } from "../src/storage";
 import { onApiError, probeDatabase } from "../src/app";
 import { logEvent, redact } from "../src/lib/logger";
@@ -13,7 +13,7 @@ test("uninitialised storage throws instead of returning undefined", async () => 
 
 test("unhandled errors are logged with request_id and no secrets", async () => {
   const lines: string[] = [];
-  const spy = spyOn(console, "log").mockImplementation((line?: unknown) => {
+  const spy = vi.spyOn(console, "log").mockImplementation((line?: unknown) => {
     lines.push(String(line));
   });
   const probe = new Hono();
@@ -62,7 +62,7 @@ test("redact() covers quoted JSON keys, Bearer tokens and URL userinfo", () => {
 
 test("logEvent() redacts every string field, not only callers that opt in", () => {
   const lines: string[] = [];
-  const spy = spyOn(console, "log").mockImplementation((line?: unknown) => {
+  const spy = vi.spyOn(console, "log").mockImplementation((line?: unknown) => {
     lines.push(String(line));
   });
   try {
@@ -77,10 +77,10 @@ test("logEvent() redacts every string field, not only callers that opt in", () =
 
 test("a failed sign-in never logs the raw auth error", async () => {
   const lines: string[] = [];
-  const consoleSpy = spyOn(console, "log").mockImplementation((line?: unknown) => {
+  const consoleSpy = vi.spyOn(console, "log").mockImplementation((line?: unknown) => {
     lines.push(String(line));
   });
-  const sign = spyOn(auth.api, "signInEmail").mockRejectedValue(
+  const sign = vi.spyOn(auth.api, "signInEmail").mockRejectedValue(
     new Error('db down; password="hunter2" token=abc'),
   );
   try {

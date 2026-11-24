@@ -1,11 +1,8 @@
+import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "../../lib/errors";
-import { withUser } from "../../db/with-user";
+import { conflict, forbidden, projectNotFound } from "./errors";
 import {
-  conflict,
-  forbidden,
-  projectNotFound,
-} from "./errors";
-import {
+  type CreateProjectValues,
   casUpdateProject,
   deleteProject,
   getProject,
@@ -14,7 +11,6 @@ import {
   listProjects,
   membershipRole,
   organizationStatus,
-  type CreateProjectValues,
   type ProjectRecord,
   type UpdateProjectValues,
 } from "./queries";
@@ -53,14 +49,17 @@ export async function listProjectsForOrg(
   options: { cursor?: string; limit?: number },
 ): Promise<{ items: ProjectRecord[]; nextCursor: string | null }> {
   try {
-    return await withUser(userId, async (db) => {
-      const role = await membershipRole(db, organizationId, userId);
-      if (role === null) throw projectNotFound();
-      return listProjects(db, organizationId, {
-        cursor: options.cursor,
-        limit: options.limit ?? 50,
-      });
-    });
+    return await withTenantTransaction(
+      { userId, orgId: organizationId },
+      async (db) => {
+        const role = await membershipRole(db, organizationId, userId);
+        if (role === null) throw projectNotFound();
+        return listProjects(db, organizationId, {
+          cursor: options.cursor,
+          limit: options.limit ?? 50,
+        });
+      },
+    );
   } catch (error) {
     throw asAppError(error);
   }
@@ -72,11 +71,14 @@ export async function createProject(
   values: CreateProjectValues,
 ): Promise<ProjectRecord> {
   try {
-    return await withUser(userId, async (db) => {
-      await requireRole(db, organizationId, userId, "editor");
-      await requireActiveOrganization(db, organizationId);
-      return insertProject(db, organizationId, values);
-    });
+    return await withTenantTransaction(
+      { userId, orgId: organizationId },
+      async (db) => {
+        await requireRole(db, organizationId, userId, "editor");
+        await requireActiveOrganization(db, organizationId);
+        return insertProject(db, organizationId, values);
+      },
+    );
   } catch (error) {
     throw asAppError(error);
   }
@@ -100,7 +102,7 @@ export async function getProjectById(
   projectId: string,
 ): Promise<ProjectRecord> {
   try {
-    return await withUser(userId, async (db) => {
+    return await withTenantTransaction({ userId }, async (db) => {
       const existing = await getProject(db, projectId);
       // RLS 已把非本组织的行过滤掉；成员即可读（C3：project.read 全角色）。
       if (!existing) throw projectNotFound();
@@ -118,8 +120,13 @@ export async function updateProject(
   values: UpdateProjectValues,
 ): Promise<ProjectRecord> {
   try {
-    return await withUser(userId, async (db) => {
-      const existing = await loadProjectForWrite(db, userId, projectId, "editor");
+    return await withTenantTransaction({ userId }, async (db) => {
+      const existing = await loadProjectForWrite(
+        db,
+        userId,
+        projectId,
+        "editor",
+      );
       const updated = await casUpdateProject(
         db,
         projectId,
@@ -142,9 +149,18 @@ export async function removeProject(
   projectId: string,
 ): Promise<void> {
   try {
-    await withUser(userId, async (db) => {
-      const existing = await loadProjectForWrite(db, userId, projectId, "admin");
-      const deleted = await deleteProject(db, projectId, existing.organizationId);
+    await withTenantTransaction({ userId }, async (db) => {
+      const existing = await loadProjectForWrite(
+        db,
+        userId,
+        projectId,
+        "admin",
+      );
+      const deleted = await deleteProject(
+        db,
+        projectId,
+        existing.organizationId,
+      );
       if (!deleted) throw projectNotFound();
     });
   } catch (error) {

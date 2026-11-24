@@ -1,8 +1,8 @@
-import { Hono } from "hono";
 import { ChangePasswordSchema, UpdateAccountSchema } from "@yunpu/shared";
+import { Hono } from "hono";
 import { AppError } from "../../lib/errors";
 import type { ApiEnv } from "../../types";
-import { changePassword, getAccount, updateAccount } from "./service";
+import { changePassword, updateAccount } from "./service";
 
 function requireUser(user: ApiEnv["Variables"]["user"]) {
   if (!user) throw new AppError("UNAUTHORIZED", "需要登录", 401);

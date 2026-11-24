@@ -1,6 +1,6 @@
-import { expect, spyOn, test } from "bun:test";
+import { expect, test, vi } from "vitest";
 import app from "../src/app";
-import { auth } from "../src/auth";
+import { auth } from "../src/modules/auth";
 import { config } from "../src/config";
 import { isAllowedMediaKey } from "../src/media";
 import * as storage from "../src/storage";
@@ -33,7 +33,7 @@ test("oversize content-length is rejected before arrayBuffer", async () => {
 test("media capability-token auth survives the shared middleware chain", async () => {
   // Task 3 之后 getObject 在 storage 未初始化时会抛 storage not initialized；
   // app.request 单测不走 index.ts 的 initStorage，故注入 getObject 只验证路由/鉴权边界。
-  const spy = spyOn(storage, "getObject").mockResolvedValue(undefined);
+  const spy = vi.spyOn(storage, "getObject").mockResolvedValue(undefined);
   try {
     const noToken = await app.request("/api/media/" + validKey);
     expect(noToken.status).toBe(401);
@@ -44,8 +44,8 @@ test("media capability-token auth survives the shared middleware chain", async (
 });
 
 test("a valid capability token still works when the session store is down", async () => {
-  const session = spyOn(auth.api, "getSession").mockRejectedValue(new Error("AUTH_DB_DOWN"));
-  const get = spyOn(storage, "getObject").mockResolvedValue(undefined);
+  const session = vi.spyOn(auth.api, "getSession").mockRejectedValue(new Error("AUTH_DB_DOWN"));
+  const get = vi.spyOn(storage, "getObject").mockResolvedValue(undefined);
   try {
     const r = await app.request("/api/media/" + validKey, { headers: bearer });
     expect(r.status).toBe(404);
@@ -57,10 +57,10 @@ test("a valid capability token still works when the session store is down", asyn
 });
 
 test("a session cookie cannot replace the capability token on media", async () => {
-  const session = spyOn(auth.api, "getSession").mockResolvedValue({
+  const session = vi.spyOn(auth.api, "getSession").mockResolvedValue({
     user: { id: "forged", email: "forged@example.com", name: "forged" },
   } as never);
-  const get = spyOn(storage, "getObject").mockResolvedValue(undefined);
+  const get = vi.spyOn(storage, "getObject").mockResolvedValue(undefined);
   try {
     const r = await app.request("/api/media/" + validKey, {
       headers: { cookie: "better-auth.session_token=forged" },
@@ -73,7 +73,7 @@ test("a session cookie cannot replace the capability token on media", async () =
 });
 
 test("an oversize chunked body is rejected before the whole stream is buffered", async () => {
-  const put = spyOn(storage, "putObject").mockResolvedValue(undefined);
+  const put = vi.spyOn(storage, "putObject").mockResolvedValue(undefined);
   let produced = 0;
   const chunked = new ReadableStream<Uint8Array>({
     pull(controller) {
@@ -101,7 +101,7 @@ test("an oversize chunked body is rejected before the whole stream is buffered",
 });
 
 test("an invalid content-length cannot bypass the body limit", async () => {
-  const put = spyOn(storage, "putObject").mockResolvedValue(undefined);
+  const put = vi.spyOn(storage, "putObject").mockResolvedValue(undefined);
   let produced = 0;
   const chunked = new ReadableStream<Uint8Array>({
     pull(controller) {

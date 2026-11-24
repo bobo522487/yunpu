@@ -1,7 +1,6 @@
 name: verify
 
-# 真实的构建/测试门禁（评审 P0-1）：lint、全量 bun test、文档一致性。
-# docs.yml 只守护文档事实来源；这里才跑源码与真 PG18 集成测试。
+# 真实的构建/测试门禁：lint、全量 Vitest、文档一致性（Node 26 LTS）。
 on:
   push:
     branches: [main]
@@ -18,17 +17,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.4
+          node-version: 26
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm lint
+
+      - name: Biome import-boundary check
+        run: pnpm exec biome check .
+
+      - name: Docker availability
+        run: |
+          docker version
+          docker compose version
 
       - name: Start development environment
         run: scripts/env.sh up development
@@ -51,5 +54,5 @@ jobs:
       - name: Docs consistency gate (--strict, ratchet vs baseline)
         run: scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt
 
-      - name: Report baseline size (do not hide the 477 known violations)
+      - name: Report baseline size (ratchet; do not inflate known violations)
         run: wc -l docs/.check-docs-baseline.txt

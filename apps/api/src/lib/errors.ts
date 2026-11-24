@@ -9,8 +9,17 @@ function asDatabaseError(error: unknown): DatabaseError | undefined {
   let current: unknown = error;
   for (let depth = 0; depth < 5; depth += 1) {
     if (typeof current === "object" && current !== null) {
-      const candidate = current as DatabaseError & { cause?: unknown };
+      const candidate = current as DatabaseError & {
+        cause?: unknown;
+        message?: unknown;
+      };
       if (candidate.code) return candidate;
+      if (
+        typeof candidate.message === "string" &&
+        /\bGX001\b/.test(candidate.message)
+      ) {
+        return { code: "GX001" };
+      }
       current = candidate.cause;
       continue;
     }
@@ -42,6 +51,10 @@ export function mapDatabaseError(error: unknown): AppError {
       return new AppError("VALIDATION", "输入格式不合法", 400);
     case "23514":
       return new AppError("VALIDATION", "输入不符合约束", 400);
+    case "GX001":
+      return new AppError("CYCLE_DETECTED", "会形成祖先环路", 409, {
+        sqlstate: dbError.code,
+      });
     case "GX005":
       return new AppError("NOT_FOUND", "目标不存在或已失效", 404, {
         sqlstate: dbError.code,

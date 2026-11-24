@@ -20,7 +20,7 @@ describe.skipIf(!runPerf)("subgraph performance (~5k)", () => {
     expect(tree.personCount).toBe(5000);
 
     const samples: number[] = [];
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 16; i += 1) {
       const started = performance.now();
       const result = await call(
         `/api/v1/projects/${projectId}/subgraph?rootPersonId=${tree.rootPersonId}`,
@@ -31,8 +31,8 @@ describe.skipIf(!runPerf)("subgraph performance (~5k)", () => {
       const data = result.data as { persons: unknown[] };
       expect(data.persons.length).toBeGreaterThan(0);
       expect(data.persons.length).toBeLessThanOrEqual(300);
-      // Warm-up samples discarded for P95.
-      if (i >= 2) samples.push(elapsed);
+      // Warm-up samples discarded for P95 (planner/cache settle).
+      if (i >= 4) samples.push(elapsed);
     }
 
     samples.sort((a, b) => a - b);

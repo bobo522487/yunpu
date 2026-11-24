@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createLoginRateLimiter } from "../../apps/api/src/middleware/login-rate-limit";
 
 describe("US2 login rate limit", () => {

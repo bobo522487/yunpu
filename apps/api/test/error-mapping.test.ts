@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { ERROR_STATUS } from "@yunpu/shared";
 import { mapDatabaseError } from "../src/lib/errors";
 

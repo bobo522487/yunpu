@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vitest";
 import { withProofFixture } from "./proof-fixture.ts";
 
 // These tests refuse to skip. They run against the real test environment

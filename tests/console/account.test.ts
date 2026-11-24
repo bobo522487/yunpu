@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { request, signIn, signUp, uniqueEmail, type JsonResponse } from "../auth/fixtures";
 
 async function call(

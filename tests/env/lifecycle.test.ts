@@ -1,5 +1,12 @@
-import { expect, test } from "bun:test";
+import { spawnSync as nodeSpawnSync } from "node:child_process";
+import { expect, test } from "vitest";
 import { createHash, createHmac } from "node:crypto";
+
+function spawnSync(argv: string[]): { exitCode: number | null } {
+  const [cmd, ...args] = argv;
+  const result = nodeSpawnSync(cmd, args, { encoding: "utf8" });
+  return { exitCode: result.status };
+}
 
 // Lifecycle checks run against both environments while they are up. They
 // prove three outcomes: development data survives down/up, the test
@@ -116,9 +123,9 @@ async function mediaRead(base: string, token: string, key: string): Promise<Resp
 test("development data survives down then up", async () => {
   const key = await mediaWrite(devBase, devToken, "survives-down-up");
 
-  const down = Bun.spawnSync(["sh", envsh, "down", "development"]);
+  const down = spawnSync(["sh", envsh, "down", "development"]);
   expect(down.exitCode).toBe(0);
-  const up = Bun.spawnSync(["sh", envsh, "up", "development"]);
+  const up = spawnSync(["sh", envsh, "up", "development"]);
   expect(up.exitCode).toBe(0);
 
   const read = await mediaRead(devBase, devToken, key);
@@ -129,7 +136,7 @@ test("development data survives down then up", async () => {
 test("up test wipes the previous round's data", async () => {
   const key = await mediaWrite(testBase, testToken, "must-not-survive");
 
-  const up = Bun.spawnSync(["sh", envsh, "up", "test"]);
+  const up = spawnSync(["sh", envsh, "up", "test"]);
   expect(up.exitCode).toBe(0);
 
   const read = await mediaRead(testBase, testToken, key);
@@ -143,7 +150,7 @@ test("resetting one environment leaves the other's objects in place", async () =
   const devCountBefore = await objectCount(devStorage);
   expect(devCountBefore).toBeGreaterThan(0);
 
-  const reset = Bun.spawnSync(["sh", envsh, "reset", "test"]);
+  const reset = spawnSync(["sh", envsh, "reset", "test"]);
   expect(reset.exitCode).toBe(0);
 
   const devRead = await mediaRead(devBase, devToken, devKey);

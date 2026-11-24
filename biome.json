@@ -1,0 +1,34 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "files": {
+    "includes": ["apps/api/src/**", "packages/**/src/**", "tests/**"]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "bun": "Bun runtime APIs are forbidden; use Node equivalents",
+              "bun:test": "Use vitest instead of bun:test"
+            },
+            "patterns": [
+              {
+                "group": ["**/db/pool", "**/db/pool.ts"],
+                "message": "Business modules must use withTenantTransaction, not bare pools"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  }
+}

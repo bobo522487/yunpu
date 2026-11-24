@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { Client } from "pg";
 import { withAdminDb } from "../auth/fixtures";
 

@@ -1,4 +1,4 @@
-import { expect, test, afterAll } from "bun:test";
+import { expect, test, afterAll } from "vitest";
 import { Client } from "pg";
 import { createDb, PG_OPTIONS } from "../../packages/db/src/client";
 import { withUser, businessPool } from "../../apps/api/src/db/with-user";

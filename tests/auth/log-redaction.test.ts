@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { PASSWORD, signIn, signUp, uniqueEmail } from "./fixtures";
 
 describe("secret redaction", () => {

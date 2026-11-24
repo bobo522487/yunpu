@@ -30,7 +30,7 @@ case $name in
 esac
 
 missing=0
-for tool in docker pnpm bun; do
+for tool in docker pnpm node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     printf '%s\n' "$tool" >&2
     missing=1
@@ -222,7 +222,7 @@ SQL
 
 run_migrations() {
   (cd "$repo_root" && MIGRATE_DATABASE_URL="postgres://postgres:postgres@127.0.0.1:$database_host_port/$database_name" \
-    bun packages/db/src/migrate.ts --env "$name") || return 1
+    node packages/db/src/migrate.ts --env "$name") || return 1
 }
 
 start_app() {
@@ -231,17 +231,15 @@ start_app() {
   fi
   rm -f "$pid_file"
   write_env_file
-  # Dependencies only ever come from pnpm; the app itself runs with bun.
+  # Dependencies only ever come from pnpm; the app itself runs with Node.
   if [ ! -d "$repo_root/node_modules" ]; then
     (cd "$repo_root" && pnpm install --frozen-lockfile) >&2 || return 1
   fi
-  # Run with a clean environment: bun's --env-file does NOT override
-  # variables already present in the process environment, and this script is
-  # often launched from `bun test --env-file .env.test`, whose variables (e.g.
-  # PORT=3010) would otherwise leak in and override this environment's .env.
-  # Only PATH and HOME cross over; the app reads everything from its .env.
+  # Run with a clean environment so host env vars (e.g. PORT from a prior
+  # test process) cannot override this environment's .env file. Only PATH
+  # and HOME cross over; the app reads everything via Node --env-file.
   (cd "$repo_root" && nohup env -i HOME="$HOME" PATH="$PATH" \
-    bun run --env-file "$runtime_dir/.env" apps/api/src/index.ts > "$log_file" 2>&1 & echo $! > "$pid_file")
+    node --env-file="$runtime_dir/.env" apps/api/src/index.ts > "$log_file" 2>&1 & echo $! > "$pid_file")
   return 0
 }
 

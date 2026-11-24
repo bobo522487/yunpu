@@ -28,11 +28,11 @@
 
 **Purpose**: 锁定 Node 26 + Vitest + Biome + `@hono/node-server`，不改业务行为
 
-- [ ] T001 在根 `package.json` 增加 `"engines": { "node": ">=26.13.0", "pnpm": ">=12.0.0" }`，并新增/调整 scripts：`db:migrate` → `node packages/db/src/migrate.ts`，`test` 入口改为 Vitest（暂可先挂空/既有套件路径，完整迁移在 US1）
-- [ ] T002 [P] 在 `apps/api/package.json` 添加 `@hono/node-server`，升级 `hono`/`better-auth` 至 plan 锁定线，配置 `"imports": { "#/*": "./src/*.ts" }`
-- [ ] T003 [P] 更新 `apps/api/tsconfig.json`：`module`/`moduleResolution`=`NodeNext`，`erasableSyntaxOnly`、`verbatimModuleSyntax`、`strict`、`noEmit`（research R1）
-- [ ] T004 [P] 新增根 `vitest.config.ts`（或 `vitest.workspace`）指向 `tests/**` 与 `apps/api/test/**`，环境文件 `.env.test`
-- [ ] T005 [P] 新增/更新根 `biome.json`：基础 lint；`noRestrictedImports` 规则骨架预留（具体阻断路径在 US2/US6 填实）
+- [X] T001 在根 `package.json` 增加 `"engines": { "node": ">=26.13.0", "pnpm": ">=12.0.0" }`，并新增/调整 scripts：`db:migrate` → `node packages/db/src/migrate.ts`，`test` 入口改为 Vitest（暂可先挂空/既有套件路径，完整迁移在 US1）
+- [X] T002 [P] 在 `apps/api/package.json` 添加 `@hono/node-server`，升级 `hono`/`better-auth` 至 plan 锁定线，配置 `"imports": { "#/*": "./src/*.ts" }`
+- [X] T003 [P] 更新 `apps/api/tsconfig.json`：`module`/`moduleResolution`=`NodeNext`，`erasableSyntaxOnly`、`verbatimModuleSyntax`、`strict`、`noEmit`（research R1）
+- [X] T004 [P] 新增根 `vitest.config.ts`（或 `vitest.workspace`）指向 `tests/**` 与 `apps/api/test/**`，环境文件 `.env.test`
+- [X] T005 [P] 新增/更新根 `biome.json`：基础 lint；`noRestrictedImports` 规则骨架预留（具体阻断路径在 US2/US6 填实）
 
 **Checkpoint**: 依赖可安装，Node 可解析 API 入口类型
 
@@ -44,12 +44,12 @@
 
 **⚠️ CRITICAL**: 本阶段完成前不得开始用户故事实现
 
-- [ ] T006 将 `apps/api/src/db/with-user.ts` 演进为 `apps/api/src/db/with-tenant-transaction.ts`：`withTenantTransaction({ userId, orgId }, fn)` 内顺序执行 `BEGIN` → `SET LOCAL ROLE genealogy_app` → `set_config('app.user_id',…,true)` → `set_config('app.current_org_id',…,true)` → 业务 → `COMMIT`；可重试仅 `ECONNRESET`/`40001`/`40P01` 最多 3 次；`23505`/版本冲突不重试（contracts/runtime-hardening.md §2）
-- [ ] T007 更新所有既有 `withUser` 调用点（`apps/api/src/modules/**`）改为新入口或薄包装，保持 002/003 行为不变
-- [ ] T008 [P] 在 `apps/api/src/app.ts` 统一 `onError` 为 `{ ok: false, code, message, details? }`，确保 `X-Request-Id` 不丢（research R8；勿改成嵌套 `error` 对象）
+- [X] T006 将 `apps/api/src/db/with-user.ts` 演进为 `apps/api/src/db/with-tenant-transaction.ts`：`withTenantTransaction({ userId, orgId }, fn)` 内顺序执行 `BEGIN` → `SET LOCAL ROLE genealogy_app` → `set_config('app.user_id',…,true)` → `set_config('app.current_org_id',…,true)` → 业务 → `COMMIT`；可重试仅 `ECONNRESET`/`40001`/`40P01` 最多 3 次；`23505`/版本冲突不重试（contracts/runtime-hardening.md §2）
+- [X] T007 更新所有既有 `withUser` 调用点（`apps/api/src/modules/**`）改为新入口或薄包装，保持 002/003 行为不变
+- [X] T008 [P] 在 `apps/api/src/app.ts` 统一 `onError` 为 `{ ok: false, code, message, details? }`，确保 `X-Request-Id` 不丢（research R8；勿改成嵌套 `error` 对象）
 - [ ] T009 [P] 在 `packages/shared/src/enums.ts`（或等价）导出本批次关系 kind 常量：至少 `biological_parent` / `adoptive_parent` / `spouse`，并与文档 7 种枚举源对齐策略（research R5：DB 可含 7 种，API 只收 3 种）
 - [ ] T010 创建迁移前置 `packages/db/migrations/XXXX_extensions_ltree.sql`：`CREATE EXTENSION IF NOT EXISTS ltree`、`btree_gist`（data-model §9）
-- [ ] T011 [P] 调整 `.github/workflows/verify.yml`：Node 24→26；移除 `oven-sh/setup-bun`；测试步骤改为 `pnpm test` / Vitest（与 US1 脚本一致）
+- [X] T011 [P] 调整 `.github/workflows/verify.yml`：Node 24→26；移除 `oven-sh/setup-bun`；测试步骤改为 `pnpm test` / Vitest（与 US1 脚本一致）
 
 **Checkpoint**: 租户事务与错误信封就绪；用户故事可开始
 
@@ -63,15 +63,15 @@
 
 ### Tests for User Story 1
 
-- [ ] T012 [P] [US1] 先写失败用例 `tests/runtime/ready.test.ts`：进程以 Node 启动后 `/api/ready`（或既有就绪路径）返回可用
-- [ ] T013 [P] [US1] 先写失败用例 `tests/runtime/no-bun-scripts.test.ts`：扫描根/`apps/api`/`packages/db` 的 `package.json` scripts 与 CI，断言无 `bun ` 业务启动/迁移/测试命令（白名单说明除外）
+- [X] T012 [P] [US1] 先写失败用例 `tests/runtime/ready.test.ts`：进程以 Node 启动后 `/api/ready`（或既有就绪路径）返回可用
+- [X] T013 [P] [US1] 先写失败用例 `tests/runtime/no-bun-scripts.test.ts`：扫描根/`apps/api`/`packages/db` 的 `package.json` scripts 与 CI，断言无 `bun ` 业务启动/迁移/测试命令（白名单说明除外）
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] 重写 `apps/api/src/index.ts`：`@hono/node-server` `serve`；SIGTERM/SIGINT 优雅关闭（停收→排空→`closePools`→exit 0）（plan 入口示意）
-- [ ] T015 [US1] 确认 `packages/db/src/migrate.ts` 在 Node 26 下可直接运行（类型擦除/语法）；修正任何 Bun 专用 API
-- [ ] T016 [US1] 将根 `package.json` 的 `test`/`test:auth`/`test:all`/`db:migrate` 全部改为 `node`/`vitest`/`pnpm` 路径，删除业务侧 `bun test`/`bun packages/db...`
-- [ ] T017 [US1] 迁移既有 `bun test` 用例到 Vitest 兼容写法（`tests/auth`、`tests/console`、`apps/api/test` 等），保证回归绿
+- [X] T014 [US1] 重写 `apps/api/src/index.ts`：`@hono/node-server` `serve`；SIGTERM/SIGINT 优雅关闭（停收→排空→`closePools`→exit 0）（plan 入口示意）
+- [X] T015 [US1] 确认 `packages/db/src/migrate.ts` 在 Node 26 下可直接运行（类型擦除/语法）；修正任何 Bun 专用 API
+- [X] T016 [US1] 将根 `package.json` 的 `test`/`test:auth`/`test:all`/`db:migrate` 全部改为 `node`/`vitest`/`pnpm` 路径，删除业务侧 `bun test`/`bun packages/db...`
+- [X] T017 [US1] 迁移既有 `bun test` 用例到 Vitest 兼容写法（`tests/auth`、`tests/console`、`apps/api/test` 等），保证回归绿
 - [ ] T018 [US1] 更新 `specs/004-backend-architecture/quickstart.md` 与开发文档中仍写 Bun 启动的段落（若 `docs/architecture/runtime.md` 锁定 Bun，开 PR 说明本批次收口并回写）
 
 **Checkpoint**: US1 独立可验收

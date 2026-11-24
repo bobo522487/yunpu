@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vitest";
 import app from "../../apps/api/src/app.ts";
 
 process.env.YUNPU_ENV = "development";

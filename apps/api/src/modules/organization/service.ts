@@ -1,5 +1,5 @@
 import { AppError, mapDatabaseError } from "../../lib/errors";
-import { withUser } from "../../db/with-user";
+import { withTenantTransaction, withUser } from "../../db/with-tenant-transaction";
 import { conflict, forbidden, organizationNotFound } from "./errors";
 import {
   acceptInviteWithFunction,

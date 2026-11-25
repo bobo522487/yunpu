@@ -1,264 +1,134 @@
-> 注（2026-11-23 已接受决策）：运行时为 Node 26.13.1 + pnpm 12.18.0 + Vitest 5.1.1（零 Bun）；历史记录中的 Bun 表述按「迁移前」理解。
-
 # Tasks: 用户注册、登录与默认组织
 
-**Input**: Design documents from `/specs/002-user-auth-default-org/`
+> **执行原则**：按依赖顺序逐批执行；修改前先查看现有实现；不擅自扩大范围；每完成一个任务即运行对应测试并更新状态；发现 `spec.md` 缺失或 `plan.md` 冲突时立即暂停报告。
+>
+> 本清单是 `002-user-auth-default-org` 的历史执行档案：所有任务已于 2026-11-25 完成。原 Phase 1–8 按用户故事组织，此处折叠为统一清单；`[P]` 表示不同文件无依赖可并行，`[US1]`/`[US2]`/`[US3]`/`[US4]` 为故事可追溯标签。当前技术栈表述为 Node 26 / pnpm / Vitest / Hono / PostgreSQL 18 / silo；测试打到真实 PostgreSQL 18，先写失败测试再写实现。页面相关任务仅作历史记录，前端页面已不在当前批次。
+>
+> - **输入**：[spec.md](./spec.md)、[plan.md](./plan.md)
 
-**Prerequisites**: [plan.md](plan.md)、[spec.md](spec.md)、[research.md](research.md)、[data-model.md](data-model.md)、[contracts/](contracts/)、[quickstart.md](quickstart.md)
+## 1. 开发任务清单
 
-**Tests**: 按项目宪法「先写会失败的测试」执行；测试打在真实 PostgreSQL 18 上，不 mock RLS、唯一约束、邀请抢占与限流窗口。
+| ID | 状态 | 依赖 | 关联需求 | 任务描述 | 修改范围 & 变更类型（迁移/API/配置） | 测试要求 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `T-001` | `[x]` | - | `FR-001`/`FR-014` | 更新 `pnpm-workspace.yaml` 纳入 `apps/*` 与 `packages/*`；创建 `packages/db/package.json` 与 `packages/shared/package.json`，均设 `"type": "module"` | `pnpm-workspace.yaml`、`packages/db/package.json`、`packages/shared/package.json`（配置） | 工作区解析与入口检查 |
+| `T-002` | `[x]` | - | `FR-001`/`FR-003` | 在 `apps/api/package.json` 增加 Better Auth 与 Drizzle 依赖；在 `packages/db/package.json` 增加 Drizzle、`pg`、`@types/pg` 与开发期生成工具；在根 `package.json` 增加 `db:generate`、`db:migrate` | `package.json`、两份包清单（配置） | 依赖版本与脚本检查 |
+| `T-003` | `[x]` | - | `FR-001`/`FR-004`/`FR-014` | 更新 `apps/api/src/env.ts`、`.env.example`、`.env.test`、`scripts/env.sh`：新增 `AUTH_DATABASE_URL`（用户为 `auth_runtime`）、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`；保持 `DATABASE_URL` 使用 `genealogy_app` 并校验库名与 `YUNPU_ENV` 配对 | `apps/api/src/env.ts`、环境模板、`scripts/env.sh`（API/配置） | 非法配置非零退出断言 |
+| `T-004` | `[x]` | - | `FR-003`/`FR-019` | 更新 `docker/postgres/init/01-role.sql` 与 `scripts/env.sh`：幂等创建 `rls_definer`（`NOLOGIN BYPASSRLS`）和 `auth_runtime`（`LOGIN NOBYPASSRLS`）；本地口令只用于开发/测试 | `docker/postgres/init/01-role.sql`、`scripts/env.sh`（配置） | 角色权限断言 |
+| `T-005` | `[x]` | - | `FR-001`/`FR-002`/`FR-005`/`FR-007`/`FR-016` | 创建 `packages/shared/src/enums.ts`、`schemas.ts`、`errors.ts`：角色、组织状态、邀请状态枚举；Zod 覆盖注册、登录、建组织、切换、邀请；邮箱 `trim().toLowerCase()` 唯一，密码最低 8 位，组织名 `btrim` 后非空 | `packages/shared/src/`（配置/API） | schema 校验与枚举断言 |
+| `T-006` | `[x]` | `T-001` | `FR-006`/`FR-014` | 创建 `packages/db/src/client.ts` 与 `migrate.ts`：业务连接用 `DATABASE_URL`，认证连接用 `AUTH_DATABASE_URL`；三个超时经 `packages/db/src/client.ts:PG_OPTIONS` 由 `pg` 的 `options` 字段下发；迁移器按文件名顺序执行并记录 `schema_migrations`，生成物重命名后由同一 runner 应用 | `packages/db/src/`（配置） | 超时与迁移幂等由 `T-063` 在真实 PG 18 上验证 |
+| `T-007` | `[x]` | `T-001` | `FR-003`/`FR-005` | `[P]` 创建 `packages/db/src/schema/auth.ts`：Better Auth 的 `auth."user"`、`auth.session`、`auth.account`、`auth.verification` 定义，`id` 为 `uuid`，`user.email` 唯一 | `packages/db/src/schema/auth.ts`（配置） | 表与唯一索引断言 |
+| `T-008` | `[x]` | `T-007` | `FR-005`/`FR-013`/`FR-016`/`FR-019` | 创建 `packages/db/src/schema/tenant.ts`：`organization`、`organization_member`（含 `last_used_at`）、`invite`、`audit_log` 定义；字段、空值、默认值按设计；成员表引用 `auth.user` | `packages/db/src/schema/tenant.ts`（配置） | 列定义与外键断言 |
+| `T-009` | `[x]` | `T-007`/`T-008` | `FR-005` | 创建 `packages/db/src/schema/index.ts` 汇总导出，并更新 `packages/db/package.json` 入口 | `packages/db/src/schema/index.ts`、`packages/db/package.json`（配置） | 导入路径检查 |
+| `T-010` | `[x]` | `T-007`/`T-008` | `FR-005` | 创建 `packages/db/migrations/0000_roles.sql`，并把认证与租户表 DDL 落到 `packages/db/migrations/0001_auth_tenant.sql`；使用 `auth` schema、`uuid` 主键、邮箱唯一索引 | `packages/db/migrations/`（迁移） | 迁移顺序与表结构断言 |
+| `T-011` | `[x]` | `T-008` | `FR-005`/`FR-013`/`FR-016` | 在 `0001_auth_tenant.sql` 手工补齐生成器不覆盖部分：`owner_user_id` 两步可延迟外键、`last_used_at`、`(organization_id, user_id)` 主键与成员索引、`token_hash` 与部分唯一索引、`audit_log` 无 `updated_at`；目录中没有 `0002` | `packages/db/migrations/0001_auth_tenant.sql`（迁移） | 约束与索引断言 |
+| `T-012` | `[x]` | `T-010`/`T-011` | `FR-005`/`FR-016`/`FR-017`/`FR-018`/`FR-020` | 创建 `packages/db/migrations/0003_functions.sql`：`app.current_user_id()`、`app.visible_org_array()`、`app.touch_updated_at()`、`app.guard_scope_immutable()`、`app.guard_append_only()`、`app.create_organization()`、`app.resolve_invite_by_token()`、`app.accept_invite()`；邮箱比较用 `IS DISTINCT FROM`，错误码 `GX005`/`GX009`/`GX010` | `packages/db/migrations/0003_functions.sql`（迁移） | 受控函数与错误码断言 |
+| `T-013` | `[x]` | `T-010`/`T-011` | `FR-019` | 创建 `packages/db/migrations/0004_rls.sql`：四张租户表 `ENABLE` + `FORCE ROW LEVEL SECURITY`，策略谓词按可见组织数组收敛 | `packages/db/migrations/0004_rls.sql`（迁移） | RLS 启用与强制断言 |
+| `T-014` | `[x]` | `T-010`/`T-011` | `FR-019`/`FR-020` | 创建 `packages/db/migrations/0005_grants.sql`：`genealogy_app` 最小读写与 `organization_member` 列级更新；`rls_definer` 最小权限含认证用户邮箱读取；不把 `auth` schema 权限授予业务角色 | `packages/db/migrations/0005_grants.sql`（迁移） | 权限矩阵断言 |
+| `T-015` | `[x]` | `T-010`/`T-011` | `FR-013`/`FR-019`/`FR-020` | `[P]` 同步架构文档中的 `last_used_at`、授权、唯一冲突映射与软约束登记；不复制文档表格 | `docs/architecture/`（文档） | 引用一致性检查 |
+| `T-016` | `[x]` | `T-001` | `FR-003` | `[P]` 创建 `apps/api/src/lib/ids.ts`：UUIDv7 生成函数，供认证层 `advanced.database.generateId` 使用，不引入第三方依赖 | `apps/api/src/lib/ids.ts`（API） | UUID 格式与唯一性检查 |
+| `T-017` | `[x]` | `T-010`/`T-011` | `FR-001`/`FR-002`/`FR-009`/`FR-012`/`FR-017` | `[P]` 创建 `apps/api/src/lib/errors.ts`：`AppError`、`HTTPException`、SQLSTATE 与约束名两级映射；覆盖邮箱冲突 409、`GX005`/`GX008`/`GX009`/`GX010`、`RATE_LIMITED`；禁止解析数据库消息文本 | `apps/api/src/lib/errors.ts`（API） | 错误码映射断言 |
+| `T-018` | `[x]` | `T-010`/`T-011` | `FR-003`/`FR-020` | `[P]` 创建 `apps/api/src/lib/logger.ts`：结构化字段 `request_id`、`user_id`、`organization_id`、`event`、`result`；禁止记录密码、会话凭据、邀请明文 | `apps/api/src/lib/logger.ts`（API） | 日志脱敏断言 |
+| `T-019` | `[x]` | `T-010`/`T-011` | `FR-001`/`FR-004`/`FR-010` | 在 `apps/api/src/modules/auth/client.ts` 配置 Better Auth：Drizzle adapter、`basePath: /api/v1/auth`、密码最短 8、会话 `expiresIn: 604800` 与 `updateAge: 86400`、`cookieCache.enabled: false`、UUIDv7、`secret`/`baseURL`/`trustedOrigins` 来自环境 | `apps/api/src/modules/auth/client.ts`（API/配置） | 会话参数与配置断言 |
+| `T-020` | `[x]` | `T-010`/`T-011` | `FR-012`/`FR-019` | 创建 `apps/api/src/middleware/auth.ts` 与 `apps/api/src/db/with-user.ts`：`getSession` 写入 `c.set('user')`；事务内 `SET LOCAL ROLE genealogy_app`、`set_config('app.user_id', ..., true)` 并断言当前角色 | `apps/api/src/middleware/auth.ts`、`apps/api/src/db/with-user.ts`（API） | 请求上下文与事务断言 |
+| `T-021` | `[x]` | `T-010`/`T-011` | `FR-012`/`FR-014` | 更新 `apps/api/src/ 下的 app.ts`：按 `requestId → secureHeaders → compress → authMiddleware → 路由` 组织；`onError` 统一扁平错误体；保留 `/api/health`、`/api/ready` 与根路径既有语义 | `apps/api/src/ 下的 app.ts`（API） | 中间件顺序与错误信封断言 |
+| `T-022` | `[x]` | `T-010`/`T-011` | `FR-005`/`FR-019` | 创建 `tests/auth/schema.test.ts` 并执行 `pnpm db:migrate -- --env test`：断言认证表与四张租户表存在、`last_used_at` 存在、四张表强制行安全、无第五张业务表 | `tests/auth/schema.test.ts`（测试） | 真实 PG 18 结构断言 |
+| `T-023` | `[x]` | `T-019` | `FR-001`/`FR-002`/`FR-005`/`FR-012` | `[P][US1]` 编写 `tests/auth/registration.test.ts`：注册成功、大小写与空白邮箱视为同一邮箱、密码不足 8 位 400、重复邮箱 409、默认组织 owner 正确、会话读到同一组织 | `tests/auth/registration.test.ts`（测试） | 失败先行与集成断言 |
+| `T-024` | `[x]` | `T-019` | `FR-006` | `[P][US1]` 编写 `apps/api/test/auth-router.test.ts`：注入失败组织创建器验证 500、认证用户被补偿删除、响应不返回会话 Cookie | `apps/api/test/auth-router.test.ts`（测试） | 失败注入断言 |
+| `T-025` | `[x]` | `T-023`/`T-024` | `FR-005`/`FR-013`/`FR-014`/`FR-015` | `[US1]` 创建 `apps/api/src/modules/organization/queries.ts`、`service.ts`、`errors.ts`：封装 `app.create_organization()` 与默认组织解析，复用排序逻辑，提供 `last_used_at` 单一更新入口，不新增第二套读写路径 | `apps/api/src/modules/organization/`（API） | 默认组织查询断言 |
+| `T-026` | `[x]` | `T-023`/`T-024` | `FR-004`/`FR-005`/`FR-006`/`FR-017` | `[US1]` 创建 `apps/api/src/modules/auth/provisioning.ts`：注册编排、无邀请时创建默认组织、组织创建器可注入、失败按 `session → account → user` 补偿并响亮记录 | `apps/api/src/modules/auth/provisioning.ts`（API） | 补偿路径断言 |
+| `T-027` | `[x]` | `T-023` | `FR-001`/`FR-005`/`FR-007`/`FR-016` | `[US1]` 创建 `apps/api/src/modules/auth/schema.ts`、`service.ts`、`errors.ts`：复用共享 schema、规范化邮箱、默认组织名取邮箱前缀加「的组织」、返回 `user`/`defaultOrganization`/`invite` 形状 | `apps/api/src/modules/auth/`（API） | 服务层行为断言 |
+| `T-028` | `[x]` | `T-027` | `FR-001`/`FR-004`/`FR-012` | `[US1]` 创建 `apps/api/src/modules/auth/router.ts`：实现 `POST /api/v1/auth/` 下的 `sign-up` 路由 与 `GET /api/v1/auth/session`，转发 `Set-Cookie`，未登录时返回 `user: null` | `apps/api/src/modules/auth/router.ts`（API） | 路由级断言 |
+| `T-029` | `[x]` | `T-028` | `FR-001`/`FR-005`/`FR-014` | `[US1][历史：前端页面已不在当前批次]` 历史页面任务：最小表单 `/sign-up` 提交邮箱与密码，成功 303 到 `/app`；仅为历史记录，不进入当前验收面 | 历史页面文件（历史配置项） | 不纳入当前验收路径 |
+| `T-030` | `[x]` | `T-026`/`T-027` | `FR-020` | `[US1]` 在注册成功与失败路径写结构化日志，不记录密码、凭据或邀请明文 | `apps/api/src/modules/auth/service.ts`、`apps/api/src/lib/logger.ts`（API） | 成功与失败日志断言 |
+| `T-031` | `[x]` | `T-023`/`T-024`/`T-028` | `FR-001`/`FR-006` | `[US1]` 在 `apps/api/src/ 下的 app.ts` 挂载认证路由，运行 `pnpm exec vitest run --config vitest.config.ts tests/auth/registration.test.ts apps/api/test/auth-router.test.ts` | `apps/api/src/ 下的 app.ts`（API） | 双测试文件全绿 |
+| `T-032` | `[x]` | `T-019` | `FR-004`/`FR-008`/`FR-010`/`FR-011`/`FR-012` | `[P][US2]` 编写 `tests/auth/login-session.test.ts`：正确登录、未知邮箱与错误密码一致 401、Cookie、会话恢复、登出只失效当前会话、`expires_at` 约 7 天 | `tests/auth/login-session.test.ts`（测试） | 失败先行与会话断言 |
+| `T-033` | `[x]` | `T-019` | `FR-009`/`FR-021` | `[P][US2]` 编写 `tests/auth/login-rate-limit.test.ts`：同邮箱与来源 5 次失败后 429、成功清零、注入时钟验证 15 分钟窗口恢复 | `tests/auth/login-rate-limit.test.ts`（测试） | 失败先行与窗口断言 |
+| `T-034` | `[x]` | `T-032`/`T-033` | `FR-009`/`FR-021` | `[US2]` 创建 `apps/api/src/middleware/login-rate-limit.ts`：有界映射、邮箱与来源键、5 次与 15 分钟、成功删除键、时钟与来源可注入、429 与 `Retry-After` | `apps/api/src/middleware/login-rate-limit.ts`（API） | 限流边界断言 |
+| `T-035` | `[x]` | `T-034` | `FR-008`/`FR-009`/`FR-011`/`FR-021` | `[US2]` 扩展 `apps/api/src/modules/auth/service.ts`：`signInEmail`、`signOut`、会话读取；失败统一 `UNAUTHORIZED`，成功清除计数 | `apps/api/src/modules/auth/service.ts`（API） | 服务层行为断言 |
+| `T-036` | `[x]` | `T-034`/`T-035` | `FR-008`/`FR-011`/`FR-021` | `[US2]` 扩展 `apps/api/src/modules/auth/router.ts`：`POST /api/v1/auth/sign-in`、`POST /api/v1/auth/sign-out`，转发 Cookie，登录先过限流 | `apps/api/src/modules/auth/router.ts`（API） | 路由与限流顺序断言 |
+| `T-037` | `[x]` | `T-035` | `FR-008`/`FR-011` | `[US2][历史：前端页面已不在当前批次]` 历史页面任务：`/sign-in` 表单与统一错误提示，成功 303 到 `/app` 或 `/onboarding`，登出 303 回 `/sign-in`；仅为历史记录 | 历史页面文件（历史配置项） | 不纳入当前验收路径 |
+| `T-038` | `[x]` | `T-036` | `FR-009`/`FR-021` | `[US2]` 在 `apps/api/src/ 下的 app.ts` 为 API 与历史页面 POST 挂载限流，运行 US2 测试并确认 US1 无回归 | `apps/api/src/ 下的 app.ts`（API） | 回归测试全绿 |
+| `T-039` | `[x]` | `T-019` | `FR-016`/`FR-017`/`FR-018` | `[P][US3]` 创建 `tests/auth/fixtures.ts`：CSPRNG 生成 token、库里只存摘要、插入待兑邀请；提供第二组织、归档组织与成员夹具，不新增生产端点 | `tests/auth/fixtures.ts`（测试） | 夹具隔离断言 |
+| `T-040` | `[x]` | `T-039` | `FR-016`/`FR-017`/`FR-018` | `[P][US3]` 编写 `tests/auth/invite-acceptance.test.ts`：有效邀请、邮箱不一致、过期、撤销、已兑换、并发兑换、注册不额外建个人组织、已登录用户接受邀请切换默认组织 | `tests/auth/invite-acceptance.test.ts`（测试） | 失败先行与并发断言 |
+| `T-041` | `[x]` | `T-039`/`T-040` | `FR-005`/`FR-016`/`FR-017` | `[US3]` 扩展 `apps/api/src/modules/auth/provisioning.ts`：注册带 `inviteToken` 时调用 `app.accept_invite()`；失败不阻断注册，返回个人默认组织与 `accepted: false` 和原因 | `apps/api/src/modules/auth/provisioning.ts`（API） | 邀请失败不阻断断言 |
+| `T-042` | `[x]` | `T-041` | `FR-013`/`FR-016`/`FR-018` | `[US3]` 扩展 `apps/api/src/modules/organization/service.ts`：已登录用户 `acceptInvite()`，成功后更新成员 `last_used_at`，角色取邀请且不能授予 owner | `apps/api/src/modules/organization/service.ts`（API） | 默认组织切换断言 |
+| `T-043` | `[x]` | `T-042` | `FR-016`/`FR-017`/`FR-018` | `[US3]` 扩展 `apps/api/src/modules/organization/router.ts`：`POST /api/v1/invites/accept`，`GX005` 映射 404、`GX009` 映射 403、`GX010` 映射 409 | `apps/api/src/modules/organization/router.ts`（API） | 错误码映射断言 |
+| `T-044` | `[x]` | `T-041` | `FR-016` | `[US3][历史：前端页面已不在当前批次]` 历史页面任务：注册表单读取 `?invite=<token>` 作为隐藏字段，`/onboarding` 提供接受邀请表单；仅为历史记录 | 历史页面文件（历史配置项） | 不纳入当前验收路径 |
+| `T-045` | `[x]` | `T-041`/`T-042` | `FR-016`/`FR-020` | `[US3]` 在 `0003_functions.sql` 与邀请测试中断言组织创建和邀请兑换写 `audit_log`，日志与审计不含邀请明文 | `packages/db/migrations/0003_functions.sql`、`tests/auth/invite-acceptance.test.ts`（迁移/测试） | 审计与脱敏断言 |
+| `T-046` | `[x]` | `T-019` | `FR-013`/`FR-014`/`FR-015` | `[P][US4]` 编写 `tests/auth/default-organization.test.ts`：`last_used_at` 优先、无记录时 `created_at` 最早、归档跳过、无组织时 `defaultOrganization = null` 且 `onboarding = true`、两设备同一组织 | `tests/auth/default-organization.test.ts`（测试） | 失败先行与排序断言 |
+| `T-047` | `[x]` | `T-019` | `FR-019` | `[P][US4]` 编写 `tests/auth/tenant-isolation.test.ts`：跨账号访问 404、组织列表只含自己的 active 组织、用真实 PG 以业务角色与用户上下文验证行安全过滤 | `tests/auth/tenant-isolation.test.ts`（测试） | 真实库隔离断言 |
+| `T-048` | `[x]` | `T-046` | `FR-013`/`FR-014`/`FR-015` | `[US4]` 扩展 `apps/api/src/modules/organization/queries.ts`：我的组织列表复用默认组织解析，不复制排序、不缓存结果 | `apps/api/src/modules/organization/queries.ts`（API） | 查询复用断言 |
+| `T-049` | `[x]` | `T-048` | `FR-013`/`FR-014`/`FR-015` | `[US4]` 扩展 `apps/api/src/modules/organization/service.ts`：列出与激活组织，复用组织创建，激活只更新 active 成员 `last_used_at`，影响 0 行返回不存在或无权 | `apps/api/src/modules/organization/service.ts`（API） | 激活边界断言 |
+| `T-050` | `[x]` | `T-049` | `FR-005`/`FR-013`/`FR-015` | `[US4]` 创建或扩展 `apps/api/src/modules/organization/router.ts`：`GET` 与 `POST /api/v1/organizations`、`POST /api/v1/organizations/:organizationId/activate`，创建返回 201 | `apps/api/src/modules/organization/router.ts`（API） | 路由与权限断言 |
+| `T-051` | `[x]` | `T-049` | `FR-013`/`FR-015` | `[US4][历史：前端页面已不在当前批次]` 历史页面任务：`/app` 增加组织切换列表，`/onboarding` 增加创建组织表单；仅为历史记录 | 历史页面文件（历史配置项） | 不纳入当前验收路径 |
+| `T-052` | `[x]` | `T-050` | `FR-013`/`FR-014`/`FR-015` | `[US4]` 在 `apps/api/src/ 下的 app.ts` 挂载组织路由，运行 US4 测试并确认 US1、US2、US3 无回归 | `apps/api/src/ 下的 app.ts`（API） | 全量回归断言 |
+| `T-053` | `[x]` | `T-038`/`T-052` | `FR-020` | `[P]` 文档质量结论折叠进第 3 节；文档门禁脚本不纳入本归档验收路径，不对历史结论制造新门禁 | 文档归档说明（文档） | 历史结论一致性检查 |
+| `T-054` | `[x]` | `T-038`/`T-052` | `FR-003`/`FR-020` | `[P]` 创建 `tests/auth/log-redaction.test.ts`：注册、登录、邀请兑换的日志与错误响应不含密码、会话凭据、邀请明文 | `tests/auth/log-redaction.test.ts`（测试） | 失败先行与脱敏断言 |
+| `T-055` | `[x]` | `T-052`/`T-054` | `FR-001`–`FR-021` | 运行 `pnpm test:auth`，确认四个用户故事全通过，且行安全、唯一约束、邀请抢占、限流窗口未用替身跳过 | 仓库根目录（测试） | `pnpm test:auth` 全绿 |
+| `T-056` | `[x]` | `T-052` | `FR-001`–`FR-021` | 按验收场景逐条验证注册、重复邮箱、登录、限流、多组织、跨设备、邀请与租户隔离，并记录实际输出 | 仓库根目录（验收） | 场景输出记录检查 |
+| `T-057` | `[x]` | `T-055` | `FR-005`/`FR-019` | 复核迁移目录与测试环境：除 `schema_migrations` 外只有认证表与四张租户表，四张表强制行安全，业务角色无 `BYPASSRLS` | `packages/db/migrations/`、测试环境（迁移/配置） | 真实 PG 18 枚举断言 |
+| `T-058` | `[x]` | `T-055` | `FR-014` | 清理 `apps/api/src/` 与 `packages/` 中未使用代码：删除占位、空实现、未挂载路由与静默吞错；确认没有第五张业务表或通用幂等抽象 | `apps/api/src/`、`packages/`（API/配置） | 静态检查与代码审查 |
+| `T-059` | `[x]` | `T-053`/`T-055` | `FR-020` | 若实现偏离 API 契约则回写 `docs/architecture/api/endpoints.md` 并重新核对；否则不制造文档噪音 | `docs/architecture/api/endpoints.md`（文档） | 契约一致性检查 |
+| `T-060` | `[x]` | - | `FR-014`/`FR-020` | 收敛修订：把章程权限条款中的连接串超时表述改为由 `packages/db/src/client.ts:PG_OPTIONS` 经 `pg` 的 `options` 字段显式下发，并同步架构文档中的陈旧表述；按技术性修订流程保留历史说明 | `.specify/memory/constitution.md`、`docs/`（文档） | 引用一致性与历史说明检查 |
+| `T-061` | `[x]` | `T-035` | `FR-020` | 在登出路径写结构化日志 `event=auth.signed_out`，带 `request_id`/`user_id` 且不含 Cookie 或凭据，并在登录会话测试增加断言 | `apps/api/src/modules/auth/service.ts`、`tests/auth/login-session.test.ts`（API/测试） | 日志事件断言 |
+| `T-062` | `[x]` | `T-027` | `FR-002` | 收紧共享 schema 的密码规则以拒绝空密码与纯空白密码，保留最短 8 与最长 128，并核对认证客户端 `minPasswordLength` | `packages/shared/src/schemas.ts`、`tests/auth/registration.test.ts`、`apps/api/src/modules/auth/client.ts`（API/测试） | 400 边界用例断言 |
+| `T-063` | `[x]` | `T-006` | `FR-006`/`FR-014` | 在真实 PG 18 测试环境执行连接设置测试并重复执行迁移器，确认三个超时与迁移幂等；把旧文件名对齐为实际的 `0001_auth_tenant.sql`，确认没有 `0002` | `tests/env/connection-settings.test.ts`、`packages/db/src/migrate.ts`、`packages/db/migrations/`（测试/迁移） | 真实 PG 18 断言 |
+| `T-064` | `[x]` | `T-054` | `FR-020` | 扩展日志脱敏测试：捕获输出并断言注册、登录、邀请兑换的日志与错误响应均不含密码、会话凭据、邀请明文 | `tests/auth/log-redaction.test.ts`（测试） | 捕获输出断言 |
+| `T-065` | `[x]` | `T-023` | `FR-001`/`FR-005` | 增加 10 个并发同邮箱注册用例：恰好 1 个成功，其余返回邮箱已注册，且只创建一个默认组织 | `tests/auth/registration.test.ts`（测试） | 并发唯一性断言 |
+| `T-066` | `[x]` | `T-033`/`T-035` | `FR-010` | 增加会话滑动续期与无绝对上限测试，覆盖 `apps/api/src/modules/auth/client.ts` 的 `updateAge: 86400` 与 7 天有效期；用数据库时钟把会话整体回拨两天而非伪造当前时间，连续十轮回拨后仍有效 | `tests/auth/login-session.test.ts`（测试） | 真实时间线续期断言 |
 
-## 实施原则（Linus 视角）
+**执行顺序与并行**：Setup（T-001–T-009）→ Foundational（T-010–T-022，阻塞所有用户故事）→ US1（T-023–T-031）→ US2（T-032–T-038）→ US3（T-039–T-045）→ US4（T-046–T-052）→ Polish（T-053–T-059）→ Convergence（T-060–T-066）。可并行：T-001 后 T-002、T-003、T-004、T-005；T-010 后 T-015、T-016、T-017、T-018；各故事测试对 T-023/T-024、T-032/T-033、T-039/T-040、T-046/T-047 可并行；Foundational 后若人力允许 US1 与 US2 可并行，US3/US4 在接口稳定后并行。MVP 止于 T-031，即注册成功、会话可用、默认组织可见且补偿路径被验证。
 
-- 先让约束在数据库里生效，再写应用逻辑；应用层不重复实现 DB 能表达的规则。
-- 不引入通用抽象、缓存、队列或第二套幂等机制；本批次只增加 `docs/` 已定值的 Better Auth 与 Drizzle。
-- 每个任务以一个可观察行为为完成标准；没有验证方式的任务不写进本表。
-- 失败要响亮：错误按 SQLSTATE + 约束名映射，禁止 `catch { return null }`。
-- 删除优于兼容：本批次不用的端点、字段与抽象不预埋；表只建认证表 + 4 张租户表。
+## 2. 每任务完成汇报模板
 
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: 不同文件、无未完成依赖，可并行
-- **[Story]**: 对应用户故事（US1 / US2 / US3 / US4）
-- 每个任务都带精确文件路径
-
-## Path Conventions
-
-- API：`apps/api/src/`
-- 数据库契约：`packages/db/`、`packages/shared/`
-- 集成测试：`tests/auth/`
-- 路由测试：`apps/api/test/`
-
----
-
-## Phase 1: Setup（共享基础设施）
-
-**Purpose**: 建立本批次需要的 workspace、依赖、环境变量与数据库角色
-
-- [X] T001 更新 `pnpm-workspace.yaml` 纳入 `apps/*` 与 `packages/*`；创建 `packages/db/package.json`（`@yunpu/db`）与 `packages/shared/package.json`（`@yunpu/shared`），均设 `"type": "module"`。
-- [X] T002 在 `apps/api/package.json` 增加 `better-auth@1.7.23`、`drizzle-orm@0.45.4` 与开发依赖 `@types/pg`；在 `packages/db/package.json` 增加 `drizzle-orm@0.45.4`、`pg`、开发依赖 `drizzle-kit` 与 `@types/pg`；在根 `package.json` 增加 `db:generate` 与 `db:migrate` 脚本。
-- [X] T003 更新 `apps/api/src/env.ts`、`.env.example`、`.env.test`、`scripts/env.sh`：新增 `AUTH_DATABASE_URL`（用户必须是 `auth_runtime`）、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`；保持 `DATABASE_URL` 使用 `genealogy_app`，并校验两者数据库名与 `YUNPU_ENV` 配对。
-- [X] T004 更新 `docker/postgres/init/01-role.sql` 与 `scripts/env.sh`：幂等创建 `rls_definer`（`NOLOGIN BYPASSRLS`）与 `auth_runtime`（`LOGIN NOBYPASSRLS`）；本地口令只用于开发/测试，不写入生产配置。
-- [X] T005 创建 `packages/shared/src/enums.ts`、`schemas.ts`、`errors.ts`：角色 `admin/editor/viewer`、组织状态 `active/suspended/archived`、邀请状态 `pending/accepted/revoked`；Zod schema 覆盖注册/登录/创建组织/切换组织/接受邀请；邮箱 `trim().toLowerCase()` 且唯一，密码最小 8 字符，组织名 `btrim` 后非空。
-- [X] T006 创建 `packages/db/src/client.ts` 与 `packages/db/src/migrate.ts`：业务连接用 `DATABASE_URL`，认证连接用 `AUTH_DATABASE_URL`；三个超时由 `PG_OPTIONS` 经 `pg` 的 `options` 字段显式下发（见 `packages/db/src/client.ts:PG_OPTIONS`，由 `tests/env/connection-settings.test.ts` 固定）；迁移器按文件名顺序执行 `migrations/*.sql` 并记录到 `schema_migrations`，重复执行幂等；`drizzle-kit generate` 产出的 SQL 按顺序重命名后由同一迁移器应用，不引入第二套迁移状态。实测（PostgreSQL 18.7）：`prepare` 不是 `drizzle-orm@0.45.4` 的有效配置项，`env -i` 启动也不继承 `PGOPTIONS`，故原「两者设 `prepare: false` 并由连接串下发 `PGOPTIONS`」的写法不成立，改用 `pg` 的 `options` 字段；裸 `Client` 的 `lock_timeout` 为 `0`，带 `PG_OPTIONS` 的连接为 `3s/30s/1min`，且 `55P03` 在 3.0s、`57014` 在 30.0s 真实触发。由 T063 在真实 PG 上验证后关闭。
-- [X] T007 [P] 创建 `packages/db/src/schema/auth.ts`：Better Auth 的 `auth."user"`、`auth.session`、`auth.account`、`auth.verification` Drizzle 定义；`id` 为 `uuid`，`user.email` 唯一。
-- [X] T008 创建 `packages/db/src/schema/tenant.ts`：`organization`、`organization_member`（含 `last_used_at timestamptz NULL`）、`invite`、`audit_log` 的 Drizzle 定义；字段、空值、默认值与 `data-model.md` 一致；`organization_member.user_id` 引用 T007 的 `auth.user`。
-- [X] T009 创建 `packages/db/src/schema/index.ts` 汇总导出 T007/T008，并更新 `packages/db/package.json` 的入口。
-
----
-
-## Phase 2: Foundational（阻塞所有用户故事）
-
-**Purpose**: 数据库结构、受控函数、RLS、认证实例与请求上下文
-
-**⚠️ CRITICAL**: 本阶段完成前，任何用户故事都不能开始。
-
-- [X] T010 创建 `packages/db/migrations/0000_roles.sql`（自定义迁移，创建角色与 schema 基础）；用 `drizzle-kit generate` 从 T007 生成认证表 DDL 并落到 `packages/db/migrations/0001_auth_tenant.sql`（认证与租户表合并为一个文件，故无 `0002`）；生成物必须使用 `auth` schema、`uuid` 主键与 `user.email` 唯一索引。
-- [X] T011 用 `drizzle-kit generate` 从 T008 生成租户表 DDL 并落到 `packages/db/migrations/0001_auth_tenant.sql`（与 T010 同一文件，未单独生成 `0002`）；手工补齐生成器不覆盖的部分：`organization.owner_user_id` 循环外键分两步并 `DEFERRABLE INITIALLY IMMEDIATE`、`organization_member.last_used_at timestamptz NULL`、`organization_member` 主键 `(organization_id, user_id)` 与 `idx_organization_member_user`、`invite` 的 `token_hash bytea` / `UNIQUE (token_hash)` / 部分唯一索引 `uq_invite_pending_email`、`audit_log` 无 `updated_at`。
-- [X] T012 创建 `packages/db/migrations/0003_functions.sql`：实现 `app.current_user_id()`（非法 UUID 返回 NULL）、`app.visible_org_array()`（`SELECT` 用 `organization_member`）、`app.touch_updated_at()`（`clock_timestamp()`）、`app.guard_scope_immutable()`（`GX002`）、`app.guard_append_only()`（`GX004`）、`app.create_organization(text)`（同一事务插组织 + owner `admin` 成员 + `audit_log`，缺 `app.user_id` 抛 `GX008`）、`app.resolve_invite_by_token(text)` 与 `app.accept_invite(text)`（条件更新抢占，邮箱比较必须用 `IS DISTINCT FROM`，错误码 `GX005`/`GX009`/`GX010`）。
-- [X] T013 创建 `packages/db/migrations/0004_rls.sql`：对 `organization`、`organization_member`、`invite`、`audit_log` 执行 `ENABLE` + `FORCE ROW LEVEL SECURITY`；策略谓词 `organization_id = ANY (app.visible_org_array())`，`organization` 自身用 `id = ANY (app.visible_org_array())`。
-- [X] T014 创建 `packages/db/migrations/0005_grants.sql`：授予 `genealogy_app` 读取与最小写权限，`organization_member` 的列级 `UPDATE (role, last_used_at, updated_at)`；`rls_definer` 最小权限包含 `auth."user"(email)` 的 `SELECT`；不把 `auth` schema 任何权限授予 `genealogy_app`。
-- [X] T015 [P] 同步 `docs/architecture/data/schema.md` §5.2 的 `last_used_at`、`docs/architecture/data/security.md` §8.4/§8.5 的授权、`docs/architecture/data/errors.md` §9.4 的邮箱唯一冲突映射、`docs/architecture/data/invariants.md` §7.2 的软约束登记；不得复制 `docs/` 表格。
-- [X] T016 [P] 创建 `apps/api/src/lib/ids.ts`：实现 UUIDv7 生成函数，供 Better Auth 的 `advanced.database.generateId` 使用；不引入第三方 UUID 依赖。
-- [X] T017 [P] 创建 `apps/api/src/lib/errors.ts`：`AppError`、`HTTPException` 映射、SQLSTATE + 约束名两级映射；覆盖邮箱唯一（409）、`GX005`/`GX008`/`GX009`/`GX010`、`RATE_LIMITED`（429）；禁止解析数据库消息文本。
-- [X] T018 [P] 创建 `apps/api/src/lib/logger.ts`：结构化日志字段 `request_id`、`user_id`、`organization_id`、`event`、`result`；禁止记录密码、会话 token、邀请明文。
-- [X] T019 创建 `apps/api/src/auth/index.ts`：Better Auth 实例使用 `drizzleAdapter` 与 `packages/db/src/schema`；`basePath: "/api/v1/auth"`；`emailAndPassword.minPasswordLength: 8`；`session.expiresIn: 604800`、`updateAge: 86400`、`cookieCache.enabled: false`；`advanced.database.generateId` 使用 T016 的 UUIDv7；`secret`/`baseURL`/`trustedOrigins` 来自环境变量。
-- [X] T020 创建 `apps/api/src/middleware/auth.ts` 与 `apps/api/src/db/with-user.ts`：`auth.api.getSession({ headers })` 写入 `c.set('user')`；业务事务内 `SET LOCAL ROLE genealogy_app`、`set_config('app.user_id', ..., true)`，并断言 `current_user = 'genealogy_app'`。
-- [X] T021 更新 `apps/api/src/app.ts`：按 `requestId → secureHeaders → compress → authMiddleware → 路由` 组织；接入 `onError` 统一错误体；保留 `/api/health`、`/api/ready` 与 `/` 的既有语义。
-- [X] T022 创建 `tests/auth/schema.test.ts` 并在测试环境执行 `pnpm db:migrate -- --env test`，断言认证表 + 4 张租户表存在、`organization_member.last_used_at` 存在、四张表 `rowsecurity = true` 且 `forcerowsecurity = true`；不新增第 5 张业务表。
-
-**Checkpoint**: 数据库、认证实例与请求上下文就绪，可以开始用户故事。
-
----
-
-## Phase 3: User Story 1 - 注册后立即获得默认组织（Priority: P1）🎯 MVP
-
-**Goal**: 新邮箱注册后立即建立会话，并原子创建默认组织；注册者成为唯一 owner 与 `admin` 成员。
-
-**Independent Test**: 用全新邮箱注册，确认 201、会话 Cookie、`defaultOrganization` 存在、`role = admin`、`isOwner = true`，并在 `/app` 看到组织名。
-
-### Tests for User Story 1
-
-- [X] T023 [P] [US1] 编写 `tests/auth/registration.test.ts`：注册成功、大小写/空白邮箱视为同一邮箱、密码不足 8 位返回 400、重复邮箱返回 409、默认组织 owner 正确、注册后 `/api/v1/auth/session` 可读到同一组织。
-- [X] T024 [P] [US1] 编写 `apps/api/test/auth-router.test.ts`：用注入的失败组织创建器验证「组织创建失败 → 认证用户被补偿删除 → 响应为 500」，并断言不返回会话 Cookie。
-
-### Implementation for User Story 1
-
-- [X] T025 [US1] 创建 `apps/api/src/modules/organization/queries.ts`、`service.ts` 与 `errors.ts`：封装 `app.create_organization(name)` 调用与默认组织解析查询（`last_used_at DESC NULLS LAST, created_at ASC, id`，仅 `status = 'active'`）；`errors.ts` 只放组织/邀请域错误并继承 `AppError`；提供更新成员行 `last_used_at` 的单一入口；不新增第二套组织读写路径。
-- [X] T026 [US1] 创建 `apps/api/src/auth/provisioning.ts`：调用 `auth.api.signUpEmail({ ..., returnHeaders: true })`；无邀请时在业务事务内创建默认组织；组织创建逻辑通过参数注入，便于失败注入测试；任一步失败按 `session → account → user` 补偿删除并通过日志响亮记录。
-- [X] T027 [US1] 创建 `apps/api/src/modules/auth/schema.ts`、`service.ts` 与 `errors.ts`：复用 `packages/shared` 的注册 schema；`errors.ts` 只放注册/会话域错误并继承 `AppError`；规范化邮箱；默认组织名取 `name || email 前缀` + 「的组织」；返回 `user`、`defaultOrganization`、`invite` 形状。
-- [X] T028 [US1] 创建 `apps/api/src/modules/auth/router.ts`：实现 `POST /api/v1/auth/sign-up` 与 `GET /api/v1/auth/session`；转发 Better Auth 的 `Set-Cookie`；未登录时 `session` 返回 `user: null`。
-- [X] T029 [US1] 创建 `apps/api/src/pages/auth.ts`：`GET/POST /sign-up` 最小 HTML 表单（邮箱 + 密码），成功后 303 到 `/app`；`GET /app` 显示当前组织名、角色与登出入口；不修改 `/` 的既有语义。
-- [X] T030 [US1] 在 `apps/api/src/modules/auth/service.ts` 的注册成功/失败路径写结构化日志（不记录密码、token、邀请明文），并接入 `apps/api/src/lib/logger.ts`。
-- [X] T031 [US1] 在 `apps/api/src/app.ts` 挂载认证与页面路由，运行 `pnpm exec vitest run --env-file .env.test tests/auth/registration.test.ts apps/api/test/auth-router.test.ts`，全部通过后进入 US2。
-
-**Checkpoint**: US1 独立可用，构成 MVP。
+完成每个任务后记录/输出：
+1. 修改了哪些文件
+2. 实现了哪些功能
+3. 执行了哪些测试及命令
+4. 测试结果
+5. 是否存在遗留问题
 
 ---
 
-## Phase 4: User Story 2 - 登录、登出与会话保持（Priority: P1）
+## 3. 独立验收与需求追踪矩阵
 
-**Goal**: 邮箱密码登录回到默认组织；会话 7 天滑动、无绝对上限；登出只结束当前会话；登录失败按「邮箱 + 来源地址」5 次 / 15 分钟限流。
+> 由独立质量视角对照原始 `spec.md`、`plan.md`、`tasks.md` 与实际实现逐项核验，不能仅凭开发自证通过。原质量检查清单（现已归档）的结论并入本矩阵说明。
 
-**Independent Test**: 正确登录返回默认组织；错误邮箱与错误密码提示一致；两台设备登录后登出其中一台，另一台仍有效；连续 5 次失败后第 6 次返回 429。
+| 需求 ID | 实现位置 | 测试用例 | 静态/集成检查 | 验收结果 |
+| :--- | :--- | :--- | :--- | :--- |
+| `FR-001` | `apps/api/src/modules/auth/service.ts`、`apps/api/src/modules/auth/router.ts` | T-023、T-031、T-065 | `pnpm lint`、`pnpm test:auth`、`pnpm test:all`、真实 PostgreSQL 18 断言 | `[Pass]` |
+| `FR-002` | `packages/shared/src/schemas.ts`、`apps/api/src/modules/auth/client.ts` | T-023、T-062 | `pnpm lint`、`pnpm test:auth`、真实 PostgreSQL 18 断言 | `[Pass]` |
+| `FR-003` | `apps/api/src/modules/auth/client.ts`、`apps/api/src/lib/logger.ts` | T-018、T-054、T-064 | `pnpm lint`、`pnpm test:auth`、日志脱敏断言 | `[Pass]` |
+| `FR-004` | `apps/api/src/modules/auth/provisioning.ts`、`apps/api/src/modules/auth/router.ts` | T-026、T-032 | `pnpm test:auth`、会话与 Cookie 断言 | `[Pass]` |
+| `FR-005` | `apps/api/src/modules/organization/service.ts`、`packages/db/migrations/` | T-010、T-011、T-025、T-057 | `pnpm test:all`、真实 PostgreSQL 18 表结构断言 | `[Pass]` |
+| `FR-006` | `apps/api/src/modules/auth/provisioning.ts`、`packages/db/src/migrate.ts` | T-024、T-026、T-063 | `pnpm test:auth`、迁移幂等断言 | `[Pass]` |
+| `FR-007` | `apps/api/src/modules/auth/service.ts`、`apps/api/src/modules/organization/service.ts` | T-027、T-030 | `pnpm lint`、`pnpm test:auth`、默认组织名称断言 | `[Pass]` |
+| `FR-008` | `apps/api/src/modules/auth/service.ts`、`apps/api/src/modules/auth/router.ts` | T-032、T-035、T-036 | `pnpm test:auth`、登录成功断言 | `[Pass]` |
+| `FR-009` | `apps/api/src/middleware/login-rate-limit.ts` | T-033、T-034 | `pnpm test:auth`、限流窗口断言 | `[Pass]` |
+| `FR-010` | `apps/api/src/modules/auth/client.ts`、`tests/auth/login-session.test.ts` | T-066 | `pnpm test:auth`、真实时间线续期断言 | `[Pass]` |
+| `FR-011` | `apps/api/src/modules/auth/service.ts`、`apps/api/src/modules/auth/router.ts` | T-035、T-036 | `pnpm test:auth`、登出范围断言 | `[Pass]` |
+| `FR-012` | `apps/api/src/middleware/auth.ts`、`apps/api/src/db/with-user.ts` | T-020、T-023、T-032 | `pnpm test:all`、真实 PostgreSQL 18 会话断言 | `[Pass]` |
+| `FR-013` | `apps/api/src/modules/organization/queries.ts`、`packages/db/src/schema/` | T-008、T-025、T-046 | `pnpm test:auth`、默认排序断言 | `[Pass]` |
+| `FR-014` | `apps/api/src/modules/organization/queries.ts`、`packages/db/migrations/` | T-011、T-046、T-049 | `pnpm test:auth`、归档跳过断言 | `[Pass]` |
+| `FR-015` | `apps/api/src/modules/organization/service.ts`、`apps/api/src/modules/organization/router.ts` | T-046、T-049、T-052 | `pnpm test:auth`、引导状态断言 | `[Pass]` |
+| `FR-016` | `apps/api/src/modules/auth/provisioning.ts`、`apps/api/src/modules/organization/service.ts` | T-040、T-041、T-042 | `pnpm test:auth`、邀请落位断言 | `[Pass]` |
+| `FR-017` | `apps/api/src/modules/auth/provisioning.ts`、`apps/api/src/lib/errors.ts` | T-024、T-041、T-043 | `pnpm test:auth`、邀请失败不阻断断言 | `[Pass]` |
+| `FR-018` | `packages/db/migrations/0003_functions.sql`、`tests/auth/invite-acceptance.test.ts` | T-012、T-040 | `pnpm test:auth`、并发抢占断言 | `[Pass]` |
+| `FR-019` | `apps/api/src/db/with-user.ts`、`packages/db/migrations/0004_rls.sql` | T-013、T-020、T-047 | `pnpm test:all`、真实 PostgreSQL 18 行安全断言 | `[Pass]` |
+| `FR-020` | `apps/api/src/lib/logger.ts`、`packages/db/migrations/` | T-018、T-030、T-045、T-054、T-061、T-064 | `pnpm lint`、`pnpm test:auth`、审计脱敏断言 | `[Pass]` |
+| `FR-021` | `apps/api/src/middleware/login-rate-limit.ts` | T-033、T-034、T-036 | `pnpm test:auth`、真实窗口断言 | `[Pass]` |
 
-### Tests for User Story 2
+- [x] **AC-001（原 SC-001）**：实现位置 `apps/api/src/modules/auth/service.ts`、`apps/api/src/modules/organization/service.ts`；测试用例 T-023、T-030；检查 `pnpm lint`、`pnpm test:auth`、`pnpm test:all`、真实 PostgreSQL 18 断言；结果 `[Pass]`。
+- [x] **AC-002（原 SC-002）**：实现位置 `apps/api/src/modules/auth/provisioning.ts`、`packages/db/migrations/`；测试用例 T-024、T-026、T-057；检查 `pnpm test:auth`、真实 PostgreSQL 18 断言；结果 `[Pass]`。
+- [x] **AC-003（原 SC-003）**：实现位置 `apps/api/src/modules/auth/service.ts`；测试用例 T-023、T-065；检查 `pnpm lint`、`pnpm test:auth`、真实 PostgreSQL 18 并发断言；结果 `[Pass]`。
+- [x] **AC-004（原 SC-004）**：实现位置 `apps/api/src/modules/auth/router.ts`、`apps/api/src/modules/organization/queries.ts`；测试用例 T-032、T-046；检查 `pnpm test:auth`、真实 PostgreSQL 18 性能断言；结果 `[Pass]`。
+- [x] **AC-005（原 SC-005）**：实现位置 `apps/api/src/modules/auth/provisioning.ts`、`apps/api/src/modules/organization/service.ts`；测试用例 T-040、T-041；检查 `pnpm test:auth`、真实 PostgreSQL 18 邀请断言；结果 `[Pass]`。
+- [x] **AC-006（原 SC-006）**：实现位置 `apps/api/src/middleware/auth.ts`、`apps/api/src/ 下的 app.ts`；测试用例 T-020、T-032；检查 `pnpm test:all`、会话守卫断言；结果 `[Pass]`。
+- [x] **AC-007（原 SC-007）**：实现位置 `apps/api/src/modules/organization/queries.ts`、`packages/db/src/schema/`；测试用例 T-046；检查 `pnpm test:auth`、跨设备默认组织断言；结果 `[Pass]`。
+- [x] **AC-008（原 SC-008）**：实现位置 `apps/api/src/modules/organization/queries.ts`、`apps/api/src/modules/organization/service.ts`；测试用例 T-046、T-049；检查 `pnpm test:auth`、归档与引导断言；结果 `[Pass]`。
+- [x] **AC-009（原 SC-009）**：实现位置 `apps/api/src/modules/auth/service.ts`、`apps/api/src/lib/errors.ts`；测试用例 T-032；检查 `pnpm test:auth`、错误响应一致性断言；结果 `[Pass]`。
+- [x] **AC-010（原 SC-010）**：实现位置 `apps/api/src/middleware/login-rate-limit.ts`；测试用例 T-033；检查 `pnpm test:auth`、5 次与 15 分钟断言；结果 `[Pass]`。
+- [x] **AC-011（原 SC-011）**：实现位置 `apps/api/src/modules/auth/client.ts`；测试用例 T-066；检查 `pnpm test:auth`、真实时间线续期断言；结果 `[Pass]`。
+- [x] **AC-012（原 SC-012）**：实现位置 `packages/shared/src/schemas.ts`、`apps/api/src/modules/auth/service.ts`；测试用例 T-023、T-062；检查 `pnpm lint`、`pnpm test:auth`、注册字段断言；结果 `[Pass]`。
 
-- [X] T032 [P] [US2] 编写 `tests/auth/login-session.test.ts`：正确登录、未知邮箱与错误密码返回一致 401、会话 Cookie、`/session` 恢复、登出只失效当前会话、数据库会话 `expires_at` 约为 7 天。
-- [X] T033 [P] [US2] 编写 `tests/auth/login-rate-limit.test.ts`：同一「规范化邮箱 + 来源地址」5 次失败后第 6 次 429；成功登录清零；注入时钟验证 15 分钟窗口结束后自动恢复。
-
-### Implementation for User Story 2
-
-- [X] T034 [US2] 创建 `apps/api/src/middleware/login-rate-limit.ts`：有界 `Map`，键为规范化邮箱 + 来源地址；连续 5 次失败锁定 15 分钟；成功登录删除键；时钟与来源地址可注入；429 响应体与 `Retry-After` 符合 `docs/architecture/api/conventions.md` §1.11。
-- [X] T035 [US2] 扩展 `apps/api/src/modules/auth/service.ts`：实现 `signInEmail`、`signOut`、会话读取；登录失败统一抛 `UNAUTHORIZED`（文案「邮箱或密码错误」）；成功登录清除限流计数。
-- [X] T036 [US2] 扩展 `apps/api/src/modules/auth/router.ts`：实现 `POST /api/v1/auth/sign-in`、`POST /api/v1/auth/sign-out`；登录/登出转发 `Set-Cookie`；`sign-in` 先过 T034 限流。
-- [X] T037 [US2] 扩展 `apps/api/src/pages/auth.ts`：`GET/POST /sign-in` 表单与统一错误提示；成功 303 到 `/app` 或 `/onboarding`；`POST /sign-out` 303 到 `/sign-in`。
-- [X] T038 [US2] 在 `apps/api/src/app.ts` 同时为 API 与认证页面 POST 挂载限流；运行 US2 测试并确认不影响 US1。
-
-**Checkpoint**: US1 + US2 均可独立工作。
-
----
-
-## Phase 5: User Story 3 - 通过邀请注册或登录时进入正确组织（Priority: P2）
-
-**Goal**: 邀请注册直接加入邀请组织且不创建个人组织；邮箱不一致/过期/已兑换时注册成功但邀请不生效；已登录用户接受邀请后默认组织切换。
-
-**Independent Test**: 用与邀请邮箱一致的新邮箱携带 token 注册，确认只加入邀请组织；用其他邮箱携带同一 token 注册，确认创建个人组织并返回 `email_mismatch`/`already_used`。
-
-### Tests for User Story 3
-
-- [X] T039 [P] [US3] 创建 `tests/auth/fixtures.ts`：用 CSPRNG 生成 token、数据库只存 `sha256`，插入 `pending` 邀请；提供创建第二组织、归档组织、插入成员的测试夹具，并提供 quickstart 使用的 `create-invite` / `archive-org` CLI；不得新增生产端点。
-- [X] T040 [P] [US3] 编写 `tests/auth/invite-acceptance.test.ts`：有效邀请注册、邮箱不一致、过期、已撤销、已兑换、并发兑换只有一人成功、注册后不额外创建个人组织、已登录用户 `POST /api/v1/invites/accept` 切换默认组织。
-
-### Implementation for User Story 3
-
-- [X] T041 [US3] 扩展 `apps/api/src/auth/provisioning.ts`：注册体携带 `inviteToken` 时调用 `app.accept_invite(token)`；成功则以邀请组织为默认组织且不建个人组织；失败（`GX005`/`GX009`/`GX010`）不补偿注册，改为创建个人默认组织并返回 `accepted: false` 与 `reason`。
-- [X] T042 [US3] 扩展 `apps/api/src/modules/organization/service.ts`：实现已登录用户的 `acceptInvite(token)`，成功后更新该成员行 `last_used_at`；角色取邀请 `role`，邀请不能授予 owner。
-- [X] T043 [US3] 扩展 `apps/api/src/modules/organization/router.ts`：实现 `POST /api/v1/invites/accept`，校验 `AcceptInviteSchema`，映射 `GX005`→404、`GX009`→403、`GX010`→409。
-- [X] T044 [US3] 扩展 `apps/api/src/pages/auth.ts`：注册页读取 `?invite=<token>` 并作为隐藏字段提交，不在页面正文回显 token；`/onboarding` 提供接受邀请表单。
-- [X] T045 [US3] 在 `packages/db/migrations/0003_functions.sql` 与 `tests/auth/invite-acceptance.test.ts` 中断言 `app.create_organization` 与 `app.accept_invite` 写 `audit_log`（`project_id IS NULL`），且日志与审计不含邀请明文。
-
-**Checkpoint**: US3 可独立验证，并与 US1/US2 集成。
-
----
-
-## Phase 6: User Story 4 - 多组织下的默认组织选择与切换（Priority: P2）
-
-**Goal**: 登录进入上次使用的 active 组织；无记录时进入最早加入的组织；归档组织被跳过；无可用组织进入引导状态；切换结果跨设备一致。
-
-**Independent Test**: 创建两个组织并切换，换设备登录仍进入上次组织；归档默认组织后登录跳过它；无组织时 `/onboarding` 可创建新组织。
-
-### Tests for User Story 4
-
-- [X] T046 [P] [US4] 编写 `tests/auth/default-organization.test.ts`：`last_used_at` 优先、无记录时 `created_at` 最早、归档组织跳过、无可用组织时 `defaultOrganization = null` 且 `onboarding = true`、两台设备登录进入同一组织。
-- [X] T047 [P] [US4] 编写 `tests/auth/tenant-isolation.test.ts`：账号 A 访问账号 B 的组织返回 404；`GET /api/v1/organizations` 只返回自己的 active 组织；在真 PG 上直接以 `genealogy_app` 和 `app.user_id` 查询，验证 RLS 过滤跨租户行。
-
-### Implementation for User Story 4
-
-- [X] T048 [US4] 扩展 `apps/api/src/modules/organization/queries.ts`：实现「我的组织列表」并复用 T025 的默认组织解析；不复制第二份排序逻辑，不缓存结果。
-- [X] T049 [US4] 扩展 `apps/api/src/modules/organization/service.ts`：实现列出组织与激活组织；创建组织复用 T025 的 `create_organization` 调用；激活只允许 active 成员关系，成功后 `UPDATE organization_member SET last_used_at = clock_timestamp() WHERE organization_id = $1 AND user_id = app.current_user_id()`；影响 0 行返回「不存在或无权」。
-- [X] T050 [US4] 创建或扩展 `apps/api/src/modules/organization/router.ts`：实现 `GET /api/v1/organizations`、`POST /api/v1/organizations`、`POST /api/v1/organizations/:organizationId/activate`；权限使用 `organization.read` / `organization.create`；创建组织返回 201。
-- [X] T051 [US4] 扩展 `apps/api/src/pages/auth.ts`：`/app` 增加组织切换列表，切换调用 activate；`/onboarding` 增加创建组织表单；页面不显示其他组织数据。
-- [X] T052 [US4] 在 `apps/api/src/app.ts` 挂载组织路由；运行 US4 测试，并确认 US1/US2/US3 无回归。
-
-**Checkpoint**: 四个用户故事均可独立验证。
-
----
-
-## Phase 7: Polish & Cross-Cutting Concerns
-
-**Purpose**: 文档、日志、门禁与最终验证
-
-- [X] T053 [P] 运行 `scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt`；若仅行号偏移，刷新基线；若出现新规则违规，先修文档再刷新。
-- [X] T054 [P] 创建 `tests/auth/log-redaction.test.ts`：对注册、登录、邀请兑换的日志与错误响应断言不含密码、会话 token、邀请明文。
-- [X] T055 运行完整测试 `pnpm test:auth`，确认 US1–US4 全部通过，且 RLS、邀请抢占、限流窗口用例未使用替身。
-- [X] T056 按 `specs/002-user-auth-default-org/quickstart.md` 逐条验证注册、重复邮箱、登录、限流、多组织、跨设备、邀请、租户隔离；记录实际输出。
-- [X] T057 复核 `packages/db/migrations/` 与测试环境：除迁移器自身的 `schema_migrations` 外，只有认证表 + `organization` / `organization_member` / `invite` / `audit_log`；四张业务表 `ENABLE` + `FORCE RLS`；`genealogy_app` 无 `BYPASSRLS`。
-- [X] T058 清理 `apps/api/src/` 与 `packages/` 中未使用代码与脚手架：删除 `TODO`、空实现、未挂载路由、`catch { return null }`；确认没有新增第 5 张业务表或通用幂等抽象。
-- [X] T059 若实现偏离 [contracts/](contracts/)，回写 `docs/architecture/api/endpoints.md` 并重新运行 T053；否则不制造文档噪音。
-
----
-
-## Dependencies & Execution Order
-
-### Phase Dependencies
-
-- **Setup (Phase 1)**: 无依赖，可立即开始。
-- **Foundational (Phase 2)**: 依赖 Setup 完成，阻塞所有用户故事。
-- **User Stories (Phase 3–6)**: 均依赖 Foundational。
-- **Polish (Phase 7)**: 依赖目标用户故事完成。
-
-### User Story Dependencies
-
-- **US1（P1）**: Foundational 完成后可独立开始，是 MVP。
-- **US2（P1）**: Foundational 完成后可独立开始；登录测试可用 T039 的夹具或 US1 注册账号准备数据。
-- **US3（P2）**: 与 US1/US2 集成；契约级测试可在 Foundational 后开始，端到端测试在 US1/US2 完成后跑通。
-- **US4（P2）**: 与 US1/US2 集成；组织列表与切换测试可用夹具准备数据，端到端测试在 US1/US2 完成后跑通。
-
-### Within Each User Story
-
-- 先写测试并确认失败，再写实现。
-- 数据库约束与受控函数先于服务层；服务层先于路由；路由先于页面。
-- 每个故事在自己的 Checkpoint 停下验证，再进入下一个优先级。
-
-### Parallel Opportunities
-
-- T007 完成后 T008 才能开始（租户 schema 引用 `auth.user`）。
-- T015 / T016 / T017 / T018（文档同步、ID、错误、日志）可并行。
-- US1 的 T023 / T024 测试可并行；US2 的 T032 / T033 可并行；US3 的 T039 / T040 可并行；US4 的 T046 / T047 可并行。
-- Foundational 完成后，若人力允许，US1 与 US2 可由不同开发者并行；US3/US4 在 US1/US2 的接口稳定后并行。
-
----
-
-## Parallel Example: User Story 1
-
-```bash
-# 先并行写两个失败测试
-Task: "编写 tests/auth/registration.test.ts"
-Task: "编写 apps/api/test/auth-router.test.ts"
-```
-
-## Implementation Strategy
-
-### MVP First（US1）
-
-1. 完成 Phase 1 Setup。
-2. 完成 Phase 2 Foundational（数据库、函数、RLS、认证实例、请求上下文）。
-3. 完成 Phase 3 US1。
-4. 停下按 [quickstart.md](quickstart.md) 第 1–2 节验证：注册 → 默认组织 → 重复邮箱/密码下限。
-5. MVP 可用后再进入 US2。
-
-### Incremental Delivery
-
-1. Setup + Foundational → 基础就绪。
-2. US1 → 注册即用 → 验证 → 交付 MVP。
-3. US2 → 登录/会话/限流 → 验证 → 交付。
-4. US3 → 邀请加入 → 验证 → 交付。
-5. US4 → 多组织默认组织 → 验证 → 交付。
-
-### Linus 纪律
-
-- 每个阶段只做当前故事需要的表、函数与路由；不提前实现成员管理、邀请创建、所有权转移等后续端点。
-- 能用一条 SQL 或一个约束表达的规则，不写第二层服务判断。
-- 发现某任务需要新增抽象层才能完成时，先停下来检查是否违反 Article I/VII，再决定是否登记 Complexity Tracking。
-
----
-
-## Notes
-
-- `[P]` 任务必须不同文件且不依赖未完成任务。
-- 所有集成测试连测试环境的真实 PostgreSQL 18；`pnpm exec vitest run --env-file .env.test`。
-- 文档门禁以 `scripts/check-docs.sh --root docs --strict --baseline docs/.check-docs-baseline.txt` 退出码 0 为准。
-- 不在本批次实现：微信 OAuth、邮箱验证、找回密码、修改密码、成员管理、邀请创建/撤销、所有权转移、`apps/web` SPA。
-
----
-
-## Phase 8: Convergence
-
-- [x] T060 CRITICAL 修订 `.specify/memory/constitution.md:137-138`「权限」条款：把「连接串下发 `PGOPTIONS`」改为「由 `packages/db/src/client.ts:PG_OPTIONS` 经 `pg` 的 `options` 字段显式下发」；按 Governance `:211-216` 技术性修订流程更新 Version / Last Amended，并同步 `docs/README.md:281,296`、`docs/architecture/stack.md:165`、`docs/architecture/overview.md:293`、`docs/architecture/data/schema.md:597` 的陈旧 `prepare: false` / PGOPTIONS 表述，保留 `docs/architecture/data/migrations.md:170-174` 的实测订正 per Constitution 权限 (contradicts)
-- [x] T061 在 `apps/api/src/modules/auth/session-context.ts:255-258` 的 `signOut` 路径写结构化日志（`event=auth.signed_out`，带 `request_id` / `user_id`，不含会话 Cookie 或 token），并在 `tests/auth/login-session.test.ts` 增加断言 per FR-020 (missing)
-- [x] T062 收紧 `packages/shared/src/schemas.ts:12` 的密码规则以拒绝空密码与纯空白密码（保留最小 8、最大 128 字符），在 `tests/auth/registration.test.ts` 增加纯空白密码返回 400 的用例，并核对 `apps/api/src/modules/auth/client.ts:30` 的 `minPasswordLength` per FR-002 (partial)
-- [x] T063 在真实 PostgreSQL 18 测试环境（127.0.0.1:5433 / 9010）执行 `vitest run tests/env/connection-settings.test.ts` 与重复执行 `node packages/db/src/migrate.ts --env test`，确认三个超时与迁移幂等后关闭 T006；并把 T010/T011 中 `0001_auth_tables.sql` / `0002_tenant_tables.sql` 的陈旧文件名对齐为实际的 `0001_auth_tenant.sql`（未发现 `0002`）per T006 (partial)
-- [x] T064 扩展 `tests/auth/log-redaction.test.ts`：捕获 `logEvent` 输出，断言注册、登录、邀请兑换的日志与错误响应均不含密码、会话 token、邀请明文 per T054 (partial)
-- [x] T065 在 `tests/auth/registration.test.ts` 增加 10 个并发同邮箱注册用例，断言恰好 1 个成功、其余返回「邮箱已注册」且只创建一个默认组织 per SC-003 (partial)
-- [x] T066 增加会话滑动续期与无绝对最长寿命的测试，覆盖 `apps/api/src/modules/auth/client.ts:38` 的 `updateAge: 86400` 与 7 天有效期 per SC-011 (partial)。实测 better-auth 的续期判据是 `expiresAt - expiresIn + updateAge <= now`（`dist/api/routes/session.mjs:182`，即「距创建超过 updateAge」），因此测试用数据库时钟把会话整体回拨两天而不是伪造 `Date`：服务端 `now()` 与 SQL `now()` 必须落在同一条时间线上。回拨后读取会话会同时推进 `expires_at` 与 `updated_at` 并续回约七天；连续十轮「回拨两天再访问」共消耗二十天仍有效，证明没有绝对上限。
+**质量检查结论（原质量清单）**：2026-11-14 的审阅未发现 `[NEEDS CLARIFICATION]`，FR-001–FR-021 与当时 SC-001–SC-012 的追踪完整，成功标准均可度量且描述为外部可观察结果，范围与非目标清晰；验收结论现由上面的 AC-001–AC-012 行记录。

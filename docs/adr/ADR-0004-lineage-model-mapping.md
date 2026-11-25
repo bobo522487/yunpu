@@ -10,7 +10,7 @@ An earlier 2026-11-23 architecture proposal assumed a 22-table legacy schema (`n
 
 ## Decision
 
-**This mapping was NOT adopted.** Starting from `packages/db/migrations/0012_genealogy_core.sql` (`004-backend-architecture` and `005-slim-architecture`), the repository directly implemented the concrete genealogy core schema in `packages/db/src/schema/genealogy.ts`:
+**This mapping was NOT adopted.** 在早期架构精简批次中，仓库从 `packages/db/migrations/0012_genealogy_core.sql` 开始直接实现具体的家谱核心模型 `packages/db/src/schema/genealogy.ts`：
 
 - `person`: core person entity (`sex`, `surname`, `birth_year`, `death_year`, `is_living`, `version`).
 - `person_name`: multi-kind names (`formal`, `courtesy`, `art`, `milk`, `genealogy`, `posthumous`, `other`) with partial unique index for `is_primary`.

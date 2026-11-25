@@ -29,4 +29,4 @@ status: accepted
 
 ## Status
 
-Accepted。阶段 0/1 的删除与收敛已落地；阶段 1.5 的类型检查门禁已生效——`tsc --noEmit` 从 14 个错误修至 0，并纳入 `pnpm lint`（`biome check . && tsc --noEmit -p apps/api/tsconfig.json`），`verify.yml` 仅执行一次。静态检查（Biome/tsc）、契约导出与 DB 无关测试全部通过。全量集成验证以仓库自带嵌入式 PostgreSQL 18.7 起库、14 个迁移全部 applied 完成 core 套件 A/B 对照：重构后失败集为 pristine HEAD 基线的真子集（`8 failed/168 passed` vs `10 failed/174 passed`），零新增失败；8 项均为基线既存、与本次改动无关的陈旧 `json.error` 断言。`tests/env` 因当前沙箱无 silo/S3 与 3010/3001 应用服务仍无法全跑（环境限制，非代码回归）。详见 [006-architecture-slimming/tasks.md](../../specs/006-architecture-slimming/tasks.md)。
+Accepted。阶段 0/1 的删除与收敛已落地；阶段 1.5 的类型检查门禁已生效——`tsc --noEmit` 从 14 个错误修至 0，并纳入 `pnpm lint`（`biome check . && tsc --noEmit -p apps/api/tsconfig.json`），`verify.yml` 仅执行一次。静态检查（Biome/tsc）、契约导出与 DB 无关测试全部通过。全量集成验证以仓库自带嵌入式 PostgreSQL 18.7 起库、14 个迁移全部 applied 完成 core 套件 A/B 对照：重构后失败集为 pristine HEAD 基线的真子集（`8 failed/168 passed` vs `10 failed/174 passed`），零新增失败；8 项均为基线既存、与本次改动无关的陈旧 `json.error` 断言。`tests/env` 因当前沙箱无 silo/S3 与 3010/3001 应用服务仍无法全跑（环境限制，非代码回归）。详见本 ADR 与对应提交历史（原 `006-architecture-slimming` 规格三件套已随收口删除）。

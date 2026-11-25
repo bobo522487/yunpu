@@ -19,11 +19,14 @@ test("GET /api/health returns process and database up and omits storage", async 
   expect(body.checks).not.toHaveProperty("storage");
 });
 
-test("development GET / contains the starter workspace", async () => {
+test("API service does not serve legacy HTML at /", async () => {
   const response = await app.request("/");
-  expect(response.status).toBe(200);
+  expect(response.status).toBe(404);
 
-  const body = await response.text();
-  expect(body).toContain("示例工作区");
-  expect(body).toContain("yunpu-starter-workspace");
+  const body = await response.json();
+  expect(body).toEqual({
+    ok: false,
+    code: "NOT_FOUND",
+    message: "接口不存在",
+  });
 });

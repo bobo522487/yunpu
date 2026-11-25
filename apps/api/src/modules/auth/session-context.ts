@@ -1,9 +1,8 @@
 import type { SignInInput, SignUpInput } from "@yunpu/shared";
-import { mapDatabaseError } from "../../lib/errors.ts";
-import { AppError } from "../../lib/errors.ts";
+import { AppError, mapDatabaseError } from "../../lib/errors.ts";
 import { logEvent } from "../../lib/logger.ts";
 import type { SessionUser } from "../../types.ts";
-import { mapSignInError, mapSignUpError } from "./auth-errors.ts";
+import { mapSignInError, mapSignUpError } from "./errors.ts";
 
 export type DefaultOrganization = {
   id: string;
@@ -69,7 +68,9 @@ export type ProvisionOutcome = {
 export type SessionContextDependencies = {
   auth: SessionAuthClient;
   provisionUser(input: ProvisionInput): Promise<ProvisionOutcome>;
-  resolveDefaultOrganization(userId: string): Promise<DefaultOrganization | null>;
+  resolveDefaultOrganization(
+    userId: string,
+  ): Promise<DefaultOrganization | null>;
   deleteAuthUser(userId: string): Promise<void>;
   revokeAuthSession(sessionId: string): Promise<void>;
 };
@@ -80,10 +81,16 @@ export type SessionContextMeta = { requestId?: string };
 export type SignOutMeta = SessionContextMeta & { userId?: string };
 
 export type SessionContext = {
-  register(input: SignUpInput, meta?: SessionContextMeta): Promise<SessionResult>;
+  register(
+    input: SignUpInput,
+    meta?: SessionContextMeta,
+  ): Promise<SessionResult>;
   signIn(input: SignInInput, meta?: SessionContextMeta): Promise<SessionResult>;
   signOut(headers: Headers, meta?: SignOutMeta): Promise<Headers>;
-  resolve(headers: Headers, user?: SessionUser | null): Promise<SessionView | null>;
+  resolve(
+    headers: Headers,
+    user?: SessionUser | null,
+  ): Promise<SessionView | null>;
 };
 
 function toSessionUser(user: AuthUser): SessionUser {
@@ -95,13 +102,17 @@ function toSessionUser(user: AuthUser): SessionUser {
 }
 
 function asAppError(error: unknown, fallback: string): AppError {
-  return error instanceof AppError ? error : mapDatabaseError(error) ?? new AppError("INTERNAL", fallback, 500);
+  return error instanceof AppError
+    ? error
+    : (mapDatabaseError(error) ?? new AppError("INTERNAL", fallback, 500));
 }
 
 export function createSessionContext(
   deps: SessionContextDependencies,
 ): SessionContext {
-  async function resolveOrganization(userId: string): Promise<DefaultOrganization | null> {
+  async function resolveOrganization(
+    userId: string,
+  ): Promise<DefaultOrganization | null> {
     try {
       return await deps.resolveDefaultOrganization(userId);
     } catch (error) {
@@ -123,7 +134,8 @@ export function createSessionContext(
         request_id: meta?.requestId,
         user_id: userId,
         result: "failed",
-        reason: cleanupError instanceof Error ? cleanupError.message : "unknown",
+        reason:
+          cleanupError instanceof Error ? cleanupError.message : "unknown",
       });
     }
   }
@@ -231,7 +243,9 @@ export function createSessionContext(
     } catch (error) {
       let sessionId: string | undefined;
       try {
-        const established = await deps.auth.api.getSession({ headers: result.headers });
+        const established = await deps.auth.api.getSession({
+          headers: result.headers,
+        });
         sessionId = established?.session?.id;
       } catch {
         // The original resolution failure is the useful error; do not mask it.
@@ -255,9 +269,15 @@ export function createSessionContext(
     }
   }
 
-  async function signOut(headers: Headers, meta?: SignOutMeta): Promise<Headers> {
+  async function signOut(
+    headers: Headers,
+    meta?: SignOutMeta,
+  ): Promise<Headers> {
     try {
-      const result = await deps.auth.api.signOut({ headers, returnHeaders: true });
+      const result = await deps.auth.api.signOut({
+        headers,
+        returnHeaders: true,
+      });
       logEvent({
         event: "auth.signed_out",
         request_id: meta?.requestId,

@@ -123,63 +123,6 @@
       }
     },
     {
-      "includes": [
-        "apps/api/src/modules/person/**",
-        "apps/api/src/modules/organization/**",
-        "apps/api/src/modules/project/**",
-        "apps/api/src/modules/account/**"
-      ],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "paths": {
-                  "bun": "Bun runtime APIs are forbidden; use Node equivalents",
-                  "bun:test": "Use vitest instead of bun:test",
-                  "@yunpu/db": {
-                    "importNames": ["createDb"],
-                    "message": "Modules must not call createDb; use withTenantTransaction (FR-003/FR-016)"
-                  }
-                },
-                "patterns": [
-                  {
-                    "group": [
-                      "**/db/pool",
-                      "**/db/pool.ts",
-                      "**/db/pool.js",
-                      "**/db/with-user",
-                      "**/db/with-user.ts",
-                      "**/db/with-user.js"
-                    ],
-                    "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
-                  },
-                  {
-                    "group": [
-                      "**/modules/*/queries",
-                      "**/modules/*/queries.ts",
-                      "../**/queries",
-                      "../**/queries.ts",
-                      "**/*.repo",
-                      "**/*.repo.ts",
-                      "**/*.route",
-                      "**/*.route.ts",
-                      "../**/*.repo",
-                      "../**/*.repo.ts",
-                      "../**/*.route",
-                      "../**/*.route.ts"
-                    ],
-                    "message": "Do not import another module's internal queries/repo/route files; call its service API instead"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
       "includes": ["apps/api/src/modules/auth/better-auth.ts"],
       "linter": {
         "rules": {

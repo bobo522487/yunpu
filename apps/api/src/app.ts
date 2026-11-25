@@ -3,6 +3,7 @@ import { ERROR_STATUS } from "@yunpu/shared";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { compress } from "hono/compress";
+import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
@@ -18,7 +19,6 @@ import { authRouter } from "./modules/auth";
 import { organizationRouter } from "./modules/organization/router";
 import { personRouter } from "./modules/person/router";
 import { projectRouter } from "./modules/project/router";
-import { authPages } from "./pages/auth";
 import { checkStorage } from "./storage";
 import type { ApiEnv } from "./types";
 
@@ -75,6 +75,18 @@ export async function probeDatabase(): Promise<{
 app.use(requestId());
 app.use(secureHeaders());
 app.use(compress());
+app.use(
+  "/api/*",
+  cors({
+    origin: (origin) => {
+      const allowed = config().CORS_ORIGINS;
+      return allowed.includes(origin) ? origin : undefined;
+    },
+    credentials: true,
+    allowHeaders: ["content-type", "authorization"],
+    allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  }),
+);
 app.use(authMiddleware());
 
 export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
@@ -177,35 +189,6 @@ app.get("/api/ready", async (c) => {
   return c.json({ ok: false, checks, reason: reasons.join("; ") }, 503);
 });
 
-const starterPage = () =>
-  `<!doctype html>
-<html lang="zh-CN">
-  <head><meta charset="utf-8"><title>Yunpu</title></head>
-  <body>
-    <main>
-      <h1>示例工作区</h1>
-      <p data-marker="yunpu-starter-workspace">yunpu-starter-workspace</p>
-    </main>
-  </body>
-</html>`;
-
-const emptyPage = () =>
-  `<!doctype html>
-<html lang="zh-CN">
-  <head><meta charset="utf-8"><title>Yunpu</title></head>
-  <body>
-    <main id="root"></main>
-  </body>
-</html>`;
-
-app.get("/", (c) => {
-  const environment = process.env.YUNPU_ENV;
-  if (environment === "development") {
-    return c.html(starterPage());
-  }
-  return c.html(emptyPage());
-});
-
 const apiRoutes = new Hono<ApiEnv>()
   .route("/auth", authRouter)
   .route("/", organizationRouter)
@@ -214,7 +197,6 @@ const apiRoutes = new Hono<ApiEnv>()
   .route("/", personRouter);
 
 app.route("/api/v1", apiRoutes);
-app.route("/", authPages);
 app.route("/", media);
 
 export type AppType = typeof apiRoutes;

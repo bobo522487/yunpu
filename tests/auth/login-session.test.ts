@@ -106,7 +106,11 @@ describe("US2 login and session", () => {
     expect((session.data?.user as { email: string }).email).toBe(email);
 
     const after = await withAdminDb(async (client) => {
-      const result = await client.query<{ expires_at: Date; updated_at: Date; days: number }>(
+      const result = await client.query<{
+        expires_at: Date;
+        updated_at: Date;
+        days: number;
+      }>(
         `SELECT expires_at, updated_at,
                 EXTRACT(EPOCH FROM (expires_at - now())) / 86400 AS days
            FROM auth.session WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -115,8 +119,12 @@ describe("US2 login and session", () => {
       return result.rows[0];
     });
 
-    expect(after.expires_at.getTime()).toBeGreaterThan(before.expires_at.getTime());
-    expect(after.updated_at.getTime()).toBeGreaterThan(before.updated_at.getTime());
+    expect(after.expires_at.getTime()).toBeGreaterThan(
+      before.expires_at.getTime(),
+    );
+    expect(after.updated_at.getTime()).toBeGreaterThan(
+      before.updated_at.getTime(),
+    );
     expect(Number(after.days)).toBeGreaterThan(6.9);
     expect(Number(after.days)).toBeLessThanOrEqual(7.01);
   });

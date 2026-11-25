@@ -74,7 +74,9 @@ describe("US1 registration", () => {
   });
 
   test("keeps a password that only has surrounding spaces", async () => {
-    const result = await signUp(uniqueEmail("spaced"), { password: "  spaced-pass  " });
+    const result = await signUp(uniqueEmail("spaced"), {
+      password: "  spaced-pass  ",
+    });
     expect(result.response.status).toBe(201);
   });
 
@@ -84,8 +86,12 @@ describe("US1 registration", () => {
       Array.from({ length: 10 }, () => signUp(email)),
     );
 
-    const created = attempts.filter((attempt) => attempt.response.status === 201);
-    const rejected = attempts.filter((attempt) => attempt.response.status === 409);
+    const created = attempts.filter(
+      (attempt) => attempt.response.status === 201,
+    );
+    const rejected = attempts.filter(
+      (attempt) => attempt.response.status === 409,
+    );
     expect(created).toHaveLength(1);
     expect(rejected).toHaveLength(9);
     for (const attempt of rejected) {

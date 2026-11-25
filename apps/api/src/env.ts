@@ -20,6 +20,7 @@ const envFields = [
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
   "YUNPU_CAPABILITY_TOKEN",
+  "CORS_ORIGINS",
 ] as const;
 
 function databaseTarget(
@@ -105,6 +106,17 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().min(1),
   S3_SECRET_ACCESS_KEY: z.string().min(1),
   YUNPU_CAPABILITY_TOKEN: z.string().min(1),
+  CORS_ORIGINS: z
+    .string()
+    .optional()
+    .transform((raw) =>
+      raw
+        ? raw
+            .split(",")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0)
+        : [],
+    ),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

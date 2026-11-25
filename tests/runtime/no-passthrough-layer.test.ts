@@ -38,12 +38,12 @@ describe("request path", () => {
     expect(router).toContain("createPersonForProject");
   });
 
-  test("api, web, db, and shared stay separate packages", async () => {
+  test("api, db, and shared stay separate packages", async () => {
     const present = await Promise.all(
-      ["apps/api", "apps/web", "packages/db", "packages/shared"].map((dir) =>
+      ["apps/api", "packages/db", "packages/shared"].map((dir) =>
         stat(dir).then((info) => info.isDirectory()),
       ),
     );
-    expect(present).toEqual([true, true, true, true]);
+    expect(present).toEqual([true, true, true]);
   });
 });

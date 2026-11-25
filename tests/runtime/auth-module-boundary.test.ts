@@ -50,7 +50,6 @@ test("non-module api files do not import the removed legacy auth package path", 
   const offenders: string[] = [];
   for (const file of walkTsFiles(apiSrc)) {
     const rel = relative(apiSrc, file).replace(/\\/g, "/");
-    if (rel === "pages/auth.ts") continue;
     if (rel.startsWith("modules/")) continue;
     if (rel.startsWith("auth/")) continue;
 

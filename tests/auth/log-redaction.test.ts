@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
-  PASSWORD,
   createOrganization,
   insertInvite,
+  PASSWORD,
   request,
   signIn,
   signUp,
@@ -29,7 +29,9 @@ function loggedEvents(): LoggedEvent[] {
   return loggedLines().flatMap((line) => {
     try {
       const parsed = JSON.parse(line) as unknown;
-      return parsed && typeof parsed === "object" ? [parsed as LoggedEvent] : [];
+      return parsed && typeof parsed === "object"
+        ? [parsed as LoggedEvent]
+        : [];
     } catch {
       return [];
     }
@@ -64,7 +66,9 @@ describe("secret redaction", () => {
     expect(signedIn.response.status).toBe(200);
 
     const events = loggedEvents();
-    expect(events.some((event) => event.event === "auth.registered")).toBe(true);
+    expect(events.some((event) => event.event === "auth.registered")).toBe(
+      true,
+    );
     expect(events.some((event) => event.event === "auth.signed_in")).toBe(true);
 
     const all = loggedLines().join("\n");
@@ -91,7 +95,8 @@ describe("secret redaction", () => {
     const owner = await signUp(ownerEmail);
     const ownerId = (owner.json.data?.user as { id: string }).id;
     const organization = await createOrganization(owner.cookie, "脱敏组织");
-    const organizationId = (organization.data?.organization as { id: string }).id;
+    const organizationId = (organization.data?.organization as { id: string })
+      .id;
 
     const invitee = uniqueEmail("redact-invitee");
     const token = crypto.randomUUID();
@@ -105,7 +110,9 @@ describe("secret redaction", () => {
     logSpy.mockClear();
     const registered = await signUp(invitee, { inviteToken: token });
     expect(registered.response.status).toBe(201);
-    expect((registered.json.data?.invite as { accepted: boolean }).accepted).toBe(true);
+    expect(
+      (registered.json.data?.invite as { accepted: boolean }).accepted,
+    ).toBe(true);
 
     const all = loggedLines().join("\n");
     expect(all).not.toContain(token);

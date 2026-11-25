@@ -83,6 +83,8 @@ yunpu/
 
 HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/export-contract.ts` 从注册表生成 `contracts/openapi.json`，CI 的 `contract:check` 防止路由与契约漂移。校验错误统一为裸 `fieldErrors`，详见 ADR-0012。
 
+登录限流只把 `X-Forwarded-For` 当作受信任输入（`TRUST_PROXY=true`）；默认从 `@hono/node-server` 的 `getConnInfo` 读真实 socket 远端，并同时维护来源频率、账号+来源与账号渐进退避三套计数。对象存储只通过 `S3Client` 的 `HeadBucketCommand` 探活，`region` 来自配置，初始化失败由 `index.ts` 决定进程退出；不再有手写 SigV4 或 MinIO 专属健康路径。
+
 ---
 
 ## 五、租户事务与系统边界

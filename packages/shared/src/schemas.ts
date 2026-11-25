@@ -167,8 +167,8 @@ export const CreateRelationSchema = z
     fromPersonId: z.uuid(),
     toPersonId: z.uuid(),
     kind: z.enum(API_RELATION_KINDS),
-    meta: z.record(z.string(), z.unknown()).optional(),
   })
+  .strict()
   .refine((value) => value.fromPersonId !== value.toPersonId, {
     message: "关系两端不能是同一人",
     path: ["toPersonId"],

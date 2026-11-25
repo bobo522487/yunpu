@@ -4,8 +4,8 @@ import { AppError } from "../../lib/errors";
 import { appendSetCookie, parseJson } from "../../lib/http";
 import {
   assertLoginAllowed,
-  loginKey,
-  loginRateLimiter,
+  clearLoginRateLimits,
+  loginLimits,
   sourceAddress,
 } from "../../middleware/login-rate-limit";
 import type { ApiEnv } from "../../types";
@@ -34,12 +34,15 @@ authRouter.post("/sign-up", async (c) => {
 
 authRouter.post("/sign-in", async (c) => {
   const input = await parseJson(c, SignInSchema);
-  const key = loginKey(input.email, sourceAddress(c));
-  assertLoginAllowed(loginRateLimiter, key);
+  const address = sourceAddress(c);
+  const limits = loginLimits(input.email, address);
+  for (const { limiter, key } of limits) {
+    assertLoginAllowed(limiter, key);
+  }
 
   try {
     const result = await signIn(input, c.get("requestId"));
-    loginRateLimiter.clear(key);
+    clearLoginRateLimits(input.email, address);
     appendSetCookie(c, result.headers);
     return c.json({
       ok: true,
@@ -51,7 +54,9 @@ authRouter.post("/sign-in", async (c) => {
     });
   } catch (error) {
     if (error instanceof AppError && error.code === "UNAUTHORIZED") {
-      loginRateLimiter.recordFailure(key);
+      for (const { limiter, key } of limits) {
+        limiter.recordFailure(key);
+      }
     }
     throw error;
   }

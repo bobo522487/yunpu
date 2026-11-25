@@ -4922,13 +4922,6 @@
                       "adoptive_parent",
                       "spouse"
                     ]
-                  },
-                  "meta": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
                   }
                 },
                 "required": [
@@ -5610,13 +5603,6 @@
               "adoptive_parent",
               "spouse"
             ]
-          },
-          "meta": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
           }
         },
         "required": [

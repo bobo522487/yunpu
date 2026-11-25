@@ -11,12 +11,20 @@ async function closePools(): Promise<void> {
 
 const env = config();
 
-await initStorage({
-  endpoint: env.S3_ENDPOINT,
-  bucket: env.S3_BUCKET,
-  accessKeyId: env.S3_ACCESS_KEY_ID,
-  secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-});
+try {
+  await initStorage({
+    endpoint: env.S3_ENDPOINT,
+    bucket: env.S3_BUCKET,
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+    region: env.S3_REGION,
+  });
+} catch (error) {
+  console.error(
+    `storage init failed: ${error instanceof Error ? error.message : String(error)}`,
+  );
+  process.exit(1);
+}
 
 const server = serve({
   fetch: app.fetch,

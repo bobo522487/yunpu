@@ -2,6 +2,7 @@ import { project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
+import { validationError } from "../../lib/errors";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type ProjectRecord = {
@@ -36,6 +37,9 @@ const projectColumns = {
 
 export type { ProjectStatus };
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function listProjects(
   db: TxDatabase,
   organizationId: string,
@@ -43,9 +47,15 @@ export async function listProjects(
 ): Promise<{ items: ProjectRecord[]; nextCursor: string | null }> {
   const conditions = [eq(project.organizationId, organizationId)];
   if (options.cursor) {
-    const separator = options.cursor.indexOf("|");
-    const updatedAt = options.cursor.slice(0, separator);
-    const id = options.cursor.slice(separator + 1);
+    const parts = options.cursor.split("|");
+    if (
+      parts.length !== 2 ||
+      Number.isNaN(Date.parse(parts[0])) ||
+      !UUID_PATTERN.test(parts[1])
+    ) {
+      throw validationError({ cursor: "游标格式不合法" });
+    }
+    const [updatedAt, id] = parts;
     conditions.push(
       sql`(${project.updatedAt}, ${project.id}) < (${updatedAt}::timestamptz, ${id}::uuid)`,
     );
@@ -56,15 +66,13 @@ export async function listProjects(
     .from(project)
     .where(and(...conditions))
     .orderBy(desc(project.updatedAt), desc(project.id))
-    .limit(options.limit);
-
-  const last = rows[rows.length - 1];
+    .limit(options.limit + 1);
+  const hasMore = rows.length > options.limit;
+  const items = hasMore ? rows.slice(0, options.limit) : rows;
+  const last = items[items.length - 1];
   return {
-    items: rows,
-    nextCursor:
-      rows.length === options.limit && last
-        ? `${last.updatedAt}|${last.id}`
-        : null,
+    items,
+    nextCursor: hasMore && last ? `${last.updatedAt}|${last.id}` : null,
   };
 }
 

@@ -99,12 +99,16 @@ export async function getPersonForProject(
 export async function listPersonsForProject(
   userId: string,
   projectId: string,
-): Promise<PersonView[]> {
+  options: { cursor?: string; limit?: number },
+): Promise<{ persons: PersonView[]; nextCursor: string | null }> {
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const scope = await resolveProjectScope(db, projectId);
       await requireMember(db, scope.organizationId, userId, null);
-      return listPersons(db, scope.organizationId, projectId);
+      return listPersons(db, scope.organizationId, projectId, {
+        cursor: options.cursor,
+        limit: options.limit ?? 50,
+      });
     });
   } catch (error) {
     throw asAppError(error);

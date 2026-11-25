@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import {
+  createOrganization,
+  signUp,
+  uniqueEmail,
+  withAdminDb,
+} from "../auth/fixtures";
 import {
   call,
   createPerson,
@@ -90,5 +95,53 @@ describe("controlled subgraph", () => {
       stranger.cookie,
     );
     expect(result.status).toBe(404);
+  });
+
+  test("a ritual_heir ancestor keeps its connecting edge", async () => {
+    const { cookie, projectId, organizationId } =
+      await seedOwnerProject("sub-ritual");
+    const ancestor = await createPerson(cookie, projectId, {
+      displayName: "嗣父母",
+    });
+    const heir = await createPerson(cookie, projectId, {
+      displayName: "嗣子",
+    });
+    const ancestorId = (ancestor.data?.person as { id: string }).id;
+    const heirId = (heir.data?.person as { id: string }).id;
+
+    // The API deliberately accepts only the three product-facing kinds, but
+    // historical/imported ritual_heir edges can exist in the database.
+    await withAdminDb(async (client) => {
+      await client.query(
+        `INSERT INTO person_relation (
+           organization_id, project_id, from_person_id, to_person_id, kind
+         ) VALUES ($1, $2, $3, $4, 'ritual_heir')`,
+        [organizationId, projectId, ancestorId, heirId],
+      );
+    });
+
+    const result = await call(
+      `/api/v1/projects/${projectId}/subgraph?rootPersonId=${heirId}&upDepth=1&downDepth=0`,
+      cookie,
+    );
+    expect(result.status).toBe(200);
+    const data = result.data as {
+      persons: Array<{ id: string }>;
+      relations: Array<{
+        kind: string;
+        fromPersonId: string;
+        toPersonId: string;
+      }>;
+    };
+    expect(data.persons.map((person) => person.id)).toContain(ancestorId);
+    expect(data.relations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "ritual_heir",
+          fromPersonId: ancestorId,
+          toPersonId: heirId,
+        }),
+      ]),
+    );
   });
 });

@@ -41,9 +41,10 @@ describe("tenant connection boundary", () => {
       source.indexOf("export async function probeDatabase"),
       source.indexOf("app.use(requestId())"),
     );
-    expect(probe).toContain(
-      'client.query<{ version: string }>("SELECT version()")',
-    );
+    expect(probe).toContain("businessPool.query");
+    expect(probe).toContain('"SELECT version()"');
+    expect(probe).not.toContain("new Client");
+    expect(probe).not.toContain("client.end");
     expect(probe).not.toMatch(/person|organization_member|project/);
   });
 });

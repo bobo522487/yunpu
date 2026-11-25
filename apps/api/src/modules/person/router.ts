@@ -1,11 +1,12 @@
 import {
   CreatePersonSchema,
   CreateRelationSchema,
+  PageQuerySchema,
   SubgraphQuerySchema,
   UpdatePersonSchema,
 } from "@yunpu/shared";
 import { Hono } from "hono";
-import { parse, parseJson, requireUser } from "../../lib/http";
+import { parse, parseJson, parseQuery, requireUser } from "../../lib/http";
 import type { ApiEnv } from "../../types";
 import {
   createPersonForProject,
@@ -30,11 +31,12 @@ personRouter.post("/projects/:projectId/persons", async (c) => {
 
 personRouter.get("/projects/:projectId/persons", async (c) => {
   const user = requireUser(c);
-  const persons = await listPersonsForProject(
-    user.id,
-    c.req.param("projectId"),
-  );
-  return c.json({ ok: true, data: { persons } });
+  const query = parseQuery(c, PageQuerySchema, "issues");
+  const page = await listPersonsForProject(user.id, c.req.param("projectId"), {
+    cursor: query.cursor,
+    limit: query.limit,
+  });
+  return c.json({ ok: true, data: page });
 });
 
 personRouter.get("/projects/:projectId/persons/:personId", async (c) => {

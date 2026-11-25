@@ -1,4 +1,3 @@
-import { PG_OPTIONS } from "@yunpu/db";
 import { ERROR_STATUS } from "@yunpu/shared";
 import type { Context } from "hono";
 import { Hono } from "hono";
@@ -8,8 +7,8 @@ import { HTTPException } from "hono/http-exception";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { Client } from "pg";
 import { config } from "./config";
+import { businessPool } from "./db/with-tenant-transaction";
 import { AppError, mapDatabaseError } from "./lib/errors";
 import { logEvent } from "./lib/logger";
 import media from "./media";
@@ -43,16 +42,10 @@ export async function probeDatabase(): Promise<{
     return { up: false };
   }
 
-  let client: Client | undefined;
   try {
-    client = new Client({
-      connectionString: databaseUrl,
-      connectionTimeoutMillis: 5000,
-      query_timeout: 5000,
-      options: PG_OPTIONS,
-    });
-    await client.connect();
-    const result = await client.query<{ version: string }>("SELECT version()");
+    const result = await businessPool.query<{ version: string }>(
+      "SELECT version()",
+    );
     return { up: true, version: result.rows[0]?.version };
   } catch (error) {
     logEvent({
@@ -61,14 +54,6 @@ export async function probeDatabase(): Promise<{
       reason: error instanceof Error ? error.message : String(error),
     });
     return { up: false };
-  } finally {
-    await client?.end().catch((error: unknown) => {
-      logEvent({
-        event: "database_probe_close",
-        result: "failed",
-        reason: error instanceof Error ? error.message : String(error),
-      });
-    });
   }
 }
 
@@ -87,7 +72,7 @@ app.use(
     allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   }),
 );
-app.use(authMiddleware());
+app.use("/api/v1/*", authMiddleware());
 
 export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
   if (error instanceof AppError) {

@@ -6,8 +6,9 @@ import {
   project,
 } from "@yunpu/db";
 import type { ApiRelationKind, PersonSex } from "@yunpu/shared";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
+import { validationError } from "../../lib/errors";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type PersonView = {
@@ -91,12 +92,31 @@ export async function getPerson(
   return loadPersonView(db, projectId, personId);
 }
 
+export type ListPageOptions = {
+  cursor?: string;
+  limit: number;
+};
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function listPersons(
   db: TxDatabase,
   organizationId: string,
   projectId: string,
-): Promise<PersonView[]> {
-  return db
+  options: ListPageOptions,
+): Promise<{ persons: PersonView[]; nextCursor: string | null }> {
+  if (options.cursor && !UUID_PATTERN.test(options.cursor)) {
+    throw validationError({ cursor: "游标格式不合法" });
+  }
+  const conditions = [
+    eq(person.organizationId, organizationId),
+    eq(person.projectId, projectId),
+  ];
+  if (options.cursor) {
+    conditions.push(gt(person.id, options.cursor));
+  }
+  const rows = await db
     .select({
       id: person.id,
       projectId: person.projectId,
@@ -120,13 +140,16 @@ export async function listPersons(
         eq(personName.isPrimary, true),
       ),
     )
-    .where(
-      and(
-        eq(person.organizationId, organizationId),
-        eq(person.projectId, projectId),
-      ),
-    )
-    .orderBy(person.id);
+    .where(and(...conditions))
+    .orderBy(person.id)
+    .limit(options.limit + 1);
+  const hasMore = rows.length > options.limit;
+  const persons = hasMore ? rows.slice(0, options.limit) : rows;
+  const last = persons[persons.length - 1];
+  return {
+    persons,
+    nextCursor: hasMore && last ? last.id : null,
+  };
 }
 
 export type CreatePersonValues = {
@@ -481,7 +504,7 @@ export async function querySubgraph(
          AND r.project_id = ${projectId}::uuid
          AND r.from_person_id IN (SELECT person_id FROM limited)
          AND r.to_person_id IN (SELECT person_id FROM limited)
-         AND r.kind IN ('biological_parent', 'adoptive_parent', 'spouse')
+         AND r.kind IN ('biological_parent', 'adoptive_parent', 'ritual_heir', 'spouse')
     )
     SELECT
       EXISTS (SELECT 1 FROM root_path) AS root_ok,

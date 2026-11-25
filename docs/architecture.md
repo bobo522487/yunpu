@@ -79,7 +79,7 @@ yunpu/
   - **组织与协作**：`organization`、`organization_member`、`invite`、`project`、`audit_log`。
   - **谱系核心**：`person`、`person_name`、`person_relation`、`lineage_projection`（使用 `ltree` 存储主脉路径与世代）。
 
-数据库级不变量（在 `0012`~`0014` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、环检测延迟约束触发器（`GX001`）与基于角色的行级写策略。
+数据库级不变量（在 `0012`~`0016` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、环检测延迟约束触发器（`GX001`）与基于角色的行级写策略。
 
 ---
 
@@ -90,10 +90,11 @@ yunpu/
 - `BEGIN` 与 `SET LOCAL ROLE genealogy_app` 合并为一次简单协议往返；随后用一条 `SELECT set_config('app.user_id', $1, true), current_user` 同时写入事务局部身份并断言角色，前置往返由 5 次降为 2 次。
 - `app.current_org_id` 从未被任何 RLS 策略读取，已从租户入口移除；租户隔离只依赖 `app.user_id`、RLS 谓词与成员角色校验。
 - 连接释放前事务结束（`COMMIT` 或 `ROLLBACK`），`SET LOCAL` 作用域自动失效；`ROLLBACK` 失败、连接级故障或角色断言失败时以 `release(true)` 销毁会话，避免连接池复用导致跨租户串数据。
+- `authMiddleware` 只挂在 `/api/v1/*`；`/api/health`、`/api/ready` 与 `/api/media/*` 不查会话。列表接口统一使用共享分页 schema 与 `limit + 1` 游标，游标非法时在查库前返回 `VALIDATION`。
 
 **仅有的三处非租户事务入口（严禁普通业务复用）：**
 
-1. **健康检查（`apps/api/src/app.ts` `probeDatabase`）**：使用独立短连接仅执行 `SELECT version()`，供 `/api/health` 与 `/api/ready` 探测数据库连通性与 PostgreSQL 18 版本。
+1. **健康检查（`apps/api/src/app.ts` `probeDatabase`）**：复用 `businessPool` 仅执行 `SELECT version()`，供 `/api/health` 与 `/api/ready` 探测数据库连通性与 PostgreSQL 18 版本；不新建短连接，也不访问租户表。
 2. **认证库（`apps/api/src/modules/auth/better-auth.ts` `authDatabase`）**：使用 `AUTH_DATABASE_URL` 独立连接池，只访问 `auth` schema 下的表，不查询业务租户表。
 3. **数据库迁移（`packages/db/src/migrate.ts`）**：使用迁移命令行独立连接执行跨租户 DDL 与策略变更，HTTP 请求与普通后台任务禁止借用。
 

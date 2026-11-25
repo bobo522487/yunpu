@@ -12,7 +12,7 @@
 | 业务术语表 | 统一领域术语与禁用同义词 | [docs/glossary.md](docs/glossary.md) |
 | 架构决策记录 | 关键技术决策与历史取舍（ADR） | [docs/adr/](docs/adr/) |
 | 功能级 Spec 模板 | SDD `spec.md` / `plan.md` / `tasks.md` 标准模板 | [specs/_templates/](specs/_templates/) |
-| 功能 Spec 目录 | 各独立功能/变更规格（`001`~`005` 为历史档案） | [specs/INDEX.md](specs/INDEX.md) |
+| 功能 Spec 目录 | 各独立功能/变更规格（`001`~`002` 为历史档案） | [specs/INDEX.md](specs/INDEX.md) |
 
 ---
 

@@ -24,14 +24,14 @@ export const personRouter = new Hono<ApiEnv>();
 personRouter.post("/projects/:projectId/persons", async (c) => {
   const user = requireUser(c);
   const projectId = c.req.param("projectId");
-  const input = await parseJson(c, CreatePersonSchema, "issues");
+  const input = await parseJson(c, CreatePersonSchema);
   const person = await createPersonForProject(user.id, projectId, input);
   return c.json({ ok: true, data: { person } }, 201);
 });
 
 personRouter.get("/projects/:projectId/persons", async (c) => {
   const user = requireUser(c);
-  const query = parseQuery(c, PageQuerySchema, "issues");
+  const query = parseQuery(c, PageQuerySchema);
   const page = await listPersonsForProject(user.id, c.req.param("projectId"), {
     cursor: query.cursor,
     limit: query.limit,
@@ -51,7 +51,7 @@ personRouter.get("/projects/:projectId/persons/:personId", async (c) => {
 
 personRouter.patch("/projects/:projectId/persons/:personId", async (c) => {
   const user = requireUser(c);
-  const input = await parseJson(c, UpdatePersonSchema, "issues");
+  const input = await parseJson(c, UpdatePersonSchema);
   const person = await updatePersonForProject(
     user.id,
     c.req.param("projectId"),
@@ -73,7 +73,7 @@ personRouter.delete("/projects/:projectId/persons/:personId", async (c) => {
 
 personRouter.post("/projects/:projectId/relations", async (c) => {
   const user = requireUser(c);
-  const input = await parseJson(c, CreateRelationSchema, "issues");
+  const input = await parseJson(c, CreateRelationSchema);
   const relation = await createRelationForProject(
     user.id,
     c.req.param("projectId"),
@@ -94,16 +94,12 @@ personRouter.delete("/projects/:projectId/relations/:relationId", async (c) => {
 
 personRouter.get("/projects/:projectId/subgraph", async (c) => {
   const user = requireUser(c);
-  const query = parse(
-    SubgraphQuerySchema,
-    {
-      rootPersonId: c.req.query("rootPersonId"),
-      upDepth: c.req.query("upDepth"),
-      downDepth: c.req.query("downDepth"),
-      limit: c.req.query("limit"),
-    },
-    "issues",
-  );
+  const query = parse(SubgraphQuerySchema, {
+    rootPersonId: c.req.query("rootPersonId"),
+    upDepth: c.req.query("upDepth"),
+    downDepth: c.req.query("downDepth"),
+    limit: c.req.query("limit"),
+  });
   const data = await getSubgraphForProject(
     user.id,
     c.req.param("projectId"),

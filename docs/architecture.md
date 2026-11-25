@@ -79,7 +79,9 @@ yunpu/
   - **组织与协作**：`organization`、`organization_member`、`invite`、`project`、`audit_log`。
   - **谱系核心**：`person`、`person_name`、`person_relation`、`lineage_projection`（使用 `ltree` 存储主脉路径与世代）。
 
-数据库级不变量（在 `0012`~`0016` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、环检测延迟约束触发器（`GX001`）与基于角色的行级写策略。
+数据库级不变量（在 `0012`~`0022` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、环检测延迟约束触发器（`GX001`）与基于角色的行级写策略。谱系投影由 0017 之后的逐边增量 reflow 维护，不再全表重建，也不再静默截断 64 代；路径前缀索引为 btree 文本前缀而非 ltree GiST，避免索引膨胀。项目与人物统一使用整数 `version` 做 CAS（0019），不再用 `updated_at` 字符串作为并发令牌。
+
+HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/export-contract.ts` 从注册表生成 `contracts/openapi.json`，CI 的 `contract:check` 防止路由与契约漂移。校验错误统一为裸 `fieldErrors`，详见 ADR-0012。
 
 ---
 

@@ -7,8 +7,10 @@ import {
 } from "@yunpu/shared";
 import { sql } from "drizzle-orm";
 import {
+  check,
   customType,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -119,12 +121,14 @@ export const project = pgTable(
       .notNull()
       .default("sky"),
     projectLevel: smallint("project_level").notNull().default(1),
+    version: integer("version").notNull().default(1),
     createdAt,
     updatedAt,
   },
   (table) => [
     uniqueIndex("uq_project_org_id").on(table.organizationId, table.id),
     index("idx_project_org_status").on(table.organizationId, table.status),
+    check("ck_project_version_positive", sql`${table.version} > 0`),
   ],
 );
 

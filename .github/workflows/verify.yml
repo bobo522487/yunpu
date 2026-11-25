@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: OpenAPI contract drift
+        run: pnpm contract:check
+
       - name: Docker availability
         run: |
           docker version

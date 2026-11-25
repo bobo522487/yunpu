@@ -3,9 +3,9 @@ import { requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import {
   AppError,
-  conflict,
   mapDatabaseError,
   notFound,
+  versionConflict,
 } from "../../lib/errors";
 import {
   type CreateProjectValues,
@@ -87,7 +87,7 @@ export async function getProjectById(
 export async function updateProject(
   userId: string,
   projectId: string,
-  expectedUpdatedAt: string,
+  expectedVersion: number,
   values: UpdateProjectValues,
 ): Promise<ProjectRecord> {
   try {
@@ -102,11 +102,11 @@ export async function updateProject(
         db,
         projectId,
         existing.organizationId,
-        expectedUpdatedAt,
+        expectedVersion,
         values,
       );
       if (!updated) {
-        throw conflict("项目已被他人修改，请刷新后重试");
+        throw versionConflict("项目已被他人修改，请刷新后重试");
       }
       return updated;
     });

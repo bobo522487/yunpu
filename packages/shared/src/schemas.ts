@@ -118,12 +118,11 @@ export const UpdateProjectSchema = z
     description: z.string().trim().max(2000).nullable().optional(),
     colorTheme: z.enum(PROJECT_COLOR_THEMES).optional(),
     projectLevel: z.coerce.number().int().min(1).max(5).optional(),
-    expectedUpdatedAt: z.iso.datetime(),
+    version: z.coerce.number().int().positive(),
   })
-  .refine(
-    (value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
-    { message: "至少提供一个要修改的字段" },
-  );
+  .refine((value) => Object.keys(value).some((key) => key !== "version"), {
+    message: "至少提供一个要修改的字段",
+  });
 export type UpdateProjectInput = z.infer<typeof UpdateProjectSchema>;
 
 export const CreatePersonSchema = z.object({

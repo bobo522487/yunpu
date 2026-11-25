@@ -1,10 +1,4 @@
-import {
-  lineageProjection,
-  person,
-  personName,
-  personRelation,
-  project,
-} from "@yunpu/db";
+import { person, personName, personRelation, project } from "@yunpu/db";
 import type { ApiRelationKind, PersonSex } from "@yunpu/shared";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
@@ -34,10 +28,6 @@ export type RelationView = {
   createdAt: string;
   updatedAt: string;
 };
-
-function pathLabel(personId: string): string {
-  return personId.replace(/-/g, "");
-}
 
 export async function getProjectScope(
   db: TxDatabase,
@@ -188,14 +178,6 @@ export async function insertPerson(
     kind: "formal",
     value: values.displayName,
     isPrimary: true,
-  });
-
-  await db.insert(lineageProjection).values({
-    organizationId,
-    projectId,
-    personId,
-    primaryPath: pathLabel(personId),
-    generation: 0,
   });
 
   const view = await loadPersonView(db, projectId, personId);
@@ -539,7 +521,10 @@ export async function querySubgraph(
             JOIN root_path rp ON true
            WHERE lp.organization_id = ${organizationId}::uuid
          AND lp.project_id = ${projectId}::uuid
-             AND lp.primary_path <@ rp.primary_path
+             AND (
+            lp.primary_path::text = rp.primary_path::text
+            OR lp.primary_path::text LIKE rp.primary_path::text || '.%'
+          )
              AND nlevel(lp.primary_path) = nlevel(rp.primary_path) + ${options.downDepth}
              AND ${options.downDepth} > 0
              AND EXISTS (

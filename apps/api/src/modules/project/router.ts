@@ -52,16 +52,8 @@ projectRouter.get("/projects/:projectId", async (c) => {
 projectRouter.patch("/projects/:projectId", async (c) => {
   const user = requireUser(c);
   const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const { expectedUpdatedAt, ...values } = await parseJson(
-    c,
-    UpdateProjectSchema,
-  );
-  const project = await updateProject(
-    user.id,
-    projectId,
-    expectedUpdatedAt,
-    values,
-  );
+  const { version, ...values } = await parseJson(c, UpdateProjectSchema);
+  const project = await updateProject(user.id, projectId, version, values);
   return c.json({ ok: true, data: { project } });
 });
 

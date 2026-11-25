@@ -111,12 +111,10 @@ export function parentLimit(): AppError {
   return new AppError("PARENT_LIMIT", "同类型父母边已达上限", 409);
 }
 
-export function versionConflict(): AppError {
-  return new AppError(
-    "VERSION_CONFLICT",
-    "人物已被他人修改，请刷新后重试",
-    409,
-  );
+export function versionConflict(
+  message = "人物已被他人修改，请刷新后重试",
+): AppError {
+  return new AppError("VERSION_CONFLICT", message, 409);
 }
 
 export { AppError };

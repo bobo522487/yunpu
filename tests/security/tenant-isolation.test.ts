@@ -72,7 +72,7 @@ describe("US2 tenant isolation (security)", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "hijack",
-          expectedUpdatedAt: new Date().toISOString(),
+          version: 1,
         }),
       },
     );

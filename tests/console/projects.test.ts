@@ -27,7 +27,14 @@ describe("project CRUD (console)", () => {
     );
     expect(createdProject.status).toBe(201);
     expect(createdProject.json.ok).toBe(true);
-    const project = createdProject.data?.project as Record<string, unknown>;
+    const project = createdProject.data?.project as {
+      id: string;
+      name: string;
+      status: string;
+      organizationId: string;
+      version: number;
+      updatedAt: string;
+    };
     expect(project.name).toBe("李氏家谱");
     expect(project.status).toBe("planning");
     expect(project.organizationId).toBe(organizationId);
@@ -46,12 +53,15 @@ describe("project CRUD (console)", () => {
       method: "PATCH",
       body: JSON.stringify({
         name: "李氏家谱（修订）",
-        expectedUpdatedAt: project.updatedAt,
+        version: project.version,
       }),
     });
     expect(patched.status).toBe(200);
     expect((patched.data?.project as { name: string }).name).toBe(
       "李氏家谱（修订）",
+    );
+    expect((patched.data?.project as { version: number }).version).toBe(
+      project.version + 1,
     );
     expect((patched.data?.project as { updatedAt: string }).updatedAt).not.toBe(
       project.updatedAt,
@@ -105,7 +115,7 @@ describe("project CRUD (console)", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "偷改",
-          expectedUpdatedAt: new Date().toISOString(),
+          version: 1,
         }),
       },
       { method: "DELETE" },
@@ -120,24 +130,24 @@ describe("project CRUD (console)", () => {
     }
   });
 
-  test("stale expectedUpdatedAt yields conflict instead of silent overwrite", async () => {
+  test("stale version yields VERSION_CONFLICT instead of silent overwrite", async () => {
     const owner = await signUp(uniqueEmail("proj-cas"));
     const created = await createOrganization(owner.cookie, "并发组织");
     const organizationId = (created.data?.organization as { id: string }).id;
     const project = (
       (await createProject(owner.cookie, organizationId, "并发谱")).data
-        ?.project as { id: string; updatedAt: string }
+        ?.project as { id: string }
     ).id;
 
     const first = await call(`/api/v1/projects/${project}`, owner.cookie, {
       method: "PATCH",
       body: JSON.stringify({
         name: "第一次修改",
-        expectedUpdatedAt: new Date(0).toISOString(),
+        version: 999,
       }),
     });
     expect(first.status).toBe(409);
-    expect(first.json.code).toBe("CONFLICT");
+    expect(first.json.code).toBe("VERSION_CONFLICT");
   });
 
   test("viewer cannot write; editor can create and update but not delete", async () => {
@@ -146,7 +156,7 @@ describe("project CRUD (console)", () => {
     const organizationId = (created.data?.organization as { id: string }).id;
     const project = (
       (await createProject(owner.cookie, organizationId, "角色谱")).data
-        ?.project as { id: string; updatedAt: string }
+        ?.project as { id: string }
     ).id;
 
     const viewerEmail = uniqueEmail("proj-viewer");
@@ -169,7 +179,7 @@ describe("project CRUD (console)", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "viewer 改",
-          expectedUpdatedAt: new Date().toISOString(),
+          version: 1,
         }),
       },
     );
@@ -202,9 +212,7 @@ describe("project CRUD (console)", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "editor 改名",
-          expectedUpdatedAt: (
-            editorCreate.data?.project as { updatedAt: string }
-          ).updatedAt,
+          version: (editorCreate.data?.project as { version: number }).version,
         }),
       },
     );

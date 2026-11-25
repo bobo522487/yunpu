@@ -5,14 +5,6 @@ import { AppError, validationError } from "./errors";
 
 type ApiContext = Context<ApiEnv>;
 
-/**
- * Original routers were not uniform in how they exposed Zod failures:
- * most passed `flatten().fieldErrors`, person passed `{ issues: flatten() }`.
- * Keep both shapes available so the shared helper preserves every route's
- * original error envelope.
- */
-type DetailsShape = "fieldErrors" | "issues";
-
 export function appendSetCookie(c: Context, headers: Headers): void {
   const cookies =
     typeof headers.getSetCookie === "function"
@@ -33,14 +25,10 @@ export function requireUser(c: ApiContext) {
 function parseOrThrow<S extends z.ZodType>(
   schema: S,
   value: unknown,
-  shape: DetailsShape,
 ): z.output<S> {
   const parsed = schema.safeParse(value);
   if (!parsed.success) {
-    const flat = parsed.error.flatten();
-    throw validationError(
-      shape === "issues" ? { issues: flat } : flat.fieldErrors,
-    );
+    throw validationError(parsed.error.flatten().fieldErrors);
   }
   return parsed.data as z.output<S>;
 }
@@ -49,34 +37,30 @@ function parseOrThrow<S extends z.ZodType>(
 export function parse<S extends z.ZodType>(
   schema: S,
   value: unknown,
-  shape: DetailsShape = "fieldErrors",
 ): z.output<S> {
-  return parseOrThrow(schema, value, shape);
+  return parseOrThrow(schema, value);
 }
 
 /** Parse a JSON body, throwing the shared validation envelope on failure. */
 export async function parseJson<S extends z.ZodType>(
   c: ApiContext,
   schema: S,
-  shape: DetailsShape = "fieldErrors",
 ): Promise<z.output<S>> {
-  return parseOrThrow(schema, await c.req.json().catch(() => null), shape);
+  return parseOrThrow(schema, await c.req.json().catch(() => null));
 }
 
 /** Parse route params, throwing the shared validation envelope on failure. */
 export function parseParams<S extends z.ZodType>(
   c: ApiContext,
   schema: S,
-  shape: DetailsShape = "fieldErrors",
 ): z.output<S> {
-  return parseOrThrow(schema, c.req.param(), shape);
+  return parseOrThrow(schema, c.req.param());
 }
 
 /** Parse the query string, throwing the shared validation envelope on failure. */
 export function parseQuery<S extends z.ZodType>(
   c: ApiContext,
   schema: S,
-  shape: DetailsShape = "fieldErrors",
 ): z.output<S> {
-  return parseOrThrow(schema, c.req.query(), shape);
+  return parseOrThrow(schema, c.req.query());
 }

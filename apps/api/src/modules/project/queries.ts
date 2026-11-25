@@ -16,6 +16,7 @@ export type ProjectRecord = {
   description: string | null;
   colorTheme: ProjectColorTheme;
   projectLevel: number;
+  version: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -31,6 +32,7 @@ const projectColumns = {
   description: project.description,
   colorTheme: project.colorTheme,
   projectLevel: project.projectLevel,
+  version: project.version,
   createdAt: timestamp(project.createdAt),
   updatedAt: timestamp(project.updatedAt),
 };
@@ -131,15 +133,16 @@ export type UpdateProjectValues = Omit<
   description?: string | null;
 };
 
-/** CAS：`updated_at` 令牌不匹配返回 null（路由映射 409），不静默覆盖。 */
+/** CAS：`version` 令牌不匹配返回 null（路由映射 VERSION_CONFLICT），不静默覆盖。 */
 export async function casUpdateProject(
   db: TxDatabase,
   projectId: string,
   organizationId: string,
-  expectedUpdatedAt: string,
+  expectedVersion: number,
   values: UpdateProjectValues,
 ): Promise<ProjectRecord | null> {
   const set: Record<string, unknown> = {
+    version: sql`${project.version} + 1`,
     updatedAt: sql`clock_timestamp()`,
   };
   if (values.name !== undefined) set.name = values.name;
@@ -158,9 +161,7 @@ export async function casUpdateProject(
       and(
         eq(project.id, projectId),
         eq(project.organizationId, organizationId),
-        // 必须用原始字符串比较：Drizzle 的列映射会把参数转成 Date（毫秒精度），
-        // 截断微秒后 CAS 永不命中；`::timestamptz` 直接按完整精度比较。
-        sql`${project.updatedAt} = ${expectedUpdatedAt}::timestamptz`,
+        eq(project.version, expectedVersion),
       ),
     )
     .returning(projectColumns);

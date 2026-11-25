@@ -14,6 +14,7 @@
     "db:migrate": "node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts",
     "lint": "pnpm exec biome check . && tsc --noEmit -p apps/api/tsconfig.json",
     "contract:export": "node --import ./scripts/ts-ext-register.mjs scripts/export-contract.ts",
+    "contract:check": "pnpm contract:export && git diff --exit-code -- contracts/openapi.json",
     "test:all": "vitest run --config vitest.config.ts tests/env && vitest run --config vitest.config.ts --fileParallelism=false tests/auth tests/console tests/genealogy tests/security tests/runtime apps/api/test",
     "start:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts"
   },

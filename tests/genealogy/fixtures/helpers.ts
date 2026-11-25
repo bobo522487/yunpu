@@ -1,33 +1,7 @@
-import {
-  createOrganization,
-  type JsonResponse,
-  request,
-  signUp,
-  uniqueEmail,
-} from "../../auth/fixtures";
+import { createOrganization, signUp, uniqueEmail } from "../../auth/fixtures";
+import { call, type Envelope } from "../../fixtures/http";
 
-export type Envelope = {
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-};
-
-export async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<Envelope> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
+export { call, type Envelope };
 
 export async function seedOwnerProject(prefix: string): Promise<{
   cookie: string;

@@ -2,8 +2,12 @@ import { createHash, randomBytes } from "node:crypto";
 import type { MemberRole } from "@yunpu/shared";
 import { memberRole, requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
-import { AppError, mapDatabaseError } from "../../lib/errors";
-import { conflict, organizationNotFound } from "./errors";
+import {
+  AppError,
+  conflict,
+  mapDatabaseError,
+  notFound,
+} from "../../lib/errors";
 import {
   acceptInviteWithFunction,
   activateOrganization,
@@ -33,6 +37,8 @@ import {
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+export type { OrganizationSummary } from "./queries";
+
 function asAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
   return mapDatabaseError(error);
@@ -46,7 +52,7 @@ export async function createOrganization(
     return await withTenantTransaction({ userId }, async (db) => {
       const organizationId = await createOrganizationWithFunction(db, name);
       const summary = await getOrganizationSummary(db, organizationId, userId);
-      if (!summary) throw organizationNotFound();
+      if (!summary) throw notFound();
       return summary;
     });
   } catch (error) {
@@ -99,9 +105,9 @@ export async function activateOrganizationForUser(
   try {
     return await withTenantTransaction({ userId }, async (db) => {
       const activated = await activateOrganization(db, organizationId, userId);
-      if (!activated) throw organizationNotFound();
+      if (!activated) throw notFound();
       const summary = await getOrganizationSummary(db, organizationId, userId);
-      if (!summary) throw organizationNotFound();
+      if (!summary) throw notFound();
       return summary;
     });
   } catch (error) {
@@ -117,7 +123,7 @@ export async function acceptInvite(
     return await withTenantTransaction({ userId }, async (db) => {
       const organizationId = await acceptInviteWithFunction(db, token);
       const summary = await getOrganizationSummary(db, organizationId, userId);
-      if (!summary) throw organizationNotFound();
+      if (!summary) throw notFound();
       return summary;
     });
   } catch (error) {
@@ -162,9 +168,9 @@ export async function updateMemberRoleForOrg(
         targetUserId,
         role,
       );
-      if (!updated) throw organizationNotFound();
+      if (!updated) throw notFound();
       const member = await getMemberRecord(db, organizationId, targetUserId);
-      if (!member) throw organizationNotFound();
+      if (!member) throw notFound();
       return member;
     });
   } catch (error) {
@@ -186,7 +192,7 @@ export async function removeMemberFromOrg(
         organizationId,
         targetUserId,
       );
-      if (!removed) throw organizationNotFound();
+      if (!removed) throw notFound();
     });
   } catch (error) {
     throw asAppError(error);
@@ -248,7 +254,7 @@ export async function revokeInviteForOrg(
       await requireMember(db, organizationId, userId, "admin");
       const existing = await getInviteRecord(db, organizationId, inviteId);
       if (!existing || existing.status !== "pending") {
-        throw organizationNotFound();
+        throw notFound();
       }
       await revokeInviteViaFunction(db, inviteId, "");
     });
@@ -291,7 +297,7 @@ export async function updateOrganizationForUser(
       }
       await updateOrganizationRecord(db, organizationId, patch);
       const detail = await getOrganizationDetail(db, organizationId, userId);
-      if (!detail) throw organizationNotFound();
+      if (!detail) throw notFound();
       return detail;
     });
   } catch (error) {
@@ -306,13 +312,13 @@ export async function leaveOrganizationForUser(
   try {
     await withTenantTransaction({ userId }, async (db) => {
       const role = await memberRole(db, organizationId, userId);
-      if (role === null) throw organizationNotFound();
+      if (role === null) throw notFound();
       const ownerId = await organizationOwnerId(db, organizationId);
       if (ownerId === userId) {
         throw conflict("请先转移所有权再退出组织");
       }
       const removed = await removeMemberRecord(db, organizationId, userId);
-      if (!removed) throw organizationNotFound();
+      if (!removed) throw notFound();
     });
   } catch (error) {
     throw asAppError(error);

@@ -1,6 +1,7 @@
+import { SignInSchema, SignUpSchema } from "@yunpu/shared";
 import { Hono } from "hono";
 import { AppError } from "../../lib/errors";
-import { appendSetCookie } from "../../lib/http";
+import { appendSetCookie, parseJson } from "../../lib/http";
 import {
   assertLoginAllowed,
   loginKey,
@@ -9,23 +10,13 @@ import {
 } from "../../middleware/login-rate-limit";
 import type { ApiEnv } from "../../types";
 import { unauthorized } from "./errors";
-import { SignInSchema, SignUpSchema } from "./schema";
 import { getSessionView, register, signIn, signOut } from "./service";
-
-function validationError(details: Record<string, unknown>): AppError {
-  return new AppError("VALIDATION", "请求参数不合法", 400, details);
-}
 
 export const authRouter = new Hono<ApiEnv>();
 
 authRouter.post("/sign-up", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const parsed = SignUpSchema.safeParse(body);
-  if (!parsed.success) {
-    throw validationError(parsed.error.flatten().fieldErrors);
-  }
-
-  const result = await register(parsed.data, { requestId: c.get("requestId") });
+  const input = await parseJson(c, SignUpSchema);
+  const result = await register(input, c.get("requestId"));
   appendSetCookie(c, result.headers);
 
   return c.json(
@@ -42,17 +33,12 @@ authRouter.post("/sign-up", async (c) => {
 });
 
 authRouter.post("/sign-in", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const parsed = SignInSchema.safeParse(body);
-  if (!parsed.success) {
-    throw validationError(parsed.error.flatten().fieldErrors);
-  }
-
-  const key = loginKey(parsed.data.email, sourceAddress(c));
+  const input = await parseJson(c, SignInSchema);
+  const key = loginKey(input.email, sourceAddress(c));
   assertLoginAllowed(loginRateLimiter, key);
 
   try {
-    const result = await signIn(parsed.data, { requestId: c.get("requestId") });
+    const result = await signIn(input, c.get("requestId"));
     loginRateLimiter.clear(key);
     appendSetCookie(c, result.headers);
     return c.json({

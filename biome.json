@@ -88,14 +88,7 @@
                 },
                 "patterns": [
                   {
-                    "group": [
-                      "**/db/pool",
-                      "**/db/pool.ts",
-                      "**/db/pool.js",
-                      "**/db/with-user",
-                      "**/db/with-user.ts",
-                      "**/db/with-user.js"
-                    ],
+                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
                     "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
                   },
                   {
@@ -136,14 +129,7 @@
                 },
                 "patterns": [
                   {
-                    "group": [
-                      "**/db/pool",
-                      "**/db/pool.ts",
-                      "**/db/pool.js",
-                      "**/db/with-user",
-                      "**/db/with-user.ts",
-                      "**/db/with-user.js"
-                    ],
+                    "group": ["**/db/pool", "**/db/pool.ts", "**/db/pool.js"],
                     "message": "Business modules must use withTenantTransaction, not bare pools (FR-016)"
                   }
                 ]

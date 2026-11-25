@@ -9,9 +9,9 @@
 1. **Node 26 原生 TS 执行**：后端与脚本直接运行 `.ts` 源码（通过 `node --import ./scripts/ts-ext-register.mjs ...`），禁止引入 `bun` 或 `bun:test` API（由 `biome.json` `noRestrictedImports` 拦截）。
 2. **格式化与静态检查**：
    - 使用 Biome 统一格式化（2 空格缩进）与 Lint 检查。
-   - 执行命令：`pnpm lint`（全仓 `biome check .`）。
+   - 执行命令：`pnpm lint`（全仓 `biome check .` + `tsc --noEmit -p apps/api/tsconfig.json`）。
    - 前端在独立仓库 `yunpu-web` 中用 Bun 自行做类型检查，不进入本仓库的 `pnpm lint`。
-   - `pnpm --filter @yunpu/api exec tsc --noEmit` 目前仍会被既有的查询列类型和若干调用签名挡住，本轮不把它当作门禁。
+   - `tsc --noEmit` 已纳入 `pnpm lint` 门禁，类型错误必须清零后才能合并。
    - 改了路由或 `packages/shared` 的 schema 后运行 `pnpm contract:export`，提交更新后的 `contracts/openapi.json`。
 
 ---

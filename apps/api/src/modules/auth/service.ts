@@ -7,6 +7,7 @@ import {
   resolveDefaultOrganization,
 } from "../organization/service";
 import { auth } from "./better-auth";
+import { mapSignUpError } from "./errors";
 import {
   deleteAuthUser,
   provisionDefaultOrganization,
@@ -39,21 +40,6 @@ function toSessionUser(user: BetterAuthUser): SessionUser {
     email: String(user.email ?? ""),
     name: String(user.name ?? ""),
   };
-}
-
-function mapSignUpError(error: unknown): AppError {
-  const record =
-    typeof error === "object" && error !== null
-      ? (error as { statusCode?: unknown; status?: unknown })
-      : undefined;
-  const status = Number(record?.statusCode ?? record?.status);
-  if (status === 409 || status === 422) {
-    return new AppError("CONFLICT", "该邮箱已注册", 409);
-  }
-  if (status === 400) {
-    return new AppError("VALIDATION", "注册信息不合法", 400);
-  }
-  return new AppError("INTERNAL", "注册失败", 500);
 }
 
 export async function register(

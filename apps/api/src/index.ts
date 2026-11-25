@@ -1,8 +1,13 @@
 import { serve } from "@hono/node-server";
 import app from "./app";
 import { config } from "./config";
-import { closePools } from "./db/pool";
+import { businessPool } from "./db/with-tenant-transaction";
 import { initStorage } from "./storage";
+
+async function closePools(): Promise<void> {
+  const { authPool } = await import("./modules/auth/better-auth");
+  await Promise.allSettled([businessPool.end(), authPool.end()]);
+}
 
 const env = config();
 

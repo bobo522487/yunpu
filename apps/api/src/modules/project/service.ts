@@ -1,7 +1,12 @@
+import type { MemberRole } from "@yunpu/shared";
 import { requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
-import { AppError, mapDatabaseError } from "../../lib/errors";
-import { conflict, projectNotFound } from "./errors";
+import {
+  AppError,
+  conflict,
+  mapDatabaseError,
+  notFound,
+} from "../../lib/errors";
 import {
   type CreateProjectValues,
   casUpdateProject,
@@ -61,10 +66,10 @@ async function loadProjectForWrite(
   db: Parameters<typeof getProject>[0],
   userId: string,
   projectId: string,
-  min: "editor" | "admin",
+  min: Exclude<MemberRole, "viewer">,
 ): Promise<ProjectRecord> {
   const existing = await getProject(db, projectId);
-  if (!existing) throw projectNotFound();
+  if (!existing) throw notFound();
   await requireMember(db, existing.organizationId, userId, min);
   return existing;
 }
@@ -77,7 +82,7 @@ export async function getProjectById(
     return await withTenantTransaction({ userId }, async (db) => {
       const existing = await getProject(db, projectId);
       // RLS 已把非本组织的行过滤掉；成员即可读（C3：project.read 全角色）。
-      if (!existing) throw projectNotFound();
+      if (!existing) throw notFound();
       return existing;
     });
   } catch (error) {
@@ -133,7 +138,7 @@ export async function removeProject(
         projectId,
         existing.organizationId,
       );
-      if (!deleted) throw projectNotFound();
+      if (!deleted) throw notFound();
     });
   } catch (error) {
     throw asAppError(error);

@@ -12,7 +12,7 @@
     "test:auth": "node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts --env test && vitest run --config vitest.config.ts --fileParallelism=false tests/auth apps/api/test",
     "db:generate": "pnpm --filter @yunpu/db exec drizzle-kit generate",
     "db:migrate": "node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts",
-    "lint": "pnpm exec biome check .",
+    "lint": "pnpm exec biome check . && tsc --noEmit -p apps/api/tsconfig.json",
     "contract:export": "node --import ./scripts/ts-ext-register.mjs scripts/export-contract.ts",
     "test:all": "vitest run --config vitest.config.ts tests/env && vitest run --config vitest.config.ts --fileParallelism=false tests/auth tests/console tests/genealogy tests/security tests/runtime apps/api/test",
     "start:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts"

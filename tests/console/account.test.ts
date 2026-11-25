@@ -1,32 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  type JsonResponse,
-  request,
-  signIn,
-  signUp,
-  uniqueEmail,
-} from "../auth/fixtures";
-
-async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<{
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-}> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
+import { signIn, signUp, uniqueEmail } from "../auth/fixtures";
+import { call } from "../fixtures/http";
 
 describe("account settings (console)", () => {
   test("GET /account returns the caller's own profile", async () => {

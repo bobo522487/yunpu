@@ -25,9 +25,6 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Biome import-boundary check
-        run: pnpm exec biome check .
-
       - name: Docker availability
         run: |
           docker version

@@ -2,6 +2,7 @@ import { authUser, invite, organization, organizationMember } from "@yunpu/db";
 import type { InviteStatus, MemberRole } from "@yunpu/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
+import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type OrganizationSummary = {
   id: string;
@@ -100,7 +101,7 @@ export type OrganizationDetail = {
   name: string;
   status: "active" | "suspended" | "archived";
   ownerUserId: string;
-  myRole: "admin" | "editor" | "viewer";
+  myRole: MemberRole;
   isOwner: boolean;
   memberCount: number;
   pendingInviteCount: number;
@@ -202,10 +203,6 @@ export async function activateOrganization(
 }
 
 // ---- 控制台：成员 / 邀请 / 所有权 ----
-
-/** 与项目模块同一序列化口径：UTC 微秒精度，避免乐观锁/展示的精度截断。 */
-const timestamp = (column: unknown) =>
-  sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
 export type MemberListItem = {
   userId: string;

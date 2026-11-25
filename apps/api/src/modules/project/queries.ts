@@ -2,6 +2,7 @@ import { project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
+import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type ProjectRecord = {
   id: string;
@@ -17,14 +18,6 @@ export type ProjectRecord = {
   createdAt: string;
   updatedAt: string;
 };
-
-/**
- * 时间戳以 UTC 微秒精度序列化（`...T10:00:00.123456Z`）：
- * 乐观锁令牌 `expectedUpdatedAt` 必须与库中值逐微秒相等，
- * JS Date 的毫秒精度会截断微秒，导致 CAS 永远不命中。
- */
-const timestamp = (column: typeof project.updatedAt) =>
-  sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
 const projectColumns = {
   id: project.id,
@@ -120,7 +113,10 @@ export async function insertProject(
   return rows[0];
 }
 
-export type UpdateProjectValues = Partial<CreateProjectValues> & {
+export type UpdateProjectValues = Omit<
+  Partial<CreateProjectValues>,
+  "surname" | "hallName" | "originText" | "description"
+> & {
   surname?: string | null;
   hallName?: string | null;
   originText?: string | null;
@@ -179,5 +175,3 @@ export async function deleteProject(
     .returning({ id: project.id });
   return rows.length > 0;
 }
-
-export const defaultListLimit = 50;

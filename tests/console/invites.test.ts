@@ -1,50 +1,7 @@
 import { describe, expect, test } from "vitest";
-import {
-  createOrganization,
-  type JsonResponse,
-  request,
-  signUp,
-  uniqueEmail,
-  withAdminDb,
-} from "../auth/fixtures";
-
-async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<{
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-}> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
-
-async function addMember(
-  organizationId: string,
-  email: string,
-  role: "admin" | "editor" | "viewer",
-): Promise<string> {
-  const member = await signUp(email);
-  await withAdminDb(async (client) => {
-    await client.query(
-      `INSERT INTO organization_member (organization_id, user_id, role, created_at, updated_at)
-       SELECT $1, id, $2, now(), now() FROM auth."user" WHERE email = $3
-       ON CONFLICT DO NOTHING`,
-      [organizationId, role, email.toLowerCase()],
-    );
-  });
-  return member.cookie;
-}
+import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import { call } from "../fixtures/http";
+import { addMember } from "../fixtures/members";
 
 describe("organization invites (console)", () => {
   test("creating an invite returns a one-time inviteUrl; list never exposes the token", async () => {
@@ -116,7 +73,7 @@ describe("organization invites (console)", () => {
     const owner = await signUp(uniqueEmail("inv-v-o"));
     const created = await createOrganization(owner.cookie, "只读邀请组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const viewerCookie = await addMember(
+    const { cookie: viewerCookie } = await addMember(
       organizationId,
       uniqueEmail("inv-v-t"),
       "viewer",
@@ -184,7 +141,7 @@ describe("organization invites (console)", () => {
     const owner = await signUp(uniqueEmail("inv-p-o"));
     const created = await createOrganization(owner.cookie, "权限邀请组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const editorCookie = await addMember(
+    const { cookie: editorCookie } = await addMember(
       organizationId,
       uniqueEmail("inv-p-e"),
       "editor",

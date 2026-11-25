@@ -1,11 +1,10 @@
 import { organizationMember } from "@yunpu/db";
+import { MEMBER_ROLES, type MemberRole } from "@yunpu/shared";
 import { and, eq } from "drizzle-orm";
 import type { TxDatabase } from "./db/with-tenant-transaction";
 import { AppError } from "./lib/errors";
 
-const RANK = { viewer: 1, editor: 2, admin: 3 } as const;
-
-type Role = keyof typeof RANK;
+const RANK: Record<MemberRole, number> = { viewer: 1, editor: 2, admin: 3 };
 
 export function accessNotFound(): AppError {
   return new AppError("NOT_FOUND", "不存在或无权", 404);
@@ -15,15 +14,11 @@ export function accessForbidden(): AppError {
   return new AppError("FORBIDDEN", "无权执行该操作", 403);
 }
 
-export function ownerRoleConflict(): AppError {
-  return new AppError("CONFLICT", "不能修改所有者角色", 409);
-}
-
 export async function memberRole(
   db: TxDatabase,
   organizationId: string,
   userId: string,
-): Promise<Role | null> {
+): Promise<MemberRole | null> {
   const rows = await db
     .select({ role: organizationMember.role })
     .from(organizationMember)
@@ -35,7 +30,9 @@ export async function memberRole(
     )
     .limit(1);
   const role = rows[0]?.role;
-  if (role === "admin" || role === "editor" || role === "viewer") return role;
+  if (MEMBER_ROLES.some((candidate) => candidate === role)) {
+    return role as MemberRole;
+  }
   return null;
 }
 
@@ -44,7 +41,7 @@ export async function requireMember(
   db: TxDatabase,
   organizationId: string,
   userId: string,
-  min: "editor" | "admin" | null,
+  min: Exclude<MemberRole, "viewer"> | null,
 ): Promise<void> {
   const role = await memberRole(db, organizationId, userId);
   if (role === null) throw accessNotFound();

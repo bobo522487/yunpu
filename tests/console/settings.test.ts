@@ -1,50 +1,7 @@
 import { describe, expect, test } from "vitest";
-import {
-  createOrganization,
-  type JsonResponse,
-  request,
-  signUp,
-  uniqueEmail,
-  withAdminDb,
-} from "../auth/fixtures";
-
-async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<{
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-}> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
-
-async function addMember(
-  organizationId: string,
-  email: string,
-  role: "admin" | "editor" | "viewer",
-): Promise<string> {
-  const member = await signUp(email);
-  await withAdminDb(async (client) => {
-    await client.query(
-      `INSERT INTO organization_member (organization_id, user_id, role, created_at, updated_at)
-       SELECT $1, id, $2, now(), now() FROM auth."user" WHERE email = $3
-       ON CONFLICT DO NOTHING`,
-      [organizationId, role, email.toLowerCase()],
-    );
-  });
-  return member.cookie;
-}
+import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import { call } from "../fixtures/http";
+import { addMember } from "../fixtures/members";
 
 describe("organization settings (console)", () => {
   test("admin renames the organization; blank name is rejected", async () => {
@@ -75,7 +32,7 @@ describe("organization settings (console)", () => {
     const owner = await signUp(uniqueEmail("set-v-o"));
     const created = await createOrganization(owner.cookie, "只读设置组织");
     const organizationId = (created.data?.organization as { id: string }).id;
-    const viewerCookie = await addMember(
+    const { cookie: viewerCookie } = await addMember(
       organizationId,
       uniqueEmail("set-v-t"),
       "viewer",
@@ -162,7 +119,11 @@ describe("organization settings (console)", () => {
     const created = await createOrganization(owner.cookie, "退出组织");
     const organizationId = (created.data?.organization as { id: string }).id;
     const memberEmail = uniqueEmail("set-l-t");
-    const memberCookie = await addMember(organizationId, memberEmail, "editor");
+    const { cookie: memberCookie } = await addMember(
+      organizationId,
+      memberEmail,
+      "editor",
+    );
 
     const ownerLeave = await call(
       `/api/v1/organizations/${organizationId}/leave`,

@@ -1,32 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { withTenantTransaction } from "../../apps/api/src/db/with-tenant-transaction";
 import { signUp, uniqueEmail, withAdminDb } from "../auth/fixtures";
+import { addMember } from "../fixtures/members";
 import {
   call,
   createPerson,
   seedOwnerProject,
 } from "../genealogy/fixtures/helpers";
-
-async function addMember(
-  organizationId: string,
-  role: "admin" | "editor" | "viewer",
-): Promise<{ cookie: string; userId: string }> {
-  const email = uniqueEmail(`role-${role}`);
-  const member = await signUp(email);
-  const userId = await withAdminDb(async (client) => {
-    const result = await client.query<{ id: string }>(
-      `SELECT id FROM auth."user" WHERE email = $1`,
-      [email.toLowerCase()],
-    );
-    await client.query(
-      `INSERT INTO organization_member (organization_id, user_id, role)
-       VALUES ($1, $2, $3)`,
-      [organizationId, result.rows[0].id, role],
-    );
-    return result.rows[0].id;
-  });
-  return { cookie: member.cookie, userId };
-}
 
 describe("write role backstop", () => {
   test("viewer inserts are 42501, non-members stay not found, owner role stays a conflict", async () => {

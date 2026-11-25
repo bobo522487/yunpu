@@ -1,13 +1,20 @@
-import type { ApiRelationKind } from "@yunpu/shared";
+import type {
+  ApiRelationKind,
+  CreatePersonInput,
+  CreateRelationInput,
+  SubgraphQueryInput,
+  UpdatePersonInput,
+} from "@yunpu/shared";
 import { requireMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
-import { AppError, mapDatabaseError } from "../../lib/errors";
 import {
+  AppError,
   conflict,
   cycleDetected,
-  personNotFound,
+  mapDatabaseError,
+  notFound,
   versionConflict,
-} from "./errors";
+} from "../../lib/errors";
 import {
   casUpdatePerson,
   deletePerson,
@@ -22,12 +29,6 @@ import {
   querySubgraph,
   type RelationView,
 } from "./queries";
-import type {
-  CreatePersonInput,
-  CreateRelationInput,
-  SubgraphQueryInput,
-  UpdatePersonInput,
-} from "./schema";
 
 function asAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
@@ -50,7 +51,7 @@ async function resolveProjectScope(
   projectId: string,
 ): Promise<{ id: string; organizationId: string }> {
   const scope = await getProjectScope(db, projectId);
-  if (!scope) throw personNotFound();
+  if (!scope) throw notFound();
   return scope;
 }
 
@@ -87,7 +88,7 @@ export async function getPersonForProject(
       const scope = await resolveProjectScope(db, projectId);
       await requireMember(db, scope.organizationId, userId, null);
       const person = await getPerson(db, projectId, personId);
-      if (!person) throw personNotFound();
+      if (!person) throw notFound();
       return person;
     });
   } catch (error) {
@@ -121,7 +122,7 @@ export async function updatePersonForProject(
       const scope = await resolveProjectScope(db, projectId);
       await requireMember(db, scope.organizationId, userId, "editor");
       const existing = await getPerson(db, projectId, personId);
-      if (!existing) throw personNotFound();
+      if (!existing) throw notFound();
       const updated = await casUpdatePerson(
         db,
         projectId,
@@ -154,7 +155,7 @@ export async function deletePersonForProject(
       const scope = await resolveProjectScope(db, projectId);
       await requireMember(db, scope.organizationId, userId, "editor");
       const ok = await deletePerson(db, projectId, personId);
-      if (!ok) throw personNotFound();
+      if (!ok) throw notFound();
     });
   } catch (error) {
     throw asAppError(error);
@@ -176,10 +177,10 @@ export async function createRelationForProject(
       const kind = input.kind as ApiRelationKind;
 
       if (!(await personExistsInProject(db, projectId, fromPersonId))) {
-        throw personNotFound();
+        throw notFound();
       }
       if (!(await personExistsInProject(db, projectId, toPersonId))) {
-        throw personNotFound();
+        throw notFound();
       }
 
       if (kind === "spouse") {
@@ -223,7 +224,7 @@ export async function deleteRelationForProject(
       const scope = await resolveProjectScope(db, projectId);
       await requireMember(db, scope.organizationId, userId, "editor");
       const deleted = await deleteRelation(db, projectId, relationId);
-      if (!deleted) throw personNotFound();
+      if (!deleted) throw notFound();
     });
   } catch (error) {
     throw asAppError(error);
@@ -245,7 +246,7 @@ export async function getSubgraphForProject(
         downDepth: query.downDepth ?? 4,
         limit: query.limit ?? 300,
       });
-      if (!graph) throw personNotFound();
+      if (!graph) throw notFound();
       return graph;
     });
   } catch (error) {

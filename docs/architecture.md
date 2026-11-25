@@ -27,8 +27,11 @@ yunpu/
 │   │   │   ├── media.ts     # 独立媒体/存储探测端点
 │   │   │   ├── storage.ts   # S3 客户端初始化与健康检查
 │   │   │   ├── db/
-│   │   │   │   ├── with-tenant-transaction.ts  # 业务租户唯一事务入口与瞬态重试
-│   │   │   │   └── pool.ts                     # 连接池汇总与优雅关闭（业务模块禁止直接导入）
+│   │   │   │   └── with-tenant-transaction.ts  # 业务租户唯一事务入口与瞬态重试
+│   │   │   ├── lib/
+│   │   │   │   ├── http.ts     # 路由共用的 HTTP 助手（如 Set-Cookie 透传）
+│   │   │   │   ├── errors.ts   # 唯一的数据库错误码到 HTTP 结果映射
+│   │   │   │   └── sql.ts      # 统一 SQL 时间格式等片段助手
 │   │   │   ├── middleware/
 │   │   │   │   └── auth.ts  # 会话校验中间件
 │   │   │   └── modules/     # 业务领域模块：auth / organization / project / account / person
@@ -38,7 +41,7 @@ yunpu/
 ├── packages/
 │   ├── db/                  # PostgreSQL Drizzle schema（auth / tenant / genealogy）与 SQL 迁移（0000~0014）
 │   └── shared/              # 跨端共享枚举（enums.ts）、错误定义（errors.ts）、校验 Schema（schemas.ts）
-├── scripts/                 # env.sh、ts-ext-register.mjs、check-rls.ts、export-contract.ts
+├── scripts/                 # env.sh、ts-ext-register.mjs、export-contract.ts
 └── tests/                   # 端到端集成测试（env / auth / console / genealogy / runtime / security）
 ```
 
@@ -48,7 +51,7 @@ yunpu/
 
 | 模块 | 挂载与职责 | 主要文件 |
 | :--- | :--- | :--- |
-| `auth` | 登录、注册、登出、Better Auth 集成、默认组织上下文与新用户配置 | `better-auth.ts`, `router.ts`, `service.ts`, `provisioning.ts`, `session-context.ts` |
+| `auth` | 登录、注册、登出、Better Auth 集成、默认组织上下文与新用户配置 | `better-auth.ts`, `router.ts`, `service.ts`, `provisioning.ts` |
 | `organization` | 组织创建、切换、成员角色管理、所有权转移、邀请创建/撤回/兑换 | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
 | `project` | 组织下谱系项目 CRUD 与项目元数据（姓氏、堂号、源流、配色主题等） | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
 | `account` | 当前登录用户个人资料与账户操作 | `router.ts`, `service.ts` |

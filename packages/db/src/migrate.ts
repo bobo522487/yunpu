@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "pg";
 import { PG_OPTIONS } from "./client";
+import { loadEnvFileIntoProcess } from "./load-env";
 
 const migrationsDir = fileURLToPath(new URL("../migrations", import.meta.url));
 
@@ -12,30 +13,9 @@ function requestedEnv(argv: string[]): string {
   return value === "test" || value === "development" ? value : "test";
 }
 
-async function loadEnvFile(env: string): Promise<void> {
-  const path = join(process.cwd(), `.env.${env}`);
-  try {
-    const text = await readFile(path, "utf8");
-    for (const rawLine of text.split("\n")) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith("#")) continue;
-      const eq = line.indexOf("=");
-      if (eq <= 0) continue;
-      const key = line.slice(0, eq).trim();
-      const value = line
-        .slice(eq + 1)
-        .trim()
-        .replace(/^['"]|['"]$/g, "");
-      if (process.env[key] === undefined) process.env[key] = value;
-    }
-  } catch {
-    // Missing env file is fine when the caller exported variables directly.
-  }
-}
-
 async function main(): Promise<void> {
   const env = requestedEnv(process.argv);
-  await loadEnvFile(env);
+  await loadEnvFileIntoProcess(env);
 
   const connectionString =
     process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL;

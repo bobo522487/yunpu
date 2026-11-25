@@ -1,3 +1,4 @@
+import type { MemberRole } from "@yunpu/shared";
 import { Client } from "pg";
 import app from "../../apps/api/src/app";
 
@@ -127,7 +128,7 @@ export async function insertInvite(input: {
   email: string;
   token: string;
   invitedBy: string;
-  role?: "admin" | "editor" | "viewer";
+  role?: MemberRole;
   status?: "pending" | "accepted" | "revoked";
   expiresInHours?: number;
 }): Promise<void> {
@@ -197,10 +198,7 @@ async function cli(): Promise<void> {
   if (command === "create-invite") {
     const organizationId = argValue("--org");
     const email = argValue("--email");
-    const role = (argValue("--role") ?? "editor") as
-      | "admin"
-      | "editor"
-      | "viewer";
+    const role = (argValue("--role") ?? "editor") as MemberRole;
     if (!organizationId || !email) {
       throw new Error("create-invite requires --org and --email");
     }

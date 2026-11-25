@@ -4,7 +4,7 @@ import { config } from "../../apps/api/src/config";
 import {
   businessPool,
   withTenantTransaction,
-} from "../../apps/api/src/db/with-user";
+} from "../../apps/api/src/db/with-tenant-transaction";
 import { createDb, PG_OPTIONS } from "../../packages/db/src/client";
 
 afterAll(async () => {

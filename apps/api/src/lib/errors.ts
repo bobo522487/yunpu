@@ -86,4 +86,37 @@ export function mapDatabaseError(error: unknown): AppError {
   }
 }
 
+/** Shared error factories. HTTP contract: code + status + message stay byte-identical. */
+export function notFound(): AppError {
+  return new AppError("NOT_FOUND", "不存在或无权", 404);
+}
+
+export function forbidden(message = "无权执行该操作"): AppError {
+  return new AppError("FORBIDDEN", message, 403);
+}
+
+export function conflict(message: string): AppError {
+  return new AppError("CONFLICT", message, 409);
+}
+
+export function validationError(details: Record<string, unknown>): AppError {
+  return new AppError("VALIDATION", "请求参数不合法", 400, details);
+}
+
+export function cycleDetected(): AppError {
+  return new AppError("CYCLE_DETECTED", "会形成祖先环路", 409);
+}
+
+export function parentLimit(): AppError {
+  return new AppError("PARENT_LIMIT", "同类型父母边已达上限", 409);
+}
+
+export function versionConflict(): AppError {
+  return new AppError(
+    "VERSION_CONFLICT",
+    "人物已被他人修改，请刷新后重试",
+    409,
+  );
+}
+
 export { AppError };

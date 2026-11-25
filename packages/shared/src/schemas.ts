@@ -183,3 +183,16 @@ export const SubgraphQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).optional(),
 });
 export type SubgraphQueryInput = z.infer<typeof SubgraphQuerySchema>;
+
+export const ProjectIdParamsSchema = z.object({
+  projectId: z.uuid(),
+});
+
+export const PageQuerySchema = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+
+export const ListProjectsQuerySchema = PageQuerySchema.extend({
+  sort: z.literal("recent").optional(),
+});

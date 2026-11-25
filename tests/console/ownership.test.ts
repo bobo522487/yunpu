@@ -1,55 +1,12 @@
 import { describe, expect, test } from "vitest";
 import {
   createOrganization,
-  type JsonResponse,
-  request,
   signUp,
   uniqueEmail,
   withAdminDb,
 } from "../auth/fixtures";
-
-async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<{
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-}> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
-
-async function addMember(
-  organizationId: string,
-  email: string,
-  role: "admin" | "editor" | "viewer",
-): Promise<{ cookie: string; userId: string }> {
-  const member = await signUp(email);
-  const userId = await withAdminDb(async (client) => {
-    const result = await client.query<{ id: string }>(
-      `SELECT id FROM auth."user" WHERE email = $1`,
-      [email.toLowerCase()],
-    );
-    await client.query(
-      `INSERT INTO organization_member (organization_id, user_id, role, created_at, updated_at)
-       VALUES ($1, $2, $3, now(), now())
-       ON CONFLICT DO NOTHING`,
-      [organizationId, result.rows[0].id, role],
-    );
-    return result.rows[0].id;
-  });
-  return { cookie: member.cookie, userId };
-}
+import { call } from "../fixtures/http";
+import { addMember } from "../fixtures/members";
 
 describe("ownership transfer (console)", () => {
   test("owner transfers ownership to a member; audit row is written", async () => {

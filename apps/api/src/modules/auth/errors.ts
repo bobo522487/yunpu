@@ -39,17 +39,3 @@ export function mapSignInError(error: unknown): AppError | undefined {
   }
   return undefined;
 }
-
-export function mapAccountError(error: unknown, fallback: string): AppError {
-  const { status, code } = authErrorInfo(error);
-  if (code === "INVALID_PASSWORD") {
-    return new AppError("VALIDATION", "当前密码不正确", 400);
-  }
-  if (status === 400) {
-    return new AppError("VALIDATION", fallback, 400);
-  }
-  if (status === 401) {
-    return new AppError("UNAUTHORIZED", "需要登录", 401);
-  }
-  return new AppError("INTERNAL", fallback, 500);
-}

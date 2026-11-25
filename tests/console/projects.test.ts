@@ -1,52 +1,7 @@
 import { describe, expect, test } from "vitest";
-import {
-  createOrganization,
-  type JsonResponse,
-  request,
-  signUp,
-  uniqueEmail,
-  withAdminDb,
-} from "../auth/fixtures";
-
-type Envelope = {
-  status: number;
-  json: JsonResponse;
-  data?: Record<string, unknown>;
-};
-
-async function call(
-  path: string,
-  cookie: string | null,
-  init: RequestInit = {},
-): Promise<Envelope> {
-  const response = await request(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(cookie ? { cookie } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  const json = (await response.json()) as JsonResponse;
-  return { status: response.status, json, data: json.data };
-}
-
-async function addMember(
-  organizationId: string,
-  email: string,
-  role: "admin" | "editor" | "viewer",
-): Promise<string> {
-  const member = await signUp(email);
-  await withAdminDb(async (client) => {
-    await client.query(
-      `INSERT INTO organization_member (organization_id, user_id, role, created_at, updated_at)
-       SELECT $1, id, $2, now(), now() FROM auth."user" WHERE email = $3
-       ON CONFLICT DO NOTHING`,
-      [organizationId, role, email.toLowerCase()],
-    );
-  });
-  return member.cookie;
-}
+import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import { call, type Envelope } from "../fixtures/http";
+import { addMember } from "../fixtures/members";
 
 async function createProject(
   cookie: string,
@@ -195,7 +150,11 @@ describe("project CRUD (console)", () => {
     ).id;
 
     const viewerEmail = uniqueEmail("proj-viewer");
-    const viewerCookie = await addMember(organizationId, viewerEmail, "viewer");
+    const { cookie: viewerCookie } = await addMember(
+      organizationId,
+      viewerEmail,
+      "viewer",
+    );
     const viewerCreate = await createProject(
       viewerCookie,
       organizationId,
@@ -225,7 +184,11 @@ describe("project CRUD (console)", () => {
     expect(viewerDelete.status).toBe(403);
 
     const editorEmail = uniqueEmail("proj-editor");
-    const editorCookie = await addMember(organizationId, editorEmail, "editor");
+    const { cookie: editorCookie } = await addMember(
+      organizationId,
+      editorEmail,
+      "editor",
+    );
     const editorCreate = await createProject(
       editorCookie,
       organizationId,

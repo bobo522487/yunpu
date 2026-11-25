@@ -8,6 +8,7 @@ import {
 import type { ApiRelationKind, PersonSex } from "@yunpu/shared";
 import { and, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
+import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type PersonView = {
   id: string;
@@ -32,9 +33,6 @@ export type RelationView = {
   createdAt: string;
   updatedAt: string;
 };
-
-const timestamp = (column: typeof person.updatedAt) =>
-  sql<string>`to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 
 function pathLabel(personId: string): string {
   return personId.replace(/-/g, "");
@@ -550,38 +548,4 @@ export async function querySubgraph(
     hasMoreAncestors: Boolean(row.has_more_ancestors),
     hasMoreDescendants: Boolean(row.has_more_descendants),
   };
-}
-
-export async function countResidualEdges(
-  db: TxDatabase,
-  projectId: string,
-  personId: string,
-): Promise<number> {
-  const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(personRelation)
-    .where(
-      and(
-        eq(personRelation.projectId, projectId),
-        sql`(${personRelation.fromPersonId} = ${personId}::uuid OR ${personRelation.toPersonId} = ${personId}::uuid)`,
-      ),
-    );
-  return rows[0]?.count ?? 0;
-}
-
-export async function countResidualProjection(
-  db: TxDatabase,
-  projectId: string,
-  personId: string,
-): Promise<number> {
-  const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(lineageProjection)
-    .where(
-      and(
-        eq(lineageProjection.projectId, projectId),
-        eq(lineageProjection.personId, personId),
-      ),
-    );
-  return rows[0]?.count ?? 0;
 }

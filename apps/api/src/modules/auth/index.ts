@@ -1,4 +1,4 @@
-export { auth, authDb, authPool } from "./better-auth";
+export { auth, authPool } from "./better-auth";
 export {
   deleteAuthUser,
   type InviteOutcome,

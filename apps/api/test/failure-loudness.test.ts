@@ -1,6 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { Hono } from "hono";
 import { requestId } from "hono/request-id";
+import type { ApiEnv } from "../src/types";
 import { auth } from "../src/modules/auth";
 import { getObject } from "../src/storage";
 import { onApiError, probeDatabase } from "../src/app";
@@ -16,7 +17,7 @@ test("unhandled errors are logged with request_id and no secrets", async () => {
   const spy = vi.spyOn(console, "log").mockImplementation((line?: unknown) => {
     lines.push(String(line));
   });
-  const probe = new Hono();
+  const probe = new Hono<ApiEnv>();
   probe.use(requestId());
   probe.onError(onApiError);
   probe.get("/boom", () => { throw new Error("password=hunter2 token=abc"); });

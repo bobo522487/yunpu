@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   createOrganization,
+  setOrganizationStatus,
   signUp,
   uniqueEmail,
   withAdminDb,
@@ -143,6 +144,83 @@ describe("ownership transfer (console)", () => {
     const ownerUserId = (detail.data?.organization as { ownerUserId: string })
       .ownerUserId;
     expect([a.userId, b.userId]).toContain(ownerUserId);
+  });
+
+  test("a viewer cannot become a powerless owner: transfer promotes them to admin", async () => {
+    const owner = await signUp(uniqueEmail("own-v-o"));
+    const created = await createOrganization(owner.cookie, "viewer 接手组织");
+    const organizationId = (created.data?.organization as { id: string }).id;
+    const viewer = await addMember(
+      organizationId,
+      uniqueEmail("own-v-t"),
+      "viewer",
+    );
+
+    const before = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      viewer.cookie,
+    );
+    expect(before.status).toBe(403);
+
+    const transferred = await call(
+      `/api/v1/organizations/${organizationId}/owner`,
+      owner.cookie,
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: viewer.userId }),
+      },
+    );
+    expect(transferred.status).toBe(200);
+    expect(transferred.data?.ownerUserId).toBe(viewer.userId);
+
+    const role = await withAdminDb(async (client) => {
+      const result = await client.query<{ role: string }>(
+        `SELECT role FROM organization_member
+          WHERE organization_id = $1 AND user_id = $2`,
+        [organizationId, viewer.userId],
+      );
+      return result.rows[0]?.role;
+    });
+    expect(role).toBe("admin");
+
+    // A viewer-owner would be locked out by the admin-only RLS; this proves not.
+    const after = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      viewer.cookie,
+    );
+    expect(after.status).toBe(200);
+  });
+
+  test("ownership transfer is refused for an archived organization", async () => {
+    const owner = await signUp(uniqueEmail("own-a-o"));
+    const created = await createOrganization(owner.cookie, "归档组织转移");
+    const organizationId = (created.data?.organization as { id: string }).id;
+    const target = await addMember(
+      organizationId,
+      uniqueEmail("own-a-t"),
+      "admin",
+    );
+    await setOrganizationStatus(organizationId, "archived");
+
+    const result = await call(
+      `/api/v1/organizations/${organizationId}/owner`,
+      owner.cookie,
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: target.userId }),
+      },
+    );
+    expect(result.status).toBe(409);
+    expect(result.json.code).toBe("CONFLICT");
+
+    const actualOwner = await withAdminDb(async (client) => {
+      const row = await client.query<{ owner_user_id: string }>(
+        "SELECT owner_user_id FROM organization WHERE id = $1",
+        [organizationId],
+      );
+      return row.rows[0].owner_user_id;
+    });
+    expect(actualOwner).not.toBe(target.userId);
   });
 
   test("cross-tenant transfer returns not found", async () => {

@@ -23,7 +23,7 @@
 
 ### 4. 租户数据严格隔离
 
-租户数据隔离由 PostgreSQL `FORCE ROW LEVEL SECURITY` 策略强制执行。业务模块与普通后台任务只能通过 `withTenantTransaction` 进入事务，在事务内切换 `SET LOCAL ROLE genealogy_app` 并设置事务局部 `app.user_id`（以及可选的 `app.current_org_id`），连接归还即清空身份。禁止业务模块绕过该入口直接借用连接池。
+租户数据隔离由 PostgreSQL `FORCE ROW LEVEL SECURITY` 策略强制执行。业务模块与普通后台任务只能通过 `withTenantTransaction` 进入事务，在事务内切换 `SET LOCAL ROLE genealogy_app` 并设置事务局部 `app.user_id`，断言角色已切换后才执行业务 SQL；连接归还即清空身份。回滚失败或连接级故障的会话必须销毁，不得放回池中复用。禁止业务模块绕过该入口直接借用连接池。
 
 例外入口（健康检查、认证库、数据库迁移）明确登记在 [docs/architecture.md](architecture.md)，严禁扩展或挪用。
 

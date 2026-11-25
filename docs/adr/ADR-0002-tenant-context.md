@@ -1,8 +1,11 @@
 ---
-status: accepted
+status: superseded
+superseded_by: ADR-0010-tenant-session-hardening
 ---
 
 # ADR-0002: Tenant transaction entry
+
+> **Superseded by [ADR-0010](ADR-0010-tenant-session-hardening.md).** The single tenant-entry boundary remains, but the `orgId` / `app.current_org_id` option is removed and the session setup is collapsed to two round trips with poisoned-connection destruction. The text below is kept as history.
 
 ## Context
 

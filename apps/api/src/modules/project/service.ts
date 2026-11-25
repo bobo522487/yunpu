@@ -29,16 +29,13 @@ export async function listProjectsForOrg(
   options: { cursor?: string; limit?: number },
 ): Promise<{ items: ProjectRecord[]; nextCursor: string | null }> {
   try {
-    return await withTenantTransaction(
-      { userId, orgId: organizationId },
-      async (db) => {
-        await requireMember(db, organizationId, userId, null);
-        return listProjects(db, organizationId, {
-          cursor: options.cursor,
-          limit: options.limit ?? 50,
-        });
-      },
-    );
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, null);
+      return listProjects(db, organizationId, {
+        cursor: options.cursor,
+        limit: options.limit ?? 50,
+      });
+    });
   } catch (error) {
     throw asAppError(error);
   }
@@ -50,13 +47,10 @@ export async function createProject(
   values: CreateProjectValues,
 ): Promise<ProjectRecord> {
   try {
-    return await withTenantTransaction(
-      { userId, orgId: organizationId },
-      async (db) => {
-        await requireMember(db, organizationId, userId, "editor");
-        return insertProject(db, organizationId, values);
-      },
-    );
+    return await withTenantTransaction({ userId }, async (db) => {
+      await requireMember(db, organizationId, userId, "editor");
+      return insertProject(db, organizationId, values);
+    });
   } catch (error) {
     throw asAppError(error);
   }

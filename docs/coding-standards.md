@@ -56,10 +56,11 @@
 ## 四、数据库、事务与并发规范
 
 1. **连接与超时参数**：所有数据库连接均需通过 `packages/db/src/client.ts` 的 `PG_OPTIONS` 注入服务端超时（`lock_timeout=3000`、`statement_timeout=30000`、`idle_in_transaction_session_timeout=60000`）。
-2. **租户事务入口**：所有业务数据库读写必须包裹在 `withTenantTransaction({ userId, orgId? }, fn)` 中：
+2. **租户事务入口**：所有业务数据库读写必须包裹在 `withTenantTransaction({ userId }, fn)` 中：
+   - 事务入口只用 `app.user_id` 表达租户身份；`app.current_org_id` 已从入口移除，组织权限一律在事务内经 `access.ts`（`requireMember`）校验成员关系与角色。
    - 仅对瞬态故障（`ECONNRESET`、`40001` 序列化冲突、`40P01` 死锁）执行最多 3 次指数退避重试（`25ms * 2^attempt`）。
    - 唯一键冲突（`23505`）与乐观锁版本冲突（`VERSION_CONFLICT`）**不得重试**，直接返回 `409`。
-   - 传给 `withTenantTransaction` 的 `orgId` 若用于业务写操作或权限判定，必须经过 `access.ts`（`requireMember`）在事务内完成成员关系校验。
+   - `ROLLBACK` 失败、连接级故障或角色断言失败时，必须以 `release(true)` 销毁会话，禁止把可能中毒的连接还池。
 3. **迁移规范**：Schema 变更必须通过 `packages/db/migrations/` 顺序迁移文件与 `packages/db/src/schema/` 同步落地，迁移脚本不得混入业务模块调用。
 
 ---

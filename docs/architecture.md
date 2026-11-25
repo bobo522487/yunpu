@@ -85,10 +85,11 @@ yunpu/
 
 ## 五、租户事务与系统边界
 
-业务请求与后台任务读写任何租户表，**必须且只能**通过 `apps/api/src/db/with-tenant-transaction.ts` 的 `withTenantTransaction({ userId, orgId? }, fn)`：
+业务请求与后台任务读写任何租户表，**必须且只能**通过 `apps/api/src/db/with-tenant-transaction.ts` 的 `withTenantTransaction({ userId }, fn)`：
 
-- 事务开启后执行 `SET LOCAL ROLE genealogy_app`，并设置 `app.user_id`（以及可选的 `app.current_org_id`），通过 `SELECT current_user` 断言角色已切换。
-- 连接释放前事务结束（`COMMIT` 或 `ROLLBACK`），`SET LOCAL` 作用域自动失效，避免连接池复用导致跨租户串数据。
+- `BEGIN` 与 `SET LOCAL ROLE genealogy_app` 合并为一次简单协议往返；随后用一条 `SELECT set_config('app.user_id', $1, true), current_user` 同时写入事务局部身份并断言角色，前置往返由 5 次降为 2 次。
+- `app.current_org_id` 从未被任何 RLS 策略读取，已从租户入口移除；租户隔离只依赖 `app.user_id`、RLS 谓词与成员角色校验。
+- 连接释放前事务结束（`COMMIT` 或 `ROLLBACK`），`SET LOCAL` 作用域自动失效；`ROLLBACK` 失败、连接级故障或角色断言失败时以 `release(true)` 销毁会话，避免连接池复用导致跨租户串数据。
 
 **仅有的三处非租户事务入口（严禁普通业务复用）：**
 

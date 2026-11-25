@@ -49,20 +49,20 @@ describe("US1 registration", () => {
 
     const duplicate = await signUp(` ${email.toUpperCase()} `);
     expect(duplicate.response.status).toBe(409);
-    expect(duplicate.json.error?.code).toBe("CONFLICT");
+    expect(duplicate.json.code).toBe("CONFLICT");
   });
 
   test("rejects a password shorter than 8 characters", async () => {
     const result = await signUp(uniqueEmail("short"), { password: "short" });
     expect(result.response.status).toBe(400);
-    expect(result.json.error?.code).toBe("VALIDATION");
+    expect(result.json.code).toBe("VALIDATION");
   });
 
   test("rejects an all-whitespace password with 400 and names the minimum", async () => {
     const result = await signUp(uniqueEmail("blank"), { password: "        " });
     expect(result.response.status).toBe(400);
-    expect(result.json.error?.code).toBe("VALIDATION");
-    const details = JSON.stringify(result.json.error?.details ?? {});
+    expect(result.json.code).toBe("VALIDATION");
+    const details = JSON.stringify(result.json.details ?? {});
     expect(details).toContain("密码");
     expect(details).toContain("8");
   });
@@ -70,7 +70,7 @@ describe("US1 registration", () => {
   test("rejects an empty password with 400", async () => {
     const result = await signUp(uniqueEmail("empty"), { password: "" });
     expect(result.response.status).toBe(400);
-    expect(result.json.error?.code).toBe("VALIDATION");
+    expect(result.json.code).toBe("VALIDATION");
   });
 
   test("keeps a password that only has surrounding spaces", async () => {
@@ -95,8 +95,8 @@ describe("US1 registration", () => {
     expect(created).toHaveLength(1);
     expect(rejected).toHaveLength(9);
     for (const attempt of rejected) {
-      expect(attempt.json.error?.code).toBe("CONFLICT");
-      expect(attempt.json.error?.message).toContain("已注册");
+      expect(attempt.json.code).toBe("CONFLICT");
+      expect(attempt.json.message).toContain("已注册");
     }
 
     const counts = await withAdminDb(async (client) => {

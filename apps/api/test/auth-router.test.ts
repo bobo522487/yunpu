@@ -9,8 +9,8 @@ describe("auth router contract", () => {
       body: "{}",
     });
     expect(response.status).toBe(400);
-    const json = (await response.json()) as { error: { code: string } };
-    expect(json.error.code).toBe("VALIDATION");
+    const json = (await response.json()) as { code: string };
+    expect(json.code).toBe("VALIDATION");
   });
 
   test("sign-up rejects a whitespace-only password with 400", async () => {
@@ -21,9 +21,10 @@ describe("auth router contract", () => {
     });
     expect(response.status).toBe(400);
     const json = (await response.json()) as {
-      error: { code: string; details?: Record<string, string[]> };
+      code: string;
+      details?: Record<string, string[]>;
     };
-    expect(json.error.code).toBe("VALIDATION");
+    expect(json.code).toBe("VALIDATION");
     expect(JSON.stringify(json)).toContain("密码");
   });
 

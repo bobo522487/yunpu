@@ -57,8 +57,8 @@ describe("US2 login and session", () => {
 
     expect(wrong.response.status).toBe(401);
     expect(unknown.response.status).toBe(401);
-    expect(wrong.json.error?.message).toBe(unknown.json.error?.message);
-    expect(wrong.json.error?.message).toBe("邮箱或密码错误");
+    expect(wrong.json.message).toBe(unknown.json.message);
+    expect(wrong.json.message).toBe("邮箱或密码错误");
   });
 
   test("signing out one device keeps the other session alive", async () => {

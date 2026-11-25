@@ -29,15 +29,26 @@ case $name in
     ;;
 esac
 
+# Docker and Podman both provide Compose. Prefer Docker when both are
+# installed; accept either one so a Podman-only host can run the same flow.
+runtime=""
+if command -v docker >/dev/null 2>&1; then
+  runtime=docker
+elif command -v podman >/dev/null 2>&1; then
+  runtime=podman
+else
+  printf '%s\n' docker podman >&2
+fi
+
 missing=0
-for tool in docker pnpm node; do
+for tool in pnpm node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     printf '%s\n' "$tool" >&2
     missing=1
   fi
 done
 
-if [ "$missing" -ne 0 ]; then
+if [ -z "$runtime" ] || [ "$missing" -ne 0 ]; then
   exit 1
 fi
 
@@ -106,14 +117,28 @@ poll_ready() {
   return 1
 }
 
+# Compose project owners holding a published host port. Both Docker and
+# Podman expose the Compose project label and the published-port list here;
+# Podman has no `ps --filter publish`, so match the port text in the shell.
+compose_projects_for_port() {
+  port=$1
+  rows=$("$runtime" ps --format '{{.Names}}|{{index .Labels "com.docker.compose.project"}}|{{.Ports}}' 2>/dev/null || true)
+  printf '%s\n' "$rows" | while IFS='|' read -r _name owner ports; do
+    case $ports in
+      *":$port->"*) printf '%s\n' "$owner" ;;
+    esac
+  done
+}
+
 # True when some other Compose project already holds the host port. This
 # project's own leftovers (a half-started run) do not count: compose up
 # replaces them.
 port_held_by_other_project() {
   port=$1
-  holders=$(docker ps --filter "publish=$port" --format '{{.Label "com.docker.compose.project"}}' 2>/dev/null || true)
+  holders=$(compose_projects_for_port "$port")
   [ -n "$holders" ] || return 1
   while IFS= read -r holder; do
+    [ -n "$holder" ] || continue
     [ "$holder" = "$project" ] || { printf '%s' "$holder"; return 0; }
   done <<EOF
 $holders
@@ -139,7 +164,7 @@ check_ports_free() {
       printf '%s\n' "port $port is held by another project: $holder" >&2
       failed=1
     elif port_in_use "$port"; then
-      holder=$(docker ps --filter "publish=$port" --format '{{.Label "com.docker.compose.project"}}' 2>/dev/null | head -1)
+      holder=$(compose_projects_for_port "$port" | head -1)
       if [ "$holder" != "$project" ]; then
         printf '%s\n' "port $port is already in use" >&2
         failed=1
@@ -172,11 +197,26 @@ stop_app() {
   fi
 }
 
+# Docker Compose names containers `<project>-<service>-1`; podman-compose
+# uses `<project>_<service>_1`. Accept both so health checks work on either.
+container_health() {
+  service=$1
+  for candidate in "$project-$service-1" "${project}_${service}_1"; do
+    if status=$("$runtime" inspect --format '{{.State.Health.Status}}' "$candidate" 2>/dev/null); then
+      if [ -n "$status" ]; then
+        printf '%s' "$status"
+        return 0
+      fi
+    fi
+  done
+  printf 'starting'
+}
+
 wait_containers_healthy() {
   deadline=$(( $(date +%s) + 90 ))
   while [ "$(date +%s)" -lt "$deadline" ]; do
-    postgres_ok=$(docker inspect --format '{{.State.Health.Status}}' "$project-postgres-1" 2>/dev/null || echo starting)
-    minio_ok=$(docker inspect --format '{{.State.Health.Status}}' "$project-minio-1" 2>/dev/null || echo starting)
+    postgres_ok=$(container_health postgres)
+    minio_ok=$(container_health minio)
     if [ "$postgres_ok" = "healthy" ] && [ "$minio_ok" = "healthy" ]; then
       return 0
     fi
@@ -210,7 +250,7 @@ EOF
 }
 
 bootstrap_db_roles() {
-  docker compose -p "$project" -f "$compose_file" exec -T postgres \
+  "$runtime" compose -p "$project" -f "$compose_file" exec -T postgres \
     psql -U postgres -d "$database_name" -v ON_ERROR_STOP=1 >/dev/null <<'SQL'
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rls_definer') THEN
@@ -251,11 +291,18 @@ start_app() {
 }
 
 compose_up() {
+  # Docker Compose waits on healthchecks itself; podman-compose has no --wait
+  # flag, so wait_containers_healthy covers both runtimes uniformly.
+  wait_flag=""
+  if [ "$runtime" = docker ]; then
+    wait_flag="--wait"
+  fi
+
   # test starts from an empty baseline on every launch: this environment's
   # two volumes go before the containers come up. development keeps its
   # volumes across down and up.
   if [ "$name" = "test" ]; then
-    docker compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
+    "$runtime" compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
   fi
 
   # The MinIO root account doubles as the application's storage account:
@@ -268,13 +315,13 @@ compose_up() {
     POSTGRES_DB="$database_name" \
     MINIO_ROOT_USER="$storage_access_key" \
     MINIO_ROOT_PASSWORD="$storage_secret_key" \
-      docker compose -p "$project" -f "$compose_file" up -d --wait >"$compose_log" 2>&1
+      "$runtime" compose -p "$project" -f "$compose_file" up -d $wait_flag >"$compose_log" 2>&1
   then
     printf '%s\n' "component failed to start: postgres or minio" >&2
     if [ -f "$compose_log" ]; then
       tail -n 80 "$compose_log" >&2 || true
     fi
-    docker compose -p "$project" -f "$compose_file" ps >&2 || true
+    "$runtime" compose -p "$project" -f "$compose_file" ps >&2 || true
     return 1
   fi
 }
@@ -287,7 +334,7 @@ perform_up() {
   # alone keeps its volumes across repeated up calls.
   if [ "$name" = "test" ]; then
     stop_app
-    docker compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
+    "$runtime" compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
   elif report_ready >/dev/null 2>&1; then
     # Same development project already running: stay on the existing volume.
     # Still refresh the gitignored env mirrors Vitest / tooling read.
@@ -316,14 +363,14 @@ case $action in
     ;;
   down)
     stop_app
-    docker compose -p "$project" -f "$compose_file" down --remove-orphans >/dev/null 2>&1 || true
+    "$runtime" compose -p "$project" -f "$compose_file" down --remove-orphans >/dev/null 2>&1 || true
     exit 0
     ;;
   reset)
     stop_app
     # Only the named environment's volumes are deleted here; the other
     # project keeps its containers, volumes, and objects.
-    docker compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
+    "$runtime" compose -p "$project" -f "$compose_file" down -v --remove-orphans >/dev/null 2>&1 || true
     perform_up
     exit $?
     ;;

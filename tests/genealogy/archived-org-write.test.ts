@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { describe, expect, test } from "vitest";
 import { withAdminDb } from "../auth/fixtures";
 import { call, createPerson, seedOwnerProject } from "./fixtures/helpers";
@@ -32,8 +33,8 @@ describe("archived organization writes", () => {
       await client.query(
         `INSERT INTO invite
            (organization_id, email, role, token_hash, status, expires_at, invited_by)
-         VALUES ($1, 'before-archive@example.com', 'viewer', decode(repeat('aa', 32), 'hex'), 'pending', now() + interval '1 day', $2)`,
-        [organizationId, owner.rows[0].user_id],
+         VALUES ($1, 'before-archive@example.com', 'viewer', $2, 'pending', now() + interval '1 day', $3)`,
+        [organizationId, randomBytes(32), owner.rows[0].user_id],
       );
     });
 

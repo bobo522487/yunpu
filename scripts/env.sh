@@ -158,6 +158,14 @@ port_in_use() {
 }
 
 check_ports_free() {
+  # A stack that already answers ready owns this environment's published
+  # ports. That is authoritative even when `runtime ps` cannot list containers
+  # (e.g. a sandbox with a read-only runtime dir): treat `up` as idempotent
+  # instead of misreporting a foreign port conflict.
+  if report_ready >/dev/null 2>&1; then
+    return 0
+  fi
+
   failed=0
   for port in "$database_host_port" "$storage_host_port"; do
     if holder=$(port_held_by_other_project "$port"); then

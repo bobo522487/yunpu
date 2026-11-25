@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { describe, expect, test } from "vitest";
 import { withTenantTransaction } from "../../apps/api/src/db/with-tenant-transaction";
 import { signUp, uniqueEmail, withAdminDb } from "../auth/fixtures";
@@ -128,7 +129,7 @@ describe("write role backstop", () => {
         db.execute(
           `insert into invite
              (organization_id, email, role, token_hash, expires_at, invited_by)
-           values ('${organizationId}'::uuid, 'editor-invite@example.com', 'viewer', decode(repeat('bb', 32), 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
+           values ('${organizationId}'::uuid, 'editor-invite@example.com', 'viewer', decode('${randomBytes(32).toString("hex")}', 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
         ),
       ),
     ).rejects.toMatchObject({ cause: { code: "42501" } });
@@ -153,7 +154,7 @@ describe("write role backstop", () => {
       db.execute(
         `insert into invite
            (organization_id, email, role, token_hash, expires_at, invited_by)
-         values ('${organizationId}'::uuid, 'admin-invite@example.com', 'viewer', decode(repeat('cc', 32), 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
+         values ('${organizationId}'::uuid, 'admin-invite@example.com', 'viewer', decode('${randomBytes(32).toString("hex")}', 'hex'), now() + interval '1 day', '${ownerUserId}'::uuid)`,
       ),
     );
     const renamed = await withAdminDb((client) =>

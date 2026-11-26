@@ -27,7 +27,7 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 - _Avoid_: Admin, Root user
 
 ### Organization
-`User` 协作和拥有 `Project` 的租户边界，具有 `active`、`suspended` 或 `archived` 状态，并且恰好有一个 `Owner`。归档（`archived`）后禁止业务写入与切换进入。
+`User` 协作和拥有 `Project` 的租户边界，具有 `active` 或 `archived` 状态，并且恰好有一个 `Owner`。归档（`archived`）后禁止业务写入与切换进入。
 - _Avoid_: Workspace（指租户边界时）, Tenant, Team
 
 ### Current Organization

@@ -17,8 +17,12 @@ afterEach(async () => {
   await withAdminDb(async (client) => {
     await client.query("BEGIN");
     try {
-      // The owner FK and the member/org FKs are mutually RESTRICT, so the
-      // fixture has to bypass RI triggers for this cleanup transaction only.
+      // Narrower `SET CONSTRAINTS fk_organization_owner DEFERRED` was tried
+      // first and fails on the mutually RESTRICT FK cycle with:
+      // error: update or delete on table "organization_member" violates RESTRICT
+      // setting of foreign key constraint "fk_organization_owner" on table "organization"
+      // RESTRICT checks are not deferrable (member->org is RESTRICT as well),
+      // so keep the transaction-scoped override until the schema changes.
       await client.query("SET LOCAL session_replication_role = replica");
       if (userId) {
         await client.query("DELETE FROM auth.session WHERE user_id = $1", [
@@ -65,10 +69,17 @@ describe("PATCH /api/v1/organizations/:id with an unsupported status", () => {
   test("returns the validation envelope and leaves the stored status unchanged", async () => {
     const email = uniqueEmail("org-status-negative");
     const owner = await signUp(email);
-    const organizationId = (
-      owner.json.data?.defaultOrganization as { id: string }
-    ).id;
-    created = { email, organizationId };
+    expect(owner.json.ok).toBe(true);
+    // Register cleanup data before dereferencing the optional sign-up payload:
+    // a failed/partial sign-up must still be cleanable by afterEach.
+    created = {
+      email,
+      organizationId:
+        (owner.json.data?.defaultOrganization as { id?: string } | undefined)
+          ?.id ?? "",
+    };
+    const organizationId = created.organizationId;
+    expect(organizationId).not.toBe("");
 
     expect(await storedStatus(organizationId)).toBe("active");
 

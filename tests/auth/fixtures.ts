@@ -1,4 +1,4 @@
-import type { MemberRole } from "@yunpu/shared";
+import type { MemberRole, OrganizationStatus } from "@yunpu/shared";
 import { Client } from "pg";
 import app from "../../apps/api/src/app";
 
@@ -157,7 +157,7 @@ export async function insertInvite(input: {
 
 export async function setOrganizationStatus(
   organizationId: string,
-  status: "active" | "suspended" | "archived",
+  status: OrganizationStatus,
 ): Promise<void> {
   await withAdminDb(async (client) => {
     await client.query("UPDATE organization SET status = $2 WHERE id = $1", [

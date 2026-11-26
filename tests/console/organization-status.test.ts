@@ -7,7 +7,7 @@ import {
 } from "../auth/fixtures";
 import { call } from "../fixtures/http";
 
-let created: { email: string; organizationId: string } | null = null;
+let created: { email: string; organizationId: string | null } | null = null;
 
 afterEach(async () => {
   if (!created) return;
@@ -32,16 +32,30 @@ afterEach(async () => {
           userId,
         ]);
       }
-      await client.query("DELETE FROM invite WHERE organization_id = $1", [
-        organizationId,
-      ]);
-      await client.query(
-        "DELETE FROM organization_member WHERE organization_id = $1",
-        [organizationId],
-      );
-      await client.query("DELETE FROM organization WHERE id = $1", [
-        organizationId,
-      ]);
+      // Resolve the organization from the sign-up response when available.
+      // If sign-up failed before returning an id, derive it from the already
+      // registered user id. Never bind a non-uuid placeholder (e.g. "") to a
+      // uuid parameter, which would abort cleanup before deleting auth.user.
+      let organizationIdToDelete = organizationId;
+      if (!organizationIdToDelete && userId) {
+        const orgRows = await client.query<{ id: string }>(
+          "SELECT id FROM organization WHERE owner_user_id = $1",
+          [userId],
+        );
+        organizationIdToDelete = orgRows.rows[0]?.id ?? null;
+      }
+      if (organizationIdToDelete) {
+        await client.query("DELETE FROM invite WHERE organization_id = $1", [
+          organizationIdToDelete,
+        ]);
+        await client.query(
+          "DELETE FROM organization_member WHERE organization_id = $1",
+          [organizationIdToDelete],
+        );
+        await client.query("DELETE FROM organization WHERE id = $1", [
+          organizationIdToDelete,
+        ]);
+      }
       if (userId) {
         await client.query('DELETE FROM auth."user" WHERE id = $1', [userId]);
       }
@@ -68,18 +82,20 @@ async function storedStatus(
 describe("PATCH /api/v1/organizations/:id with an unsupported status", () => {
   test("returns the validation envelope and leaves the stored status unchanged", async () => {
     const email = uniqueEmail("org-status-negative");
+    // Register the cleanup target BEFORE the request: an error envelope or a
+    // thrown sign-up must still be cleanable by afterEach.
+    const cleanup = { email, organizationId: null as string | null };
+    created = cleanup;
     const owner = await signUp(email);
     expect(owner.json.ok).toBe(true);
-    // Register cleanup data before dereferencing the optional sign-up payload:
-    // a failed/partial sign-up must still be cleanable by afterEach.
-    created = {
-      email,
-      organizationId:
-        (owner.json.data?.defaultOrganization as { id?: string } | undefined)
-          ?.id ?? "",
-    };
-    const organizationId = created.organizationId;
-    expect(organizationId).not.toBe("");
+    cleanup.organizationId =
+      (owner.json.data?.defaultOrganization as { id?: string } | undefined)
+        ?.id ?? null;
+    const organizationId = cleanup.organizationId;
+    expect(organizationId).not.toBeNull();
+    if (!organizationId) {
+      throw new Error("sign-up did not create a default organization");
+    }
 
     expect(await storedStatus(organizationId)).toBe("active");
 

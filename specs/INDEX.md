@@ -9,4 +9,4 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `001-dev-test-environment` | Archived (Done) | [spec.md](./001-dev-test-environment/spec.md) | [plan.md](./001-dev-test-environment/plan.md) | [tasks.md](./001-dev-test-environment/tasks.md) |
 | `002-user-auth-default-org` | Archived (Done) | [spec.md](./002-user-auth-default-org/spec.md) | [plan.md](./002-user-auth-default-org/plan.md) | [tasks.md](./002-user-auth-default-org/tasks.md) |
-| `003-organization-member-collaboration` | Tasks（待执行） | [spec.md](./003-organization-member-collaboration/spec.md) | [plan.md](./003-organization-member-collaboration/plan.md) | [tasks.md](./003-organization-member-collaboration/tasks.md) |
+| `003-organization-member-collaboration` | Implemented（待合并评审） | [spec.md](./003-organization-member-collaboration/spec.md) | [plan.md](./003-organization-member-collaboration/plan.md) | [tasks.md](./003-organization-member-collaboration/tasks.md) |

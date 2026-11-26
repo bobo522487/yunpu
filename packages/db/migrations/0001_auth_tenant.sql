@@ -111,7 +111,7 @@ ALTER TABLE "organization_member" ADD CONSTRAINT "fk_organization_member_user" F
 ALTER TABLE "organization" ADD CONSTRAINT "fk_organization_owner" FOREIGN KEY ("id", "owner_user_id") REFERENCES "organization_member" ("organization_id", "user_id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "organization" ADD CONSTRAINT "ck_organization_name_not_blank" CHECK (btrim("name") <> '');
-ALTER TABLE "organization" ADD CONSTRAINT "ck_organization_status" CHECK ("status" IN ('active', 'suspended', 'archived'));
+ALTER TABLE "organization" ADD CONSTRAINT "ck_organization_status" CHECK ("status" IN ('active', 'archived'));
 
 ALTER TABLE "organization_member" ADD CONSTRAINT "ck_organization_member_role" CHECK ("role" IN ('admin', 'editor', 'viewer'));
 

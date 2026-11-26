@@ -1,5 +1,9 @@
 import { authUser, invite, organization, organizationMember } from "@yunpu/db";
-import type { InviteStatus, MemberRole } from "@yunpu/shared";
+import type {
+  InviteStatus,
+  MemberRole,
+  OrganizationStatus,
+} from "@yunpu/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { isoTimestamp as timestamp } from "../../lib/sql";
@@ -99,7 +103,7 @@ export async function getOrganizationSummary(
 export type OrganizationDetail = {
   id: string;
   name: string;
-  status: "active" | "suspended" | "archived";
+  status: OrganizationStatus;
   ownerUserId: string;
   myRole: MemberRole;
   isOwner: boolean;
@@ -338,7 +342,7 @@ export async function organizationOwnerId(
 export async function organizationStatus(
   db: TxDatabase,
   organizationId: string,
-): Promise<"active" | "suspended" | "archived" | null> {
+): Promise<OrganizationStatus | null> {
   const rows = await db
     .select({ status: organization.status })
     .from(organization)

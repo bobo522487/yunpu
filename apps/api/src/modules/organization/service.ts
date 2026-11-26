@@ -220,7 +220,7 @@ export async function listInvitesForOrg(
 export async function createInviteForOrg(
   userId: string,
   organizationId: string,
-  values: { email: string; role: MemberRole },
+  values: { email: string; role?: MemberRole },
   origin: string,
 ): Promise<{ invite: InviteListItem; inviteUrl: string }> {
   try {
@@ -232,7 +232,8 @@ export async function createInviteForOrg(
       const tokenHash = createHash("sha256").update(token, "utf8").digest();
       const invite = await insertInviteRecord(db, organizationId, {
         email: values.email,
-        role: values.role,
+        // DB invite.role 列无默认值；缺省在入口/服务层落为 viewer。
+        role: values.role ?? "viewer",
         tokenHash,
         expiresAt: new Date(Date.now() + INVITE_TTL_MS),
         invitedBy: userId,

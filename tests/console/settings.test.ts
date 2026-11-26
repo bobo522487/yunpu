@@ -1,7 +1,110 @@
-import { describe, expect, test } from "vitest";
-import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import {
+  createOrganization,
+  signUp,
+  uniqueEmail,
+  withAdminDb,
+} from "../auth/fixtures";
 import { call } from "../fixtures/http";
 import { addMember } from "../fixtures/members";
+
+let emails: Set<string>;
+
+beforeEach(() => {
+  emails = new Set();
+});
+
+afterEach(async () => {
+  // Register the email before signUp so a partially created fixture is still
+  // cleaned up; derive organizations from their owner and never bind a
+  // non-uuid placeholder to a uuid parameter.
+  if (emails.size === 0) return;
+  const tracked = [...emails];
+  await withAdminDb(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("SET LOCAL session_replication_role = replica");
+      const users = await client.query<{ id: string }>(
+        'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
+        [tracked],
+      );
+      const userIds = users.rows.map((row) => row.id);
+      if (userIds.length > 0) {
+        await client.query(
+          `DELETE FROM audit_log WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM invite WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM organization_member WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM project WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM organization WHERE owner_user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
+          [tracked],
+        );
+        await client.query(
+          'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
+          [userIds],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  });
+});
+
+function trackEmail(email: string): void {
+  emails.add(email.toLowerCase());
+}
+
+async function trackedSignUp(prefix: string) {
+  const email = uniqueEmail(prefix);
+  trackEmail(email);
+  const signedUp = await signUp(email);
+  expect(signedUp.response.status).toBe(201);
+  return signedUp;
+}
+
+async function trackedCreateOrganization(
+  cookie: string,
+  name: string,
+): Promise<string> {
+  const created = await createOrganization(cookie, name);
+  expect(created.ok).toBe(true);
+  const organizationId = (
+    created.data?.organization as { id?: string } | undefined
+  )?.id;
+  if (!organizationId) {
+    throw new Error("createOrganization did not return an organization id");
+  }
+  return organizationId;
+}
 
 describe("organization settings (console)", () => {
   test("admin renames the organization; blank name is rejected", async () => {
@@ -89,6 +192,8 @@ describe("organization settings (console)", () => {
       { method: "POST" },
     );
     expect(activate.status).toBe(404);
+    expect(activate.json.ok).toBe(false);
+    expect(activate.json.code).toBe("NOT_FOUND");
 
     const projectCreate = await call(
       `/api/v1/organizations/${organizationId}/projects`,
@@ -97,6 +202,31 @@ describe("organization settings (console)", () => {
     );
     expect(projectCreate.status).toBe(409);
     expect(projectCreate.json.code).toBe("CONFLICT");
+  });
+
+  test("archived organization rejects rename with a conflict error", async () => {
+    const owner = await trackedSignUp("set-ar-o");
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "归档改名组织",
+    );
+
+    const archived = await call(
+      `/api/v1/organizations/${organizationId}`,
+      owner.cookie,
+      { method: "PATCH", body: JSON.stringify({ status: "archived" }) },
+    );
+    expect(archived.status).toBe(200);
+
+    const rename = await call(
+      `/api/v1/organizations/${organizationId}`,
+      owner.cookie,
+      { method: "PATCH", body: JSON.stringify({ name: "归档后改名" }) },
+    );
+    expect(rename.status).toBe(409);
+    expect(rename.json.ok).toBe(false);
+    expect(rename.json.code).toBe("CONFLICT");
+    expect(rename.json.message).toBe("组织已归档，无法写入");
   });
 
   test("cross-tenant rename returns not found", async () => {

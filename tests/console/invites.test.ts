@@ -1,7 +1,121 @@
-import { describe, expect, test } from "vitest";
-import { createOrganization, signUp, uniqueEmail } from "../auth/fixtures";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import {
+  createOrganization,
+  signUp,
+  uniqueEmail,
+  withAdminDb,
+} from "../auth/fixtures";
 import { call } from "../fixtures/http";
 import { addMember } from "../fixtures/members";
+
+let emails: Set<string>;
+
+beforeEach(() => {
+  emails = new Set();
+});
+
+afterEach(async () => {
+  // Register the email before signUp so a partially created fixture is still
+  // cleaned up; derive organizations from their owner and never bind a
+  // non-uuid placeholder to a uuid parameter.
+  if (emails.size === 0) return;
+  const tracked = [...emails];
+  await withAdminDb(async (client) => {
+    await client.query("BEGIN");
+    try {
+      await client.query("SET LOCAL session_replication_role = replica");
+      const users = await client.query<{ id: string }>(
+        'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
+        [tracked],
+      );
+      const userIds = users.rows.map((row) => row.id);
+      if (userIds.length > 0) {
+        await client.query(
+          `DELETE FROM audit_log WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM invite WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM organization_member WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          `DELETE FROM project WHERE organization_id IN
+             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM organization WHERE owner_user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
+          [userIds],
+        );
+        await client.query(
+          "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
+          [tracked],
+        );
+        await client.query(
+          'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
+          [userIds],
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  });
+});
+
+function trackEmail(email: string): void {
+  emails.add(email.toLowerCase());
+}
+
+async function trackedSignUp(email: string) {
+  trackEmail(email);
+  const signedUp = await signUp(email);
+  expect(signedUp.response.status).toBe(201);
+  return signedUp;
+}
+
+async function trackedCreateOrganization(
+  cookie: string,
+  name: string,
+): Promise<string> {
+  const created = await createOrganization(cookie, name);
+  expect(created.ok).toBe(true);
+  const organizationId = (
+    created.data?.organization as { id?: string } | undefined
+  )?.id;
+  if (!organizationId) {
+    throw new Error("createOrganization did not return an organization id");
+  }
+  return organizationId;
+}
+
+async function archiveOrganization(
+  cookie: string,
+  organizationId: string,
+): Promise<void> {
+  const archived = await call(
+    `/api/v1/organizations/${organizationId}`,
+    cookie,
+    { method: "PATCH", body: JSON.stringify({ status: "archived" }) },
+  );
+  expect(archived.status).toBe(200);
+}
 
 describe("organization invites (console)", () => {
   test("creating an invite returns a one-time inviteUrl; list never exposes the token", async () => {
@@ -214,6 +328,63 @@ describe("organization invites (console)", () => {
     });
     expect(redeem.status).toBeGreaterThanOrEqual(400);
     expect(redeem.json.ok).toBe(false);
+  });
+
+  test("archived organization rejects invite creation with GX012", async () => {
+    const owner = await trackedSignUp(uniqueEmail("inv-ar-c-o"));
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "归档创建邀请组织",
+    );
+    await archiveOrganization(owner.cookie, organizationId);
+
+    const created = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      owner.cookie,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          email: uniqueEmail("inv-ar-c-t"),
+          role: "editor",
+        }),
+      },
+    );
+    expect(created.status).toBe(409);
+    expect(created.json.ok).toBe(false);
+    expect(created.json.code).toBe("CONFLICT");
+    expect(created.json.details).toMatchObject({ sqlstate: "GX012" });
+  });
+
+  test("archived organization rejects invite redemption with GX012", async () => {
+    const owner = await trackedSignUp(uniqueEmail("inv-ar-r-o"));
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "归档兑换邀请组织",
+    );
+    const inviteeEmail = uniqueEmail("inv-ar-r-t");
+    const invitee = await trackedSignUp(inviteeEmail);
+
+    const created = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      owner.cookie,
+      {
+        method: "POST",
+        body: JSON.stringify({ email: inviteeEmail, role: "editor" }),
+      },
+    );
+    expect(created.status).toBe(201);
+    const token = (created.data?.inviteUrl as string).split("/#/invite/")[1];
+
+    await archiveOrganization(owner.cookie, organizationId);
+
+    const redeem = await call("/api/v1/invites/accept", invitee.cookie, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+    expect(redeem.status).toBe(409);
+    expect(redeem.json.ok).toBe(false);
+    expect(redeem.json.code).toBe("CONFLICT");
+    expect(redeem.json.details).toMatchObject({ sqlstate: "GX012" });
   });
 
   test("omitting role creates a viewer invite and redemption yields a viewer member", async () => {

@@ -36,6 +36,14 @@ describe("validation error envelope", () => {
 });
 
 describe("generated OpenAPI contract", () => {
+  test("no suspended status remains anywhere in the generated contract", async () => {
+    const document = await readFile(
+      join(process.cwd(), "contracts/openapi.json"),
+      "utf8",
+    );
+    expect(document).not.toContain("suspended");
+  });
+
   test("every operation declares parameters, request bodies where needed, and schemas", async () => {
     const document = JSON.parse(
       await readFile(join(process.cwd(), "contracts/openapi.json"), "utf8"),

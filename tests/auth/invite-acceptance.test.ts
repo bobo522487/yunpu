@@ -10,6 +10,7 @@ import {
   signUp,
   uniqueEmail,
   withAdminDb,
+  type JsonResponse,
 } from "./fixtures";
 
 const trackedEmails = new Set<string>();

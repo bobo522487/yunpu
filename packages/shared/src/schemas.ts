@@ -74,7 +74,7 @@ export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 
 export const CreateInviteSchema = z.object({
   email: normalizedEmail,
-  role: RoleSchema,
+  role: RoleSchema.default("viewer"),
 });
 export type CreateInviteInput = z.infer<typeof CreateInviteSchema>;
 

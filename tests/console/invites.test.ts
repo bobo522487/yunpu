@@ -215,4 +215,53 @@ describe("organization invites (console)", () => {
     expect(redeem.status).toBeGreaterThanOrEqual(400);
     expect(redeem.json.ok).toBe(false);
   });
+
+  test("omitting role creates a viewer invite and redemption yields a viewer member", async () => {
+    const owner = await signUp(uniqueEmail("inv-default-o"));
+    const created = await createOrganization(owner.cookie, "默认角色邀请组织");
+    const organizationId = (created.data?.organization as { id: string }).id;
+    const inviteeEmail = uniqueEmail("inv-default-t");
+    const invitee = await signUp(inviteeEmail);
+
+    const createdInvite = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      owner.cookie,
+      {
+        method: "POST",
+        body: JSON.stringify({ email: inviteeEmail }),
+      },
+    );
+    expect(createdInvite.status).toBe(201);
+    const invite = createdInvite.data?.invite as Record<string, unknown>;
+    expect(invite.role).toBe("viewer");
+
+    const listed = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      owner.cookie,
+    );
+    expect(listed.status).toBe(200);
+    const invites = listed.data?.items as Record<string, unknown>[];
+    expect(invites.find((entry) => entry.email === inviteeEmail)?.role).toBe(
+      "viewer",
+    );
+
+    const token = (createdInvite.data?.inviteUrl as string).split(
+      "/#/invite/",
+    )[1];
+    const accepted = await call("/api/v1/invites/accept", invitee.cookie, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+    expect(accepted.status).toBe(200);
+
+    const members = await call(
+      `/api/v1/organizations/${organizationId}/members`,
+      owner.cookie,
+    );
+    expect(members.status).toBe(200);
+    const memberItems = members.data?.items as Record<string, unknown>[];
+    expect(
+      memberItems.find((entry) => entry.email === inviteeEmail)?.role,
+    ).toBe("viewer");
+  });
 });

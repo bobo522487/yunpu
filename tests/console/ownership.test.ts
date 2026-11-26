@@ -1,6 +1,8 @@
-import { describe, expect, test } from "vitest";
+import type { MemberRole } from "@yunpu/shared";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createOrganization,
+  findUserIdByEmail,
   setOrganizationStatus,
   signUp,
   uniqueEmail,
@@ -244,5 +246,247 @@ describe("ownership transfer (console)", () => {
     );
     expect(result.status).toBe(404);
     expect(result.json.code).toBe("NOT_FOUND");
+  });
+});
+
+describe("owner invariants and transfer role effects (T-010 review)", () => {
+  let emails: Set<string>;
+
+  beforeEach(() => {
+    emails = new Set();
+  });
+
+  afterEach(async () => {
+    // Every email is registered before the request that can fail. Organization
+    // ids are derived from actual user ids, so a non-uuid placeholder is never
+    // bound to a uuid parameter when sign-up is only partially complete.
+    if (emails.size === 0) return;
+    const tracked = [...emails];
+    await withAdminDb(async (client) => {
+      await client.query("BEGIN");
+      try {
+        await client.query("SET LOCAL session_replication_role = replica");
+        const users = await client.query<{ id: string }>(
+          'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
+          [tracked],
+        );
+        const userIds = users.rows.map((row) => row.id);
+        if (userIds.length > 0) {
+          // A successful transfer moves ownership, so collect organizations by
+          // either ownership or membership of the tracked users.
+          const organizations = await client.query<{ id: string }>(
+            `SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[])
+             UNION
+             SELECT organization_id AS id FROM organization_member
+             WHERE user_id = ANY($1::uuid[])`,
+            [userIds],
+          );
+          const organizationIds = organizations.rows.map((row) => row.id);
+          if (organizationIds.length > 0) {
+            await client.query(
+              "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
+              [organizationIds],
+            );
+            await client.query(
+              "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
+              [organizationIds],
+            );
+            await client.query(
+              "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
+              [organizationIds],
+            );
+            await client.query(
+              "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
+              [organizationIds],
+            );
+            await client.query(
+              "DELETE FROM organization WHERE id = ANY($1::uuid[])",
+              [organizationIds],
+            );
+          }
+          await client.query(
+            "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
+            [userIds],
+          );
+          await client.query(
+            "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
+            [userIds],
+          );
+          await client.query(
+            "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
+            [tracked],
+          );
+          await client.query(
+            'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
+            [userIds],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
+    });
+  });
+
+  function trackEmail(email: string): void {
+    emails.add(email.toLowerCase());
+  }
+
+  async function trackedSignUp(email: string) {
+    trackEmail(email);
+    const signedUp = await signUp(email);
+    expect(signedUp.response.status).toBe(201);
+    return signedUp;
+  }
+
+  async function trackedCreateOrganization(
+    cookie: string,
+    name: string,
+  ): Promise<string> {
+    const created = await createOrganization(cookie, name);
+    expect(created.ok).toBe(true);
+    const organizationId = (
+      created.data?.organization as { id?: string } | undefined
+    )?.id;
+    if (!organizationId) {
+      throw new Error("createOrganization did not return an organization id");
+    }
+    return organizationId;
+  }
+
+  async function trackedAddMember(
+    organizationId: string,
+    prefix: string,
+    role: MemberRole,
+  ) {
+    const email = uniqueEmail(prefix);
+    trackEmail(email);
+    return addMember(organizationId, email, role);
+  }
+
+  async function storedRole(
+    organizationId: string,
+    userId: string,
+  ): Promise<string | undefined> {
+    return withAdminDb(async (client) => {
+      const result = await client.query<{ role: string }>(
+        `SELECT role FROM organization_member
+         WHERE organization_id = $1 AND user_id = $2`,
+        [organizationId, userId],
+      );
+      return result.rows[0]?.role;
+    });
+  }
+
+  async function storedOwnerId(
+    organizationId: string,
+  ): Promise<string | undefined> {
+    return withAdminDb(async (client) => {
+      const result = await client.query<{ owner_user_id: string }>(
+        "SELECT owner_user_id FROM organization WHERE id = $1",
+        [organizationId],
+      );
+      return result.rows[0]?.owner_user_id;
+    });
+  }
+
+  test("owner cannot be removed, leave, or be demoted; each conflict preserves the owner row and role", async () => {
+    const ownerEmail = uniqueEmail("t10-inv-o");
+    const owner = await trackedSignUp(ownerEmail);
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "T010 所有者不变量组织",
+    );
+    const ownerUserId = await findUserIdByEmail(ownerEmail);
+    expect(ownerUserId).toBeDefined();
+    if (!ownerUserId) throw new Error("owner user id not found");
+    const admin = await trackedAddMember(organizationId, "t10-inv-a", "admin");
+
+    const removed = await call(
+      `/api/v1/organizations/${organizationId}/members/${ownerUserId}`,
+      admin.cookie,
+      { method: "DELETE" },
+    );
+    expect(removed.status).toBe(409);
+    expect(removed.json).toEqual({
+      ok: false,
+      code: "CONFLICT",
+      // fk_organization_owner RESTRICT surfaces SQLSTATE 23001, which maps to
+      // this generic conflict message (not the 23503-specific branch).
+      message: "记录仍被引用",
+    });
+    expect(await storedOwnerId(organizationId)).toBe(ownerUserId);
+    expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
+
+    const left = await call(
+      `/api/v1/organizations/${organizationId}/leave`,
+      owner.cookie,
+      { method: "POST" },
+    );
+    expect(left.status).toBe(409);
+    expect(left.json).toEqual({
+      ok: false,
+      code: "CONFLICT",
+      message: "请先转移所有权再退出组织",
+    });
+    expect(await storedOwnerId(organizationId)).toBe(ownerUserId);
+
+    const demoted = await call(
+      `/api/v1/organizations/${organizationId}/members/${ownerUserId}`,
+      admin.cookie,
+      { method: "PATCH", body: JSON.stringify({ role: "viewer" }) },
+    );
+    expect(demoted.status).toBe(409);
+    expect(demoted.json).toEqual({
+      ok: false,
+      code: "CONFLICT",
+      message: "不能修改所有者角色",
+    });
+    expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
+  });
+
+  test("transfer promotes a viewer recipient to admin and leaves the previous owner admin", async () => {
+    const ownerEmail = uniqueEmail("t10-prom-o");
+    const owner = await trackedSignUp(ownerEmail);
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "T010 移交角色组织",
+    );
+    const ownerUserId = await findUserIdByEmail(ownerEmail);
+    expect(ownerUserId).toBeDefined();
+    if (!ownerUserId) throw new Error("owner user id not found");
+    const viewer = await trackedAddMember(
+      organizationId,
+      "t10-prom-v",
+      "viewer",
+    );
+    expect(await storedRole(organizationId, viewer.userId)).toBe("viewer");
+    expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
+
+    const transferred = await call(
+      `/api/v1/organizations/${organizationId}/owner`,
+      owner.cookie,
+      {
+        method: "PUT",
+        body: JSON.stringify({ newOwnerUserId: viewer.userId }),
+      },
+    );
+    expect(transferred.status).toBe(200);
+    expect(transferred.json.ok).toBe(true);
+    expect(transferred.data?.ownerUserId).toBe(viewer.userId);
+    expect(await storedRole(organizationId, viewer.userId)).toBe("admin");
+    expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
+
+    const detail = await call(
+      `/api/v1/organizations/${organizationId}`,
+      owner.cookie,
+    );
+    expect(detail.status).toBe(200);
+    expect(detail.data?.organization).toMatchObject({
+      ownerUserId: viewer.userId,
+      isOwner: false,
+      myRole: "admin",
+    });
   });
 });

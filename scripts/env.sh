@@ -29,6 +29,32 @@ case $name in
     ;;
 esac
 
+# Optional dev-only inputs for a same-origin reverse proxy (AI Studio preview
+# -> Cloudflare tunnel -> this API). They are inputs to env.sh, not app env
+# vars: start_app() launches Node with `env -i ... --env-file`, so a shell
+# export alone never reaches the app. write_env_file() materialises them into
+# the generated .env instead. Test stays on the original defaults.
+# See docs/aistudio-dev-tunnel.md for the full runbook.
+dev_cors_origins=""
+dev_trust_proxy="false"
+if [ "$name" = development ]; then
+  dev_cors_origins=${YUNPU_DEV_CORS_ORIGINS:-}
+  dev_trust_proxy=${YUNPU_DEV_TRUST_PROXY:-false}
+  # Only guard the commands that write the env file. `down` and `ready` must
+  # stay usable even when a shell still carries a stale/mistyped override.
+  case $action in
+    up|reset)
+      case $dev_trust_proxy in
+        true|false) ;;
+        *)
+          printf '%s\n' "YUNPU_DEV_TRUST_PROXY must be true or false" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+  esac
+fi
+
 # Docker and Podman both provide Compose. Prefer Docker when both are
 # installed; accept either one so a Podman-only host can run the same flow.
 runtime=""
@@ -243,7 +269,7 @@ MIGRATE_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:$database_host_port/
 BETTER_AUTH_SECRET=example-$name-better-auth-secret-0123456789
 BETTER_AUTH_URL=http://127.0.0.1:$app_port
 PORT=$app_port
-TRUST_PROXY=false
+TRUST_PROXY=$dev_trust_proxy
 S3_ENDPOINT=http://127.0.0.1:$storage_host_port
 S3_REGION=us-east-1
 S3_BUCKET=yunpu-$name
@@ -251,6 +277,11 @@ S3_ACCESS_KEY_ID=$storage_access_key
 S3_SECRET_ACCESS_KEY=$storage_secret_key
 YUNPU_CAPABILITY_TOKEN=example-$name-capability-token
 EOF
+  # CORS_ORIGINS is dev-only: test env stays byte-identical to its original
+  # template, so existing env/auth tests keep their exact baseline.
+  if [ "$name" = development ]; then
+    printf 'CORS_ORIGINS=%s\n' "$dev_cors_origins" >> "$runtime_dir/.env"
+  fi
   # Repo-root copies are gitignored; Vitest loads `.env.test` in CI after
   # `env.sh up test`, so the runtime file must be mirrored here.
   case $name in

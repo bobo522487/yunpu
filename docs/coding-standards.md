@@ -152,24 +152,25 @@
 - 错误路径必须断言完整信封（`ok`、`code`、`message`），校验失败必须断言裸 `fieldErrors`；并发与权限边界要有对应用例。
 - 新增测试应优先覆盖：正常路径、异常路径、租户隔离、角色权限、并发/CAS、事务回滚与重试分类。
 
-### 3. SDD 独立验收
+### 3. SDD 独立验收（`/code-review` 双轴只读审查）
 
-对于遵循 SDD 流程的功能，测试与验收阶段必须完成：
+对于遵循 SDD 唯一主干的功能，实施与验收阶段必须完成：
 
-1. 覆盖每条 `FR-xxx` 的正常路径、异常路径、权限/租户隔离边界与并发/事务场景。
-2. 对照 `spec.md`、`plan.md`、`tasks.md` 与实际代码检查，输出需求追踪矩阵（`FR-xxx` | 实现位置 | 测试用例 | 验收结果）。
-3. 发现未通过项时记录缺陷与修复建议，修复后重新运行完整测试直至通过。
+1. **两级有界验证**：单票切片实施期间仅跑本领域局部快测（`<= 30s`）；收尾合并前跑完整门禁（见 [constitution.md](constitution.md) 第四节）。
+2. **覆盖需求边界**：测试覆盖每条 `FR-xxx` 的正常路径、异常路径、权限/租户隔离边界与并发/事务场景；测行为不测实现。
+3. **双轴只读证据审查**：运行 `/code-review` 对照本规范与对应 GitHub Spec Issue（及 `FR-xxx` 契约）做只读审查（严禁边审边改），Blocker/Major 须附 `文件:行号` 与触发路径，Spec 轴收尾输出需求追踪矩阵（`需求 ID | 实现位置 | 测试用例 | 验收结果`）。
+4. **2 轮熔断与复利回写**：同一问题返修满 2 轮仍未通过，禁止第 3 轮盲修，必须先证伪底层假设或交人工拍板；验收 PASS 后将新术语、架构决策与踩坑同步回写至 [glossary.md](glossary.md)、[adr/](adr/) 与 [pitfalls.md](pitfalls.md)。
 
 ---
 
 ## 八、提交前检查清单
 
-- [ ] `pnpm lint` 通过（含 `biome check .` 与 `tsc --noEmit`）。
-- [ ] 受影响测试通过；合并前 `pnpm test:all` 通过。
-- [ ] 修改路由或共享 Schema 后已运行 `pnpm contract:export` 并提交契约。
-- [ ] 未引入 Bun、跨模块内部导入、透传 `mapper`/`.repo.ts` 或裸连接池。
+- [ ] `pnpm lint` 通过（含 `lint:api` 的 Biome + API `tsc --noEmit`，以及 `lint:web` 的 ESLint + `tsr generate && tsc -b`）。
+- [ ] 修改路由或共享 Schema 后已运行 `pnpm contract:export`，且 `pnpm contract:check` 通过。
+- [ ] 单票已跑本领域快测；合并前真实 PG18/S3 下 `pnpm test:all` 通过；涉及前端变更时 `pnpm run build:web`、`pnpm run test:web`（及涉及页面交互时的 `pnpm run test:web:browser` 或 `/browser` 实测）通过。
+- [ ] 未引入 Bun、跨模块内部导入、透传 `mapper`/`.repo.ts`、裸连接池或新旧双轨写法。
 - [ ] 新增错误路径有对应状态码、错误码与测试断言。
-- [ ] 涉及架构、边界、术语或原则变化时，已同步更新 `docs/` 或新增 `docs/adr/`。
+- [ ] 非极小微调已通过 `/code-review` 双轴审查并附 `FR-xxx` 需求追踪矩阵；涉及架构、边界、术语、原则或踩坑时已同步更新 `docs/`、`docs/adr/` 或 `docs/pitfalls.md`。
 
 ---
 

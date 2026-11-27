@@ -27,10 +27,50 @@ export function redact(text: string): string {
   return out;
 }
 
+function redactValue(
+  value: unknown,
+  seen = new WeakSet<object>(),
+  depth = 0,
+): unknown {
+  if (typeof value === "string") {
+    return redact(value);
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  if (depth >= 6) {
+    return "[TRUNCATED]";
+  }
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: redact(value.message),
+      ...(value.stack ? { stack: redact(value.stack) } : {}),
+    };
+  }
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+  seen.add(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => redactValue(item, seen, depth + 1));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (item !== undefined) {
+      out[key] = redactValue(item, seen, depth + 1);
+    }
+  }
+  return out;
+}
+
 export function logEvent(fields: LogFields): void {
-  const safe: Record<string, unknown> = {};
+  const safe: Record<string, unknown> = { ts: new Date().toISOString() };
+  const seen = new WeakSet<object>();
   for (const [key, value] of Object.entries(fields)) {
-    safe[key] = typeof value === "string" ? redact(value) : value;
+    if (value !== undefined) {
+      safe[key] = redactValue(value, seen);
+    }
   }
   console.log(JSON.stringify(safe));
 }

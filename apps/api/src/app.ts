@@ -9,7 +9,7 @@ import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { config } from "./config";
 import { businessPool } from "./db/with-tenant-transaction";
-import { AppError, mapDatabaseError } from "./lib/errors";
+import { AppError, tryMapDatabaseError } from "./lib/errors";
 import { logEvent } from "./lib/logger";
 import media from "./media";
 import { authMiddleware } from "./middleware/auth";
@@ -106,20 +106,32 @@ export function onApiError(error: unknown, c: Context<ApiEnv>): Response {
     );
   }
 
+  const mapped = tryMapDatabaseError(error);
+  if (mapped) {
+    return c.json(
+      {
+        ok: false,
+        code: mapped.code,
+        message: mapped.message,
+        details: mapped.details,
+      },
+      mapped.status as ContentfulStatusCode,
+    );
+  }
+
   logEvent({
     event: "unhandled_error",
     request_id: c.get("requestId"),
     reason: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? (error.stack ?? "") : "",
   });
-  const mapped = mapDatabaseError(error);
   return c.json(
     {
       ok: false,
-      code: mapped.code,
-      message: mapped.message,
+      code: "INTERNAL",
+      message: "服务器内部错误",
     },
-    mapped.status as ContentfulStatusCode,
+    500,
   );
 }
 

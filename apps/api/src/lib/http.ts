@@ -18,7 +18,7 @@ export function appendSetCookie(c: Context, headers: Headers): void {
 /** Throws the single unauthorized envelope when no session is present. */
 export function requireUser(c: ApiContext) {
   const user = c.get("user");
-  if (!user) throw new AppError("UNAUTHORIZED", "需要登录", 401);
+  if (!user) throw new AppError("UNAUTHORIZED", "需要登录");
   return user;
 }
 
@@ -28,17 +28,14 @@ function parseOrThrow<S extends z.ZodType>(
 ): z.output<S> {
   const parsed = schema.safeParse(value);
   if (!parsed.success) {
-    throw validationError(parsed.error.flatten().fieldErrors);
+    const flat = parsed.error.flatten();
+    const details: Record<string, unknown> = { ...flat.fieldErrors };
+    if (flat.formErrors.length > 0) {
+      details._form = flat.formErrors;
+    }
+    throw validationError(details);
   }
   return parsed.data as z.output<S>;
-}
-
-/** Parse a value against a schema, throwing the shared validation envelope on failure. */
-export function parse<S extends z.ZodType>(
-  schema: S,
-  value: unknown,
-): z.output<S> {
-  return parseOrThrow(schema, value);
 }
 
 /** Parse a JSON body, throwing the shared validation envelope on failure. */

@@ -9,23 +9,19 @@ import {
 
 export const authSchema = pgSchema("auth");
 
-export const authUser = authSchema.table(
-  "user",
-  {
-    id: uuid("id").primaryKey(),
-    name: text("name").notNull(),
-    email: text("email").notNull().unique(),
-    emailVerified: boolean("email_verified").notNull().default(false),
-    image: text("image"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("idx_auth_user_email").on(table.email)],
-);
+export const authUser = authSchema.table("user", {
+  id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const authSession = authSchema.table(
   "session",

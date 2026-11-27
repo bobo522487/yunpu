@@ -5,22 +5,15 @@ import type {
   SubgraphQueryInput,
   UpdatePersonInput,
 } from "@yunpu/shared";
-import { requireMember } from "../../access";
+import { requireProjectMember } from "../../access";
 import { withTenantTransaction } from "../../db/with-tenant-transaction";
-import {
-  AppError,
-  conflict,
-  cycleDetected,
-  mapDatabaseError,
-  notFound,
-  versionConflict,
-} from "../../lib/errors";
+import { notFound, versionConflict } from "../../lib/errors";
 import {
   casUpdatePerson,
+  countPersonsInProject,
   deletePerson,
   deleteRelation,
   getPerson,
-  getProjectScope,
   insertPerson,
   insertRelation,
   listPersons,
@@ -29,13 +22,6 @@ import {
   querySubgraph,
   type RelationView,
 } from "./queries";
-
-function asAppError(error: unknown): AppError {
-  if (error instanceof AppError) return error;
-  const mapped = mapDatabaseError(error);
-  if (mapped.code === "CYCLE_DETECTED") return cycleDetected();
-  return mapped;
-}
 
 function normalizeSpouse(
   fromPersonId: string,
@@ -46,36 +32,20 @@ function normalizeSpouse(
     : { fromPersonId: toPersonId, toPersonId: fromPersonId };
 }
 
-async function resolveProjectScope(
-  db: Parameters<typeof getProjectScope>[0],
-  projectId: string,
-): Promise<{ id: string; organizationId: string }> {
-  const scope = await getProjectScope(db, projectId);
-  if (!scope) throw notFound();
-  return scope;
-}
-
 export async function createPersonForProject(
   userId: string,
   projectId: string,
   input: CreatePersonInput,
 ): Promise<PersonView> {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, "editor");
-      return insertPerson(db, scope.organizationId, projectId, {
-        displayName: input.displayName,
-        sex: input.sex,
-        surname: input.surname,
-        birthYear: input.birthYear,
-        deathYear: input.deathYear,
-        isLiving: input.isLiving,
-      });
-    });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  return withTenantTransaction({ userId }, async (db) => {
+    const { organizationId } = await requireProjectMember(
+      db,
+      projectId,
+      userId,
+      "editor",
+    );
+    return insertPerson(db, organizationId, projectId, input);
+  });
 }
 
 export async function getPersonForProject(
@@ -83,17 +53,12 @@ export async function getPersonForProject(
   projectId: string,
   personId: string,
 ): Promise<PersonView> {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, null);
-      const person = await getPerson(db, projectId, personId);
-      if (!person) throw notFound();
-      return person;
-    });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  return withTenantTransaction({ userId, readOnly: true }, async (db) => {
+    await requireProjectMember(db, projectId, userId, null);
+    const person = await getPerson(db, projectId, personId);
+    if (!person) throw notFound();
+    return person;
+  });
 }
 
 export async function listPersonsForProject(
@@ -101,18 +66,18 @@ export async function listPersonsForProject(
   projectId: string,
   options: { cursor?: string; limit?: number },
 ): Promise<{ persons: PersonView[]; nextCursor: string | null }> {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, null);
-      return listPersons(db, scope.organizationId, projectId, {
-        cursor: options.cursor,
-        limit: options.limit ?? 50,
-      });
+  return withTenantTransaction({ userId, readOnly: true }, async (db) => {
+    const { organizationId } = await requireProjectMember(
+      db,
+      projectId,
+      userId,
+      null,
+    );
+    return listPersons(db, organizationId, projectId, {
+      cursor: options.cursor,
+      limit: options.limit ?? 50,
     });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  });
 }
 
 export async function updatePersonForProject(
@@ -121,32 +86,22 @@ export async function updatePersonForProject(
   personId: string,
   input: UpdatePersonInput,
 ): Promise<PersonView> {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, "editor");
-      const existing = await getPerson(db, projectId, personId);
-      if (!existing) throw notFound();
-      const updated = await casUpdatePerson(
-        db,
-        projectId,
-        personId,
-        input.version,
-        {
-          displayName: input.displayName,
-          sex: input.sex,
-          surname: input.surname,
-          birthYear: input.birthYear,
-          deathYear: input.deathYear,
-          isLiving: input.isLiving,
-        },
-      );
-      if (!updated) throw versionConflict();
-      return updated;
-    });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  return withTenantTransaction({ userId }, async (db) => {
+    await requireProjectMember(db, projectId, userId, "editor");
+    const { version, ...values } = input;
+    const updated = await casUpdatePerson(
+      db,
+      projectId,
+      personId,
+      version,
+      values,
+    );
+    if (updated) return updated;
+    if (!(await personExistsInProject(db, projectId, personId))) {
+      throw notFound();
+    }
+    throw versionConflict();
+  });
 }
 
 export async function deletePersonForProject(
@@ -154,16 +109,11 @@ export async function deletePersonForProject(
   projectId: string,
   personId: string,
 ): Promise<void> {
-  try {
-    await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, "editor");
-      const ok = await deletePerson(db, projectId, personId);
-      if (!ok) throw notFound();
-    });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  await withTenantTransaction({ userId }, async (db) => {
+    await requireProjectMember(db, projectId, userId, "editor");
+    const ok = await deletePerson(db, projectId, personId);
+    if (!ok) throw notFound();
+  });
 }
 
 export async function createRelationForProject(
@@ -171,51 +121,40 @@ export async function createRelationForProject(
   projectId: string,
   input: CreateRelationInput,
 ): Promise<RelationView> {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, "editor");
+  return withTenantTransaction({ userId }, async (db) => {
+    const { organizationId } = await requireProjectMember(
+      db,
+      projectId,
+      userId,
+      "editor",
+    );
 
-      let fromPersonId = input.fromPersonId;
-      let toPersonId = input.toPersonId;
-      const kind = input.kind as ApiRelationKind;
+    let fromPersonId = input.fromPersonId;
+    let toPersonId = input.toPersonId;
+    const kind = input.kind as ApiRelationKind;
 
-      if (!(await personExistsInProject(db, projectId, fromPersonId))) {
-        throw notFound();
-      }
-      if (!(await personExistsInProject(db, projectId, toPersonId))) {
-        throw notFound();
-      }
-
-      if (kind === "spouse") {
-        ({ fromPersonId, toPersonId } = normalizeSpouse(
-          fromPersonId,
-          toPersonId,
-        ));
-      }
-
-      const created = await insertRelation(
-        db,
-        scope.organizationId,
-        projectId,
-        {
-          fromPersonId,
-          toPersonId,
-          kind,
-        },
-      );
-
-      return created;
-    });
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    const mapped = mapDatabaseError(error);
-    if (mapped.code === "CYCLE_DETECTED") throw cycleDetected();
-    if (mapped.code === "CONFLICT" && mapped.message === "记录已存在") {
-      throw conflict("这条关系已存在");
+    if (
+      (await countPersonsInProject(db, projectId, [
+        fromPersonId,
+        toPersonId,
+      ])) !== 2
+    ) {
+      throw notFound();
     }
-    throw mapped;
-  }
+
+    if (kind === "spouse") {
+      ({ fromPersonId, toPersonId } = normalizeSpouse(
+        fromPersonId,
+        toPersonId,
+      ));
+    }
+
+    return insertRelation(db, organizationId, projectId, {
+      fromPersonId,
+      toPersonId,
+      kind,
+    });
+  });
 }
 
 export async function deleteRelationForProject(
@@ -223,16 +162,11 @@ export async function deleteRelationForProject(
   projectId: string,
   relationId: string,
 ): Promise<void> {
-  try {
-    await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, "editor");
-      const deleted = await deleteRelation(db, projectId, relationId);
-      if (!deleted) throw notFound();
-    });
-  } catch (error) {
-    throw asAppError(error);
-  }
+  await withTenantTransaction({ userId }, async (db) => {
+    await requireProjectMember(db, projectId, userId, "editor");
+    const deleted = await deleteRelation(db, projectId, relationId);
+    if (!deleted) throw notFound();
+  });
 }
 
 export async function getSubgraphForProject(
@@ -240,20 +174,20 @@ export async function getSubgraphForProject(
   projectId: string,
   query: SubgraphQueryInput,
 ) {
-  try {
-    return await withTenantTransaction({ userId }, async (db) => {
-      const scope = await resolveProjectScope(db, projectId);
-      await requireMember(db, scope.organizationId, userId, null);
-      const graph = await querySubgraph(db, scope.organizationId, projectId, {
-        rootPersonId: query.rootPersonId,
-        upDepth: query.upDepth ?? 2,
-        downDepth: query.downDepth ?? 4,
-        limit: query.limit ?? 300,
-      });
-      if (!graph) throw notFound();
-      return graph;
+  return withTenantTransaction({ userId, readOnly: true }, async (db) => {
+    const { organizationId } = await requireProjectMember(
+      db,
+      projectId,
+      userId,
+      null,
+    );
+    const graph = await querySubgraph(db, organizationId, projectId, {
+      rootPersonId: query.rootPersonId,
+      upDepth: query.upDepth ?? 2,
+      downDepth: query.downDepth ?? 4,
+      limit: query.limit ?? 300,
     });
-  } catch (error) {
-    throw asAppError(error);
-  }
+    if (!graph) throw notFound();
+    return graph;
+  });
 }

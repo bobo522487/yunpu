@@ -1,6 +1,6 @@
-import { AppError } from "../../lib/errors";
 import type { SessionUser } from "../../types";
 import { auth } from "./better-auth";
+import { unauthorized } from "./errors";
 
 export async function getSession(
   headers: Headers,
@@ -17,7 +17,7 @@ export async function getSession(
 export async function requireAuth(headers: Headers): Promise<SessionUser> {
   const user = await getSession(headers);
   if (!user) {
-    throw new AppError("UNAUTHORIZED", "需要登录", 401);
+    throw unauthorized();
   }
   return user;
 }

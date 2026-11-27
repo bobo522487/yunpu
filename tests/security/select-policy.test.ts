@@ -60,3 +60,61 @@ test("a tenant SELECT plan does not rescan organization_member", async () => {
     }
   });
 });
+
+test("descendant prefix predicate is eligible for idx_lineage_projection_path_text", async () => {
+  await withAdminDb(async (client) => {
+    await client.query("BEGIN");
+    try {
+      const orgId = "01900000-0000-7000-8000-000000000091";
+      const projectId = "01900000-0000-7000-8000-000000000092";
+      const rootPersonId = "01900000-0000-7000-8000-000000000093";
+
+      await client.query("SET LOCAL session_replication_role = replica");
+      await client.query(
+        `INSERT INTO public.lineage_projection
+           (organization_id, project_id, person_id, primary_path, generation)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 'r0'::ltree, 0)`,
+        [orgId, projectId, rootPersonId],
+      );
+      await client.query(
+        `INSERT INTO public.lineage_projection
+           (organization_id, project_id, person_id, primary_path, generation)
+         SELECT $1::uuid, $2::uuid, uuidv7(), ('r0.c' || gs.i)::ltree, 1
+           FROM generate_series(1, 15) AS gs(i)`,
+        [orgId, projectId],
+      );
+      await client.query(
+        `INSERT INTO public.lineage_projection
+           (organization_id, project_id, person_id, primary_path, generation)
+         SELECT $1::uuid, $2::uuid, uuidv7(), ('u' || gs.i)::ltree, 0
+           FROM generate_series(1, 5000) AS gs(i)`,
+        [orgId, projectId],
+      );
+      await client.query("SET LOCAL session_replication_role = origin");
+      await client.query("ANALYZE public.lineage_projection");
+
+      const result = await client.query<{ "QUERY PLAN": string[] }>(
+        `EXPLAIN (FORMAT JSON)
+         WITH root_path AS (
+           SELECT lp.person_id, lp.primary_path
+             FROM public.lineage_projection lp
+            WHERE lp.organization_id = $1::uuid
+              AND lp.project_id = $2::uuid
+              AND lp.person_id = $3::uuid
+         )
+         SELECT lp.person_id
+           FROM public.lineage_projection lp
+           JOIN root_path rp ON true
+          WHERE lp.organization_id = $1::uuid
+            AND lp.project_id = $2::uuid
+            AND lp.primary_path::text ~>=~ (rp.primary_path::text || '.')
+            AND lp.primary_path::text ~<~ (rp.primary_path::text || '/')`,
+        [orgId, projectId, rootPersonId],
+      );
+      const plan = JSON.stringify(result.rows[0]?.["QUERY PLAN"] ?? []);
+      expect(plan).toContain("idx_lineage_projection_path_text");
+    } finally {
+      await client.query("ROLLBACK");
+    }
+  });
+});

@@ -74,7 +74,10 @@ describe("generated OpenAPI contract", () => {
     for (const operation of operations) {
       expect(operation.parameters).toBeDefined();
       for (const response of Object.values(operation.responses)) {
-        expect(response.content?.["application/json"]?.schema).toBeDefined();
+        const schema =
+          response.content?.["application/json"]?.schema ??
+          response.content?.["application/octet-stream"]?.schema;
+        expect(schema).toBeDefined();
       }
     }
 

@@ -2,7 +2,10 @@ import { project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
-import { validationError } from "../../lib/errors";
+import {
+  parseTimestampUuidCursor,
+  sliceCursorPage,
+} from "../../lib/pagination";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type ProjectRecord = {
@@ -39,9 +42,6 @@ const projectColumns = {
 
 export type { ProjectStatus };
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function listProjects(
   db: TxDatabase,
   organizationId: string,
@@ -49,15 +49,9 @@ export async function listProjects(
 ): Promise<{ items: ProjectRecord[]; nextCursor: string | null }> {
   const conditions = [eq(project.organizationId, organizationId)];
   if (options.cursor) {
-    const parts = options.cursor.split("|");
-    if (
-      parts.length !== 2 ||
-      Number.isNaN(Date.parse(parts[0])) ||
-      !UUID_PATTERN.test(parts[1])
-    ) {
-      throw validationError({ cursor: "游标格式不合法" });
-    }
-    const [updatedAt, id] = parts;
+    const { timestamp: updatedAt, id } = parseTimestampUuidCursor(
+      options.cursor,
+    );
     conditions.push(
       sql`(${project.updatedAt}, ${project.id}) < (${updatedAt}::timestamptz, ${id}::uuid)`,
     );
@@ -69,13 +63,11 @@ export async function listProjects(
     .where(and(...conditions))
     .orderBy(desc(project.updatedAt), desc(project.id))
     .limit(options.limit + 1);
-  const hasMore = rows.length > options.limit;
-  const items = hasMore ? rows.slice(0, options.limit) : rows;
-  const last = items[items.length - 1];
-  return {
-    items,
-    nextCursor: hasMore && last ? `${last.updatedAt}|${last.id}` : null,
-  };
+  return sliceCursorPage(
+    rows,
+    options.limit,
+    (last) => `${last.updatedAt}|${last.id}`,
+  );
 }
 
 export async function getProject(
@@ -147,10 +139,10 @@ export async function casUpdateProject(
   };
   if (values.name !== undefined) set.name = values.name;
   if (values.status !== undefined) set.status = values.status;
-  if ("surname" in values) set.surname = values.surname ?? null;
-  if ("hallName" in values) set.hallName = values.hallName ?? null;
-  if ("originText" in values) set.originText = values.originText ?? null;
-  if ("description" in values) set.description = values.description ?? null;
+  if (values.surname !== undefined) set.surname = values.surname;
+  if (values.hallName !== undefined) set.hallName = values.hallName;
+  if (values.originText !== undefined) set.originText = values.originText;
+  if (values.description !== undefined) set.description = values.description;
   if (values.colorTheme !== undefined) set.colorTheme = values.colorTheme;
   if (values.projectLevel !== undefined) set.projectLevel = values.projectLevel;
 

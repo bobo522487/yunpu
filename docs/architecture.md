@@ -6,7 +6,7 @@
 
 ## 一、运行环境与技术栈
 
-- **运行时与包管理**：Node.js `>=26.13.0`（原生 TypeScript 类型剥离，经 `scripts/ts-ext-register.mjs` 注册），`pnpm@12.18.0`（workspace 只包含 `apps/api` 与 `packages/*`）。本仓库禁止使用 Bun 运行时或 `bun:test`。
+- **运行时与包管理**：Node.js `>=26.13.0`（原生 TypeScript 类型剥离，经 `scripts/ts-ext-register.mjs` 通过同步 `module.registerHooks` 注册），`pnpm@12.18.0`（workspace 只包含 `apps/api` 与 `packages/*`）。本仓库禁止使用 Bun 运行时或 `bun:test`。
 - **后端（`@yunpu/api`）**：Hono `4.13.19` + `@hono/node-server` + Zod `4.6.7` + Better Auth `1.7.27` + Drizzle ORM `0.45.4` + `pg` `8.23.1` + `@aws-sdk/client-s3`。只提供 `/api/*` JSON，不渲染登录页。
 - **前端**：独立仓库 `yunpu-web`（Bun + Vite + React）。本仓库通过 `pnpm contract:export` 生成 `contracts/openapi.json`（Hono 路由 + `@yunpu/shared` Zod schema）。跨源联调可配置 `CORS_ORIGINS`；同源联调优先走前端 dev server 的 `/api` 代理。见 [ADR-0008](adr/ADR-0008-polyrepo-contract.md)。
 - **数据存储与基础设施**：PostgreSQL 18（启用 `ltree` 扩展与 `FORCE ROW LEVEL SECURITY`）、S3 兼容对象存储（测试/开发环境由 `scripts/env.sh` 拉起容器，使用 `pgsty/silo`）。
@@ -29,9 +29,10 @@ yunpu/
 │   │   │   ├── db/
 │   │   │   │   └── with-tenant-transaction.ts  # 业务租户唯一事务入口与瞬态重试
 │   │   │   ├── lib/
-│   │   │   │   ├── http.ts     # 路由共用的 HTTP 助手（如 Set-Cookie 透传）
-│   │   │   │   ├── errors.ts   # 唯一的数据库错误码到 HTTP 结果映射
-│   │   │   │   └── sql.ts      # 统一 SQL 时间格式等片段助手
+│   │   │   │   ├── http.ts       # 路由共用的 HTTP 助手（如 Set-Cookie 透传）
+│   │   │   │   ├── errors.ts     # 唯一的数据库错误码到 HTTP 结果映射
+│   │   │   │   ├── pagination.ts # 统一游标解析与 limit + 1 切片
+│   │   │   │   └── sql.ts        # 统一 SQL 时间格式等片段助手
 │   │   │   ├── middleware/
 │   │   │   │   └── auth.ts  # 会话校验中间件
 │   │   │   └── modules/     # 业务领域模块：auth / organization / project / account / person
@@ -39,7 +40,7 @@ yunpu/
 ├── contracts/
 │   └── openapi.json         # 只读契约，由 scripts/export-contract.ts 生成
 ├── packages/
-│   ├── db/                  # PostgreSQL Drizzle schema（auth / tenant / genealogy）与 SQL 迁移（0000~0014）
+│   ├── db/                  # PostgreSQL Drizzle schema（auth / tenant / genealogy）与 SQL 迁移（0000~0026）
 │   └── shared/              # 跨端共享枚举（enums.ts）、错误定义（errors.ts）、校验 Schema（schemas.ts）
 ├── scripts/                 # env.sh、ts-ext-register.mjs、export-contract.ts
 └── tests/                   # 端到端集成测试（env / auth / console / genealogy / runtime / security）
@@ -79,9 +80,9 @@ yunpu/
   - **组织与协作**：`organization`、`organization_member`、`invite`、`project`、`audit_log`。
   - **谱系核心**：`person`、`person_name`、`person_relation`、`lineage_projection`（使用 `ltree` 存储主脉路径与世代）。
 
-数据库级不变量（在 `0012`~`0022` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、环检测延迟约束触发器（`GX001`）与基于角色的行级写策略。谱系投影由 0017 之后的逐边增量 reflow 维护，不再全表重建，也不再静默截断 64 代；路径前缀索引为 btree 文本前缀而非 ltree GiST，避免索引膨胀。项目与人物统一使用整数 `version` 做 CAS（0019），不再用 `updated_at` 字符串作为并发令牌。
+数据库级不变量（在 `0012`~`0026` 迁移中落地）包括：人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、所有者角色防降级（`GX013`）、环检测立即约束触发器（`trg_person_relation_no_cycle` `INITIALLY IMMEDIATE` / `GX001`）与基于角色的行级写策略。谱系投影由 0017 之后的逐边增量 reflow 维护，不再全表重建，也不再静默截断 64 代；路径前缀索引为 btree `text_pattern_ops`（`idx_lineage_projection_path_text`），子图查询以 `~>=~` / `~<~` 关联前缀走索引扫描。项目与人物统一使用整数 `version` 做 CAS（0019），不再用 `updated_at` 字符串作为并发令牌。
 
-HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/export-contract.ts` 从注册表生成 `contracts/openapi.json`，CI 的 `contract:check` 防止路由与契约漂移。校验错误统一为裸 `fieldErrors`，详见 ADR-0012。
+HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/export-contract.ts` 从注册表生成 `contracts/openapi.json`，CI 的 `contract:check` 与运行时契约测试 `tests/runtime/contract-conformance.test.ts` 防止路由、Schema 与响应漂移。校验错误统一为裸 `fieldErrors`（顶层 `.refine()` 错误保留在 `details._form`），详见 ADR-0012。
 
 登录限流只把 `X-Forwarded-For` 当作受信任输入（`TRUST_PROXY=true`）；默认从 `@hono/node-server` 的 `getConnInfo` 读真实 socket 远端，并同时维护来源频率、账号+来源与账号渐进退避三套计数。对象存储只通过 `S3Client` 的 `HeadBucketCommand` 探活，`region` 来自配置，初始化失败由 `index.ts` 决定进程退出；不再有手写 SigV4 或 MinIO 专属健康路径。
 

@@ -1,18 +1,10 @@
-import { organizationMember } from "@yunpu/db";
+import { organizationMember, project } from "@yunpu/db";
 import { MEMBER_ROLES, type MemberRole } from "@yunpu/shared";
 import { and, eq } from "drizzle-orm";
 import type { TxDatabase } from "./db/with-tenant-transaction";
-import { AppError } from "./lib/errors";
+import { forbidden, notFound } from "./lib/errors";
 
 const RANK: Record<MemberRole, number> = { viewer: 1, editor: 2, admin: 3 };
-
-export function accessNotFound(): AppError {
-  return new AppError("NOT_FOUND", "不存在或无权", 404);
-}
-
-export function accessForbidden(): AppError {
-  return new AppError("FORBIDDEN", "无权执行该操作", 403);
-}
 
 export async function memberRole(
   db: TxDatabase,
@@ -42,8 +34,41 @@ export async function requireMember(
   organizationId: string,
   userId: string,
   min: Exclude<MemberRole, "viewer"> | null,
-): Promise<void> {
+): Promise<MemberRole> {
   const role = await memberRole(db, organizationId, userId);
-  if (role === null) throw accessNotFound();
-  if (min !== null && RANK[role] < RANK[min]) throw accessForbidden();
+  if (role === null) throw notFound();
+  if (min !== null && RANK[role] < RANK[min]) throw forbidden();
+  return role;
+}
+
+/** Resolve a project's organization and check caller membership in a single round trip. */
+export async function requireProjectMember(
+  db: TxDatabase,
+  projectId: string,
+  userId: string,
+  min: Exclude<MemberRole, "viewer"> | null,
+): Promise<{ organizationId: string; role: MemberRole }> {
+  const rows = await db
+    .select({
+      organizationId: project.organizationId,
+      role: organizationMember.role,
+    })
+    .from(project)
+    .leftJoin(
+      organizationMember,
+      and(
+        eq(organizationMember.organizationId, project.organizationId),
+        eq(organizationMember.userId, userId),
+      ),
+    )
+    .where(eq(project.id, projectId))
+    .limit(1);
+  const row = rows[0];
+  const role = row?.role;
+  if (!row || !MEMBER_ROLES.some((candidate) => candidate === role)) {
+    throw notFound();
+  }
+  const member = role as MemberRole;
+  if (min !== null && RANK[member] < RANK[min]) throw forbidden();
+  return { organizationId: row.organizationId, role: member };
 }

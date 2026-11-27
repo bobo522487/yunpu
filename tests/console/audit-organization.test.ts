@@ -2,6 +2,7 @@ import type { MemberRole } from "@yunpu/shared";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createOrganization,
+  createTenantCleanupTracker,
   findUserIdByEmail,
   signUp,
   uniqueEmail,
@@ -27,11 +28,6 @@ type ExpectedAudit = {
   payload: Record<string, unknown>;
 };
 
-type Scope = {
-  emails: Set<string>;
-  organizationIds: Set<string>;
-};
-
 const SENSITIVE_PATTERNS: ReadonlyArray<{ label: string; pattern: RegExp }> = [
   { label: "token", pattern: /token/i },
   { label: "tokenHash", pattern: /tokenhash/i },
@@ -46,23 +42,23 @@ const SENSITIVE_PATTERNS: ReadonlyArray<{ label: string; pattern: RegExp }> = [
   { label: "password", pattern: /password|passwd|\bpwd\b/i },
 ];
 
-let scope: Scope;
+const tracker = createTenantCleanupTracker();
 
 beforeEach(() => {
-  scope = { emails: new Set(), organizationIds: new Set() };
+  tracker.reset();
 });
 
 afterEach(async () => {
-  await cleanupScope(scope);
+  await tracker.cleanup();
 });
 
 /** Register the cleanup target before the request that may fail. */
 function trackEmail(email: string): void {
-  scope.emails.add(email.toLowerCase());
+  tracker.trackEmail(email);
 }
 
 function trackOrganization(organizationId: string): void {
-  scope.organizationIds.add(organizationId);
+  tracker.trackOrganization(organizationId);
 }
 
 async function createUser(prefix: string): Promise<{
@@ -153,82 +149,6 @@ function assertNoSensitivePayloads(rows: AuditRow[], rawToken?: string): void {
       ).not.toContain(rawToken);
     }
   }
-}
-
-/** Dedicated-client cleanup: fixture rows, audits included, must not survive. */
-async function cleanupScope(current: Scope): Promise<void> {
-  const emails = [...current.emails];
-  if (emails.length === 0) return;
-
-  await withAdminDb(async (client) => {
-    await client.query("BEGIN");
-    try {
-      // RESTRICT cycles between organization/organization_member and the
-      // append-only audit trigger make ordinary deletes impossible. Disabling
-      // triggers is confined to this dedicated Client's transaction.
-      await client.query("SET LOCAL session_replication_role = replica");
-
-      const users = await client.query<{ id: string }>(
-        'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
-        [emails],
-      );
-      const userIds = users.rows.map((row) => row.id);
-
-      const organizations = await client.query<{ id: string }>(
-        `SELECT DISTINCT id FROM organization
-          WHERE id = ANY($1::uuid[]) OR owner_user_id = ANY($2::uuid[])`,
-        [[...current.organizationIds], userIds],
-      );
-      const organizationIds = organizations.rows.map((row) => row.id);
-
-      if (organizationIds.length > 0) {
-        await client.query(
-          "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
-          [organizationIds],
-        );
-        await client.query(
-          "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
-          [organizationIds],
-        );
-        await client.query(
-          "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
-          [organizationIds],
-        );
-        await client.query(
-          "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
-          [organizationIds],
-        );
-        await client.query(
-          "DELETE FROM organization WHERE id = ANY($1::uuid[])",
-          [organizationIds],
-        );
-      }
-
-      if (userIds.length > 0) {
-        await client.query(
-          "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
-          [emails],
-        );
-        await client.query(
-          'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
-          [userIds],
-        );
-      }
-
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    }
-  });
 }
 
 describe("organization collaboration audit events (console)", () => {

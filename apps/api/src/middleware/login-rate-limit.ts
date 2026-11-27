@@ -50,6 +50,14 @@ export function createLoginRateLimiter(
       if (entry.lockedUntil > current) {
         return Math.max(1, Math.ceil((entry.lockedUntil - current) / 1000));
       }
+      if (
+        escalating &&
+        entry.lockouts > 0 &&
+        current - entry.windowStart >= windowMs * 16
+      ) {
+        entries.delete(key);
+        return null;
+      }
       if (current - entry.windowStart >= windowMs) {
         if (escalating && entry.lockouts > 0) {
           entry.failures = 0;
@@ -65,13 +73,20 @@ export function createLoginRateLimiter(
     recordFailure(key) {
       const current = now();
       const entry = entries.get(key);
-      if (!entry || current - entry.windowStart >= windowMs) {
-        evictIfNeeded();
+      const decayExpired =
+        entry !== undefined &&
+        escalating &&
+        entry.lockouts > 0 &&
+        current - entry.windowStart >= windowMs * 16;
+      if (!entry || decayExpired || current - entry.windowStart >= windowMs) {
+        if (!entry) {
+          evictIfNeeded();
+        }
         entries.set(key, {
           failures: 1,
           windowStart: current,
           lockedUntil: 0,
-          lockouts: entry?.lockouts ?? 0,
+          lockouts: decayExpired ? 0 : (entry?.lockouts ?? 0),
         });
         return;
       }
@@ -115,7 +130,7 @@ export const loginAccountLimiter = createLoginRateLimiter({
 });
 
 export function loginKey(email: string, sourceAddress: string): string {
-  return `${email}|${sourceAddress}`;
+  return `${normalizedEmail(email)}|${sourceAddress}`;
 }
 
 function normalizedEmail(email: string): string {
@@ -136,19 +151,28 @@ export function loginLimits(email: string, address: string): LoginLimit[] {
 }
 
 export function clearLoginRateLimits(email: string, address = "unknown"): void {
-  for (const { limiter, key } of loginLimits(email, address)) {
-    limiter.clear(key);
-  }
+  // Never clear loginIpLimiter on success; otherwise a valid login resets the
+  // per-source ceiling for brute-forcing other accounts from the same IP.
+  loginRateLimiter.clear(loginKey(email, address));
+  loginAccountLimiter.clear(`account|${normalizedEmail(email)}`);
 }
 
 /**
- * A forwarded header is trusted only when explicitly configured. Otherwise the
- * real socket peer is used, so a spoofed X-Forwarded-For cannot mint new keys.
+ * A forwarded header is trusted only when explicitly configured. Take the
+ * rightmost proxy-appended entry so client-supplied leftmost values cannot
+ * mint fresh keys; otherwise fall back to the real socket peer.
  */
 export function sourceAddress(c: Context): string {
   if (process.env.TRUST_PROXY === "true") {
     const forwarded = c.req.header("x-forwarded-for");
-    if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+    if (forwarded) {
+      const parts = forwarded
+        .split(",")
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+      const clientIp = parts[parts.length - 1];
+      if (clientIp) return clientIp;
+    }
   }
 
   try {

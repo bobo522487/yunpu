@@ -33,7 +33,7 @@ export class AppError extends Error {
   constructor(
     code: ErrorCode,
     message: string,
-    status: number,
+    status: number = ERROR_STATUS[code],
     details?: Record<string, unknown>,
   ) {
     super(message);

@@ -1,4 +1,4 @@
-import { AppError } from "@yunpu/shared";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { type Context, Hono } from "hono";
 import { config } from "./config";
 import { getObject, putObject } from "./storage";
@@ -15,6 +15,10 @@ export function isAllowedMediaKey(key: string): boolean {
   return MEDIA_KEY_PATTERN.test(key);
 }
 
+function sha256(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
 function authorized(request: Request): boolean {
   const expected = config().YUNPU_CAPABILITY_TOKEN;
   if (!expected) {
@@ -25,15 +29,7 @@ function authorized(request: Request): boolean {
     return false;
   }
   const token = header.slice("Bearer ".length);
-  // Constant-time-ish comparison; both environments' tokens are single strings.
-  if (token.length !== expected.length) {
-    return false;
-  }
-  let diff = 0;
-  for (let i = 0; i < expected.length; i += 1) {
-    diff |= token.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return diff === 0;
+  return timingSafeEqual(sha256(token), sha256(expected));
 }
 
 function unauthorized(c: Context) {
@@ -118,7 +114,7 @@ media.get("/api/media/*", async (c) => {
   }
   const key = path.slice(prefix.length);
   if (!isAllowedMediaKey(key)) {
-    throw new AppError("VALIDATION", "非法的对象键", 400);
+    return c.json({ ok: false, reason: "invalid object key" }, 400);
   }
   const data = await getObject(key);
   if (!data) {

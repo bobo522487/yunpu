@@ -187,6 +187,16 @@ export const ProjectIdParamsSchema = z.object({
   projectId: z.uuid(),
 });
 
+export const PersonIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  personId: z.uuid(),
+});
+
+export const RelationIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  relationId: z.uuid(),
+});
+
 export const PageQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),

@@ -2,11 +2,19 @@ import {
   CreatePersonSchema,
   CreateRelationSchema,
   PageQuerySchema,
+  PersonIdParamsSchema,
+  ProjectIdParamsSchema,
+  RelationIdParamsSchema,
   SubgraphQuerySchema,
   UpdatePersonSchema,
 } from "@yunpu/shared";
 import { Hono } from "hono";
-import { parse, parseJson, parseQuery, requireUser } from "../../lib/http";
+import {
+  parseJson,
+  parseParams,
+  parseQuery,
+  requireUser,
+} from "../../lib/http";
 import type { ApiEnv } from "../../types";
 import {
   createPersonForProject,
@@ -23,7 +31,7 @@ export const personRouter = new Hono<ApiEnv>();
 
 personRouter.post("/projects/:projectId/persons", async (c) => {
   const user = requireUser(c);
-  const projectId = c.req.param("projectId");
+  const { projectId } = parseParams(c, ProjectIdParamsSchema);
   const input = await parseJson(c, CreatePersonSchema);
   const person = await createPersonForProject(user.id, projectId, input);
   return c.json({ ok: true, data: { person } }, 201);
@@ -31,8 +39,9 @@ personRouter.post("/projects/:projectId/persons", async (c) => {
 
 personRouter.get("/projects/:projectId/persons", async (c) => {
   const user = requireUser(c);
+  const { projectId } = parseParams(c, ProjectIdParamsSchema);
   const query = parseQuery(c, PageQuerySchema);
-  const page = await listPersonsForProject(user.id, c.req.param("projectId"), {
+  const page = await listPersonsForProject(user.id, projectId, {
     cursor: query.cursor,
     limit: query.limit,
   });
@@ -41,21 +50,19 @@ personRouter.get("/projects/:projectId/persons", async (c) => {
 
 personRouter.get("/projects/:projectId/persons/:personId", async (c) => {
   const user = requireUser(c);
-  const person = await getPersonForProject(
-    user.id,
-    c.req.param("projectId"),
-    c.req.param("personId"),
-  );
+  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
+  const person = await getPersonForProject(user.id, projectId, personId);
   return c.json({ ok: true, data: { person } });
 });
 
 personRouter.patch("/projects/:projectId/persons/:personId", async (c) => {
   const user = requireUser(c);
+  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
   const input = await parseJson(c, UpdatePersonSchema);
   const person = await updatePersonForProject(
     user.id,
-    c.req.param("projectId"),
-    c.req.param("personId"),
+    projectId,
+    personId,
     input,
   );
   return c.json({ ok: true, data: { person } });
@@ -63,48 +70,31 @@ personRouter.patch("/projects/:projectId/persons/:personId", async (c) => {
 
 personRouter.delete("/projects/:projectId/persons/:personId", async (c) => {
   const user = requireUser(c);
-  await deletePersonForProject(
-    user.id,
-    c.req.param("projectId"),
-    c.req.param("personId"),
-  );
+  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
+  await deletePersonForProject(user.id, projectId, personId);
   return c.json({ ok: true });
 });
 
 personRouter.post("/projects/:projectId/relations", async (c) => {
   const user = requireUser(c);
+  const { projectId } = parseParams(c, ProjectIdParamsSchema);
   const input = await parseJson(c, CreateRelationSchema);
-  const relation = await createRelationForProject(
-    user.id,
-    c.req.param("projectId"),
-    input,
-  );
+  const relation = await createRelationForProject(user.id, projectId, input);
   return c.json({ ok: true, data: { relation } }, 201);
 });
 
 personRouter.delete("/projects/:projectId/relations/:relationId", async (c) => {
   const user = requireUser(c);
-  await deleteRelationForProject(
-    user.id,
-    c.req.param("projectId"),
-    c.req.param("relationId"),
-  );
+  const { projectId, relationId } = parseParams(c, RelationIdParamsSchema);
+  await deleteRelationForProject(user.id, projectId, relationId);
   return c.json({ ok: true });
 });
 
 personRouter.get("/projects/:projectId/subgraph", async (c) => {
   const user = requireUser(c);
-  const query = parse(SubgraphQuerySchema, {
-    rootPersonId: c.req.query("rootPersonId"),
-    upDepth: c.req.query("upDepth"),
-    downDepth: c.req.query("downDepth"),
-    limit: c.req.query("limit"),
-  });
-  const data = await getSubgraphForProject(
-    user.id,
-    c.req.param("projectId"),
-    query,
-  );
+  const { projectId } = parseParams(c, ProjectIdParamsSchema);
+  const query = parseQuery(c, SubgraphQuerySchema);
+  const data = await getSubgraphForProject(user.id, projectId, query);
   return c.json({ ok: true, data });
 });
 

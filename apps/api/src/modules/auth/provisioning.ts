@@ -1,4 +1,4 @@
-import { AppError } from "../../lib/errors";
+import { AppError, extractDatabaseError } from "../../lib/errors";
 import {
   acceptInvite,
   createOrganization,
@@ -33,8 +33,10 @@ export async function provisionWithInvite(
     const organization = await acceptInvite(userId, token);
     return { organization, accepted: true };
   } catch (error) {
-    if (!(error instanceof AppError)) throw error;
-    const sqlstate = String(error.details?.sqlstate ?? "");
+    const sqlstate =
+      error instanceof AppError
+        ? String(error.details?.sqlstate ?? "")
+        : (extractDatabaseError(error)?.code ?? "");
     const reason =
       sqlstate === "GX009"
         ? "email_mismatch"
@@ -50,17 +52,5 @@ export async function provisionWithInvite(
 }
 
 export async function deleteAuthUser(userId: string): Promise<void> {
-  const client = await authPool.connect();
-  try {
-    await client.query("BEGIN");
-    await client.query("DELETE FROM auth.session WHERE user_id = $1", [userId]);
-    await client.query("DELETE FROM auth.account WHERE user_id = $1", [userId]);
-    await client.query('DELETE FROM auth."user" WHERE id = $1', [userId]);
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+  await authPool.query('DELETE FROM auth."user" WHERE id = $1', [userId]);
 }

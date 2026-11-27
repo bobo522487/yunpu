@@ -61,7 +61,7 @@ describe.skipIf(!runPerf)("subgraph performance (~5k)", () => {
       );
       const list = performance.now() - listStarted;
       expect(listed.status).toBe(200);
-      expect((listed.data?.persons as unknown[]).length).toBe(10_000);
+      expect((listed.data?.persons as unknown[]).length).toBe(50);
 
       const graphStarted = performance.now();
       const graph = await call(

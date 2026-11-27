@@ -118,7 +118,6 @@ export const personName = pgTable(
       table.organizationId,
       table.projectId,
     ),
-    index("idx_person_name_person").on(table.projectId, table.personId),
   ],
 );
 
@@ -235,11 +234,10 @@ export const lineageProjection = pgTable(
       foreignColumns: [person.projectId, person.id],
       name: "fk_lineage_projection_person",
     }).onDelete("cascade"),
-    // GiST on (project_id, primary_path) is created in SQL migration 0012.
+    // text_pattern_ops index idx_lineage_projection_path_text on (project_id, primary_path::text) is created in SQL migration 0018.
     index("idx_lineage_projection_org_project").on(
       table.organizationId,
       table.projectId,
     ),
-    index("idx_lineage_projection_person").on(table.personId),
   ],
 );

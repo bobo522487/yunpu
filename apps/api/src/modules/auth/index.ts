@@ -1,4 +1,5 @@
 export { auth, authPool } from "./better-auth";
+export { mapBetterAuthError } from "./errors";
 export {
   deleteAuthUser,
   type InviteOutcome,

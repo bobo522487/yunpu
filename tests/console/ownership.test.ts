@@ -1,7 +1,9 @@
 import type { MemberRole } from "@yunpu/shared";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { withTenantTransaction } from "../../apps/api/src/db/with-tenant-transaction";
 import {
   createOrganization,
+  createTenantCleanupTracker,
   findUserIdByEmail,
   setOrganizationStatus,
   signUp,
@@ -250,87 +252,18 @@ describe("ownership transfer (console)", () => {
 });
 
 describe("owner invariants and transfer role effects (T-010 review)", () => {
-  let emails: Set<string>;
+  const tracker = createTenantCleanupTracker();
 
   beforeEach(() => {
-    emails = new Set();
+    tracker.reset();
   });
 
   afterEach(async () => {
-    // Every email is registered before the request that can fail. Organization
-    // ids are derived from actual user ids, so a non-uuid placeholder is never
-    // bound to a uuid parameter when sign-up is only partially complete.
-    if (emails.size === 0) return;
-    const tracked = [...emails];
-    await withAdminDb(async (client) => {
-      await client.query("BEGIN");
-      try {
-        await client.query("SET LOCAL session_replication_role = replica");
-        const users = await client.query<{ id: string }>(
-          'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
-          [tracked],
-        );
-        const userIds = users.rows.map((row) => row.id);
-        if (userIds.length > 0) {
-          // A successful transfer moves ownership, so collect organizations by
-          // either ownership or membership of the tracked users.
-          const organizations = await client.query<{ id: string }>(
-            `SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[])
-             UNION
-             SELECT organization_id AS id FROM organization_member
-             WHERE user_id = ANY($1::uuid[])`,
-            [userIds],
-          );
-          const organizationIds = organizations.rows.map((row) => row.id);
-          if (organizationIds.length > 0) {
-            await client.query(
-              "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization WHERE id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-          }
-          await client.query(
-            "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
-            [tracked],
-          );
-          await client.query(
-            'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
-            [userIds],
-          );
-        }
-        await client.query("COMMIT");
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      }
-    });
+    await tracker.cleanup();
   });
 
   function trackEmail(email: string): void {
-    emails.add(email.toLowerCase());
+    tracker.trackEmail(email);
   }
 
   async function trackedSignUp(email: string) {
@@ -412,9 +345,7 @@ describe("owner invariants and transfer role effects (T-010 review)", () => {
     expect(removed.json).toEqual({
       ok: false,
       code: "CONFLICT",
-      // fk_organization_owner RESTRICT surfaces SQLSTATE 23001, which maps to
-      // this generic conflict message (not the 23503-specific branch).
-      message: "记录仍被引用",
+      message: "不能移除组织所有者",
     });
     expect(await storedOwnerId(organizationId)).toBe(ownerUserId);
     expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
@@ -489,87 +420,44 @@ describe("owner invariants and transfer role effects (T-010 review)", () => {
       myRole: "admin",
     });
   });
+
+  test("direct SQL demotion of owner is rejected by database trigger (GX013)", async () => {
+    const ownerEmail = uniqueEmail("t10-db-guard-o");
+    const owner = await trackedSignUp(ownerEmail);
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "T010 数据库保护所有者组织",
+    );
+    const ownerUserId = await findUserIdByEmail(ownerEmail);
+    expect(ownerUserId).toBeDefined();
+    if (!ownerUserId) throw new Error("owner user id not found");
+
+    await expect(
+      withTenantTransaction({ userId: ownerUserId }, (db) =>
+        db.execute(
+          `UPDATE organization_member SET role = 'viewer'
+            WHERE organization_id = '${organizationId}'::uuid
+              AND user_id = '${ownerUserId}'::uuid`,
+        ),
+      ),
+    ).rejects.toMatchObject({ cause: { code: "GX013" } });
+    expect(await storedRole(organizationId, ownerUserId)).toBe("admin");
+  });
 });
 
 describe("transfer concurrency and atomicity (T-011 review)", () => {
-  let emails: Set<string>;
+  const tracker = createTenantCleanupTracker();
 
   beforeEach(() => {
-    emails = new Set();
+    tracker.reset();
   });
 
   afterEach(async () => {
-    const tracked = [...emails];
-    if (tracked.length === 0) return;
-    await withAdminDb(async (client) => {
-      await client.query("BEGIN");
-      try {
-        await client.query("SET LOCAL session_replication_role = replica");
-        const users = await client.query<{ id: string }>(
-          'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
-          [tracked],
-        );
-        const userIds = users.rows.map((row) => row.id);
-        if (userIds.length > 0) {
-          const organizations = await client.query<{ id: string }>(
-            `SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[])
-             UNION
-             SELECT organization_id AS id FROM organization_member
-             WHERE user_id = ANY($1::uuid[])`,
-            [userIds],
-          );
-          const organizationIds = organizations.rows.map((row) => row.id);
-          if (organizationIds.length > 0) {
-            await client.query(
-              "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization WHERE id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-          }
-          await client.query(
-            "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
-            [tracked],
-          );
-          await client.query(
-            'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
-            [userIds],
-          );
-        }
-        await client.query("COMMIT");
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      }
-    });
+    await tracker.cleanup();
   });
 
   function trackedEmail(prefix: string): string {
-    const email = uniqueEmail(prefix);
-    emails.add(email.toLowerCase());
-    return email;
+    return tracker.trackEmail(uniqueEmail(prefix));
   }
 
   async function trackedSignUp(email: string) {

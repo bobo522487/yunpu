@@ -1,7 +1,9 @@
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   RETRYABLE_ERROR_CODES,
   businessPool,
+  isConnectionLevelError,
   isNonRetryableConflictError,
   isRetryableTenantError,
   withTenantTransaction,
@@ -187,5 +189,91 @@ describe("withTenantTransaction session setup and pool hygiene", () => {
       "ROLLBACK",
     );
     expect(client.release).toHaveBeenCalledWith(false);
+  });
+
+  test("unwraps DrizzleQueryError cause chain for retry, conflict, and destroy classification", async () => {
+    const wrappedDeadlock = new DrizzleQueryError(
+      "select 1",
+      [],
+      codedError("40P01", "deadlock detected"),
+    );
+    const wrappedConflict = new DrizzleQueryError(
+      "insert 1",
+      [],
+      codedError("23505", "duplicate key"),
+    );
+    const wrappedTermination = new DrizzleQueryError(
+      "select 1",
+      [],
+      codedError("57P01", "terminating connection"),
+    );
+
+    expect(isRetryableTenantError(wrappedDeadlock)).toBe(true);
+    expect(isNonRetryableConflictError(wrappedConflict)).toBe(true);
+    expect(isConnectionLevelError(wrappedTermination)).toBe(true);
+
+    let attempts = 0;
+    const healthy = mockClient();
+    const doomed = mockClient();
+    vi.spyOn(businessPool, "connect").mockImplementation(async () => {
+      attempts += 1;
+      return (attempts === 1 ? doomed : healthy) as never;
+    });
+
+    const value = await withTenantTransaction({ userId: "u" }, async () => {
+      if (attempts === 1) throw wrappedDeadlock;
+      return "retried-ok";
+    });
+    expect(value).toBe("retried-ok");
+    expect(attempts).toBe(2);
+    expect(doomed.release).toHaveBeenCalledWith(false);
+
+    const poisoned = mockClient();
+    vi.spyOn(businessPool, "connect").mockResolvedValueOnce(poisoned as never);
+    await expect(
+      withTenantTransaction({ userId: "u" }, async () => {
+        throw wrappedTermination;
+      }),
+    ).rejects.toBe(wrappedTermination);
+    expect(poisoned.release).toHaveBeenCalledWith(true);
+  });
+
+  test("does not retry ECONNRESET during COMMIT on a write transaction, but retries readOnly", async () => {
+    let writeCalls = 0;
+    const writeClient = mockClient((sql) => {
+      if (sql === "COMMIT") throw codedError("ECONNRESET", "socket hang up");
+      if (sql === CONTEXT_SQL) return { rows: [{ role: "genealogy_app" }] };
+      return { rows: [] };
+    });
+    vi.spyOn(businessPool, "connect").mockImplementation(async () => {
+      writeCalls += 1;
+      return writeClient as never;
+    });
+
+    await expect(
+      withTenantTransaction({ userId: "u" }, async () => "written"),
+    ).rejects.toMatchObject({ code: "ECONNRESET" });
+    expect(writeCalls).toBe(1);
+    expect(writeClient.release).toHaveBeenCalledWith(true);
+
+    let readCalls = 0;
+    const brokenRead = mockClient((sql) => {
+      if (sql === "COMMIT") throw codedError("ECONNRESET", "socket hang up");
+      if (sql === CONTEXT_SQL) return { rows: [{ role: "genealogy_app" }] };
+      return { rows: [] };
+    });
+    const okRead = mockClient();
+    vi.spyOn(businessPool, "connect").mockImplementation(async () => {
+      readCalls += 1;
+      return (readCalls === 1 ? brokenRead : okRead) as never;
+    });
+
+    const res = await withTenantTransaction(
+      { userId: "u", readOnly: true },
+      async () => "read-ok",
+    );
+    expect(res).toBe("read-ok");
+    expect(readCalls).toBe(2);
+    expect(brokenRead.release).toHaveBeenCalledWith(true);
   });
 });

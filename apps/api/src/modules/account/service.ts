@@ -1,7 +1,6 @@
-import { AppError } from "../../lib/errors";
 import { logEvent } from "../../lib/logger";
 import type { SessionUser } from "../../types";
-import { auth, requireAuth } from "../auth";
+import { auth, mapBetterAuthError } from "../auth";
 
 export type AccountRecord = {
   id: string;
@@ -9,65 +8,36 @@ export type AccountRecord = {
   name: string;
 };
 
-function toAccount(user: SessionUser): AccountRecord {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-  };
-}
-
-function mapBetterAuthError(error: unknown, fallback: string): AppError {
-  const record =
-    typeof error === "object" && error !== null
-      ? (error as {
-          statusCode?: unknown;
-          status?: unknown;
-          body?: { code?: string };
-        })
-      : undefined;
-  const code = record?.body?.code;
-  if (code === "INVALID_PASSWORD") {
-    return new AppError("VALIDATION", "当前密码不正确", 400);
-  }
-  const status = Number(record?.statusCode ?? record?.status);
-  if (status === 400) {
-    return new AppError("VALIDATION", fallback, 400);
-  }
-  if (status === 401) {
-    return new AppError("UNAUTHORIZED", "需要登录", 401);
-  }
-  return new AppError("INTERNAL", fallback, 500);
-}
-
 /** 只修改调用者本人的显示名（`account.write`，FR-006）。 */
 export async function updateAccount(
+  sessionUser: SessionUser,
   headers: Headers,
   name: string,
 ): Promise<AccountRecord> {
-  const sessionUser = await requireAuth(headers);
   try {
     await auth.api.updateUser({ body: { name }, headers });
   } catch (error) {
     throw mapBetterAuthError(error, "修改资料失败");
   }
-  // 以会话回读为准，避免依赖 Better Auth 各版本的返回体形状。
-  const refreshed = await requireAuth(headers);
   logEvent({
     event: "account.updated",
     user_id: sessionUser.id,
     result: "ok",
   });
-  return toAccount(refreshed);
+  return {
+    id: sessionUser.id,
+    email: sessionUser.email,
+    name,
+  };
 }
 
 /** 修改本人密码：需当前密码；失败不改密（Better Auth 事务内校验）。 */
 export async function changePassword(
+  sessionUser: SessionUser,
   headers: Headers,
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  const sessionUser = await requireAuth(headers);
   try {
     await auth.api.changePassword({
       body: { currentPassword, newPassword },

@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as shared from "../packages/shared/src/index.ts";
@@ -99,11 +99,12 @@ for (const [name, schema] of Object.entries(OPENAPI_SCHEMAS)) {
 const paths: Record<string, Record<string, unknown>> = {};
 for (const operation of OPENAPI_OPERATIONS) {
   const encodedSuccess = jsonSchema(operation.success);
+  const contentType = operation.successContentType ?? "application/json";
   const responses: Record<string, unknown> = {
     [String(operation.successStatus)]: {
       description: operation.summary,
       content: {
-        "application/json": { schema: encodedSuccess },
+        [contentType]: { schema: encodedSuccess },
       },
     },
   };

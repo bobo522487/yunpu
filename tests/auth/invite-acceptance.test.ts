@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   activateOrganization,
   createOrganization,
+  createTenantCleanupTracker,
   findUserIdByEmail,
   insertInvite,
   type JsonResponse,
@@ -13,14 +14,12 @@ import {
   withAdminDb,
 } from "./fixtures";
 
-const trackedEmails = new Set<string>();
+const tracker = createTenantCleanupTracker();
 
 function trackedEmail(prefix: string): string {
-  const email = uniqueEmail(prefix);
   // Track before the request that may fail; cleanup must never bind a
   // non-uuid placeholder to a uuid column.
-  trackedEmails.add(email.toLowerCase());
-  return email;
+  return tracker.trackEmail(uniqueEmail(prefix));
 }
 
 async function ownerWithOrganization() {
@@ -34,75 +33,11 @@ async function ownerWithOrganization() {
 
 describe("US3 invite acceptance", () => {
   beforeEach(() => {
-    trackedEmails.clear();
+    tracker.reset();
   });
 
   afterEach(async () => {
-    const tracked = [...trackedEmails];
-    if (tracked.length === 0) return;
-    await withAdminDb(async (client) => {
-      await client.query("BEGIN");
-      try {
-        await client.query("SET LOCAL session_replication_role = replica");
-        const users = await client.query<{ id: string }>(
-          'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
-          [tracked],
-        );
-        const userIds = users.rows.map((row) => row.id);
-        if (userIds.length > 0) {
-          const organizations = await client.query<{ id: string }>(
-            `SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[])
-             UNION
-             SELECT organization_id AS id FROM organization_member
-             WHERE user_id = ANY($1::uuid[])`,
-            [userIds],
-          );
-          const organizationIds = organizations.rows.map((row) => row.id);
-          if (organizationIds.length > 0) {
-            await client.query(
-              "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-            await client.query(
-              "DELETE FROM organization WHERE id = ANY($1::uuid[])",
-              [organizationIds],
-            );
-          }
-          await client.query(
-            "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
-            [userIds],
-          );
-          await client.query(
-            "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
-            [tracked],
-          );
-          await client.query(
-            'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
-            [userIds],
-          );
-        }
-        await client.query("COMMIT");
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      }
-    });
+    await tracker.cleanup();
   });
 
   test("joining through an invite does not create a personal organization", async () => {
@@ -405,5 +340,34 @@ describe("US3 invite acceptance", () => {
       owner.organizationId,
     );
     expect(activated.response.status).toBe(200);
+  });
+
+  test("an owner accepting a viewer invite keeps the admin role", async () => {
+    const owner = await ownerWithOrganization();
+    const token = crypto.randomUUID();
+    await insertInvite({
+      organizationId: owner.organizationId,
+      email: owner.email,
+      role: "viewer",
+      token,
+      invitedBy: owner.userId,
+    });
+
+    const accepted = await request("/api/v1/invites/accept", {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: owner.cookie },
+      body: JSON.stringify({ token }),
+    });
+    expect(accepted.status).toBe(200);
+
+    const role = await withAdminDb(async (client) => {
+      const result = await client.query<{ role: string }>(
+        `SELECT role FROM organization_member
+          WHERE organization_id = $1 AND user_id = $2`,
+        [owner.organizationId, owner.userId],
+      );
+      return result.rows[0]?.role;
+    });
+    expect(role).toBe("admin");
   });
 });

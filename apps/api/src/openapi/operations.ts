@@ -35,6 +35,7 @@ export type OpenApiOperation = {
   query?: z.ZodType;
   body?: z.ZodType;
   successStatus: number;
+  successContentType?: string;
   success: z.ZodType;
   errors?: z.ZodType;
 };
@@ -151,7 +152,12 @@ const AuthDataSchema = z.object({
   onboarding: z.boolean().optional(),
 });
 
-const IdParams = z.object({ id });
+const SessionDataSchema = z.object({
+  user: AccountSchema.nullable(),
+  defaultOrganization: OrganizationSummarySchema.nullable(),
+  onboarding: z.boolean(),
+});
+
 const OrgParams = z.object({ organizationId: id });
 const ProjectParams = z.object({ projectId: id });
 const PersonParams = z.object({
@@ -186,7 +192,13 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: "apps/api/src/app.ts",
     summary: "进程存活探测",
     successStatus: 200,
-    success: z.object({ ok: z.literal(true) }),
+    success: z.object({
+      ok: z.boolean(),
+      checks: z.object({
+        process: z.literal("up"),
+        database: z.enum(["up", "down"]),
+      }),
+    }),
   },
   {
     method: "get",
@@ -197,7 +209,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     successStatus: 200,
     success: z.object({
       ok: z.boolean(),
-      checks: z.record(z.string(), z.unknown()),
+      checks: z.record(z.string(), z.enum(["up", "down"])),
+      version: z.string().optional(),
+      reason: z.string().optional(),
     }),
   },
   {
@@ -239,7 +253,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: auth,
     summary: "读取当前会话",
     successStatus: 200,
-    success: okData(AuthDataSchema),
+    success: okData(SessionDataSchema),
   },
   {
     method: "get",
@@ -280,7 +294,12 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: organization,
     summary: "列出可见组织",
     successStatus: 200,
-    success: okData(z.array(OrganizationSummarySchema)),
+    success: okData(
+      z.object({
+        organizations: z.array(OrganizationSummarySchema),
+        defaultOrganizationId: id.nullable(),
+      }),
+    ),
     errors: ErrorResponseSchema,
   },
   {
@@ -291,7 +310,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "创建组织",
     body: CreateOrganizationSchema,
     successStatus: 201,
-    success: okData(z.object({ organization: OrganizationDetailSchema })),
+    success: okData(z.object({ organization: OrganizationSummarySchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -348,7 +367,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "激活组织",
     params: OrgParams,
     successStatus: 200,
-    success: okData(z.object({ organization: OrganizationDetailSchema })),
+    success: okData(z.object({ organization: OrganizationSummarySchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -362,7 +381,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     success: okData(
       z.object({
         organization: OrganizationSummarySchema,
-        invite: InviteSchema,
+        defaultOrganizationChanged: z.literal(true),
       }),
     ),
     errors: ErrorResponseSchema,
@@ -592,8 +611,11 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     successStatus: 200,
     success: okData(
       z.object({
+        rootPersonId: id,
         persons: z.array(PersonSchema),
         relations: z.array(RelationSchema),
+        hasMoreAncestors: z.boolean(),
+        hasMoreDescendants: z.boolean(),
       }),
     ),
     errors: ErrorResponseSchema,
@@ -605,7 +627,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: media,
     summary: "上传媒体对象",
     successStatus: 201,
-    success: okData(z.object({ key: z.string() })),
+    success: z.object({ ok: z.literal(true), key: z.string() }),
     errors: z.object({ ok: z.literal(false), reason: z.string() }),
   },
   {
@@ -616,6 +638,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "读取媒体对象",
     params: z.object({ path: z.string() }),
     successStatus: 200,
+    successContentType: "application/octet-stream",
     success: z.string().describe("binary media bytes"),
     errors: z.object({ ok: z.literal(false), reason: z.string() }),
   },
@@ -631,7 +654,6 @@ export const OPENAPI_SCHEMAS: Record<string, z.ZodType> = {
   Person: PersonSchema,
   Relation: RelationSchema,
   ErrorResponse: ErrorResponseSchema,
-  IdParams,
   OrgParams,
   ProjectParams,
   PersonParams,

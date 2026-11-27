@@ -46,17 +46,42 @@ describe("person CRUD (genealogy)", () => {
       },
     );
     expect(patched.status).toBe(200);
-    expect((patched.data?.person as { displayName: string }).displayName).toBe(
-      "张明德（修订）",
+    const patchedPerson = patched.data?.person as {
+      displayName: string;
+      surname: string | null;
+      birthYear: number | null;
+      deathYear: number | null;
+      version: number;
+    };
+    expect(patchedPerson.displayName).toBe("张明德（修订）");
+    expect(patchedPerson.surname).toBe("张");
+    expect(patchedPerson.birthYear).toBe(1920);
+    expect(patchedPerson.deathYear).toBeNull();
+    expect(patchedPerson.version).toBe(2);
+
+    const cleared = await call(
+      `/api/v1/projects/${projectId}/persons/${person.id}`,
+      cookie,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ surname: null, birthYear: null, version: 2 }),
+      },
     );
-    expect((patched.data?.person as { version: number }).version).toBe(2);
+    expect(cleared.status).toBe(200);
+    expect(
+      (cleared.data?.person as { surname: string | null }).surname,
+    ).toBeNull();
+    expect(
+      (cleared.data?.person as { birthYear: number | null }).birthYear,
+    ).toBeNull();
+    expect((cleared.data?.person as { version: number }).version).toBe(3);
 
     const stale = await call(
       `/api/v1/projects/${projectId}/persons/${person.id}`,
       cookie,
       {
         method: "PATCH",
-        body: JSON.stringify({ displayName: "冲突", version: 1 }),
+        body: JSON.stringify({ displayName: "冲突", version: 2 }),
       },
     );
     expect(stale.status).toBe(409);
@@ -124,5 +149,36 @@ describe("person CRUD (genealogy)", () => {
     });
     expect(result.status).toBe(400);
     expect(result.json.code).toBe("VALIDATION");
+  });
+
+  test("deleting a child person with a parent relation succeeds cleanly", async () => {
+    const { cookie, projectId } = await seedOwnerProject("person-del-child");
+    const parent = await createPerson(cookie, projectId, { displayName: "父" });
+    const child = await createPerson(cookie, projectId, { displayName: "子" });
+    const parentId = (parent.data?.person as { id: string }).id;
+    const childId = (child.data?.person as { id: string }).id;
+
+    const edge = await call(`/api/v1/projects/${projectId}/relations`, cookie, {
+      method: "POST",
+      body: JSON.stringify({
+        fromPersonId: parentId,
+        toPersonId: childId,
+        kind: "biological_parent",
+      }),
+    });
+    expect(edge.status).toBe(201);
+
+    const removedChild = await call(
+      `/api/v1/projects/${projectId}/persons/${childId}`,
+      cookie,
+      { method: "DELETE" },
+    );
+    expect(removedChild.status).toBe(200);
+
+    const after = await call(
+      `/api/v1/projects/${projectId}/persons/${childId}`,
+      cookie,
+    );
+    expect(after.status).toBe(404);
   });
 });

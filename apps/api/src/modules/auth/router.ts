@@ -76,7 +76,7 @@ authRouter.post("/sign-out", async (c) => {
 });
 
 authRouter.get("/session", async (c) => {
-  const view = await getSessionView(c.req.raw.headers);
+  const view = await getSessionView(c.get("user"));
   if (!view) {
     return c.json({
       ok: true,

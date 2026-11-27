@@ -63,7 +63,7 @@
 2. **所有外部输入在边界校验**：JSON body 与 query 使用 `apps/api/src/lib/http.ts` 的 `parseJson`、`parseQuery`；路径参数存在专用 Schema 时使用 `parseParams`。禁止在路由内直接 `JSON.parse`、手写类型断言或重复定义 schema。
 3. **Schema 复用**：跨端或跨模块共享的校验规则放在 `packages/shared/src/schemas.ts`；输出类型使用 `z.output<typeof Schema>`，不得用 `as` 伪造。
 4. **JSON 请求**：必须携带 `Content-Type: application/json`；非法 JSON 会被转为 `null` 并返回 `VALIDATION`，不得绕过该行为。
-5. **校验错误形状**：`details` 是裸 `fieldErrors`（`z.ZodError.flatten().fieldErrors`），不得包成 `{ issues: ... }`（`tests/security/validation-shape.test.ts`）。
+5. **校验错误形状**：`details` 是裸 `fieldErrors`（`z.ZodError.flatten().fieldErrors`），不得包成 `{ issues: ... }`（`tests/security/validation-shape.test.ts`）；顶层 `.refine()` 产生的 `formErrors` 保留在 `details._form`。
 6. **契约同步**：修改路由、参数或共享 Schema 后运行 `pnpm contract:export`，提交更新后的 `contracts/openapi.json`。
 
 ---
@@ -87,17 +87,18 @@
 
 ### 3. 数据库错误映射
 
-数据库异常由 `apps/api/src/lib/errors.ts` 的 `mapDatabaseError` 统一翻译，**只依据 PostgreSQL `SQLSTATE`（`code`）与 `constraint` 名称，禁止解析错误消息文本**；映射会沿 `cause` 链向上查找最多 5 层。
+数据库异常由 `apps/api/src/lib/errors.ts` 的 `tryMapDatabaseError` / `mapDatabaseError` 统一翻译（未在 service 层捕获的已识别异常也由 `app.ts` `onApiError` 兜底映射），**只依据 PostgreSQL `SQLSTATE`（`code`）与 `constraint` 名称，禁止解析错误消息文本**；映射会沿 `cause` 链向上查找最多 5 层。
 
 | SQLSTATE | 业务码 | HTTP | 典型约束 / 说明 |
 | :--- | :--- | :--- | :--- |
-| `23505` | `CONFLICT` | 409 | `user_email_unique` 使用专属文案 |
-| `23001` / `23503` | `CONFLICT` | 409 | `fk_organization_owner` 使用专属文案 |
-| `22P02` | `VALIDATION` | 400 | 输入格式非法 |
+| `23505` | `CONFLICT` | 409 | `user_email_unique`、`uk_person_relation_kind` 使用专属文案 |
+| `23001` / `23503` | `CONFLICT` | 409 | `fk_organization_owner` 使用专属文案（不能移除组织所有者） |
+| `22P02` / `22007` | `VALIDATION` | 400 | 输入格式 / 日期时间格式非法 |
 | `23514` | `VALIDATION` | 400 | `ck_person_life_years` 等 CHECK 约束 |
 | `GX001` | `CYCLE_DETECTED` | 409 | 谱系环检测 |
 | `GX011` | `PARENT_LIMIT` | 409 | 父母边上限 |
 | `GX012` | `CONFLICT` | 409 | 归档组织禁止写入 |
+| `GX013` | `CONFLICT` | 409 | 不能修改所有者角色 |
 | `GX005` | `NOT_FOUND` | 404 | 目标不存在或已失效 |
 | `GX006` / `GX009` | `FORBIDDEN` | 403 | 权限不足 / 邀请邮箱不匹配 |
 | `GX008` | `UNAUTHORIZED` | 401 | 缺少认证上下文 |
@@ -118,7 +119,7 @@
    - `authMiddleware` 只挂载在 `/api/v1/*`；`/api/health`、`/api/ready`、`/api/media/*` 不查询业务会话。
 3. **禁止绕过入口**：`apps/api/src/modules/**` 禁止导入 `createDb`、`businessPool` 或裸 `db/pool`。仅允许 `docs/architecture.md` 登记的三类例外：健康检查、认证库、数据库迁移。
 4. **重试策略**：
-   - 仅对瞬态故障 `ECONNRESET`、`40001`（序列化冲突）、`40P01`（死锁）执行最多 3 次指数退避（`25ms * 2^attempt`）。
+   - 仅对瞬态故障执行最多 3 次指数退避（`25ms * 2^attempt`）：`40001`（序列化冲突）、`40P01`（死锁）可重试；`ECONNRESET` 仅在事务建立阶段（`setup`）或只读事务（`readOnly: true`）中重试，绝不在写入事务的提交阶段（`commit`）重放非幂等写操作。
    - 唯一键冲突（`23505`）与乐观锁版本冲突（`VERSION_CONFLICT`）不得重试，直接返回 `409`。
 5. **连接卫生**：事务必须以 `COMMIT` 或 `ROLLBACK` 结束；`ROLLBACK` 失败、连接级故障或角色断言失败时必须 `release(true)` 销毁会话，禁止把可能中毒的连接还池。
 6. **并发更新**：项目与人物使用整数 `version` 做 CAS，冲突返回 `409 VERSION_CONFLICT`；禁止用 `updated_at` 字符串充当并发令牌。

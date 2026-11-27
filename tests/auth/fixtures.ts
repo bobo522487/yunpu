@@ -179,6 +179,139 @@ export async function findUserIdByEmail(
   });
 }
 
+export function createTenantCleanupTracker() {
+  const emails = new Set<string>();
+  const organizationIds = new Set<string>();
+
+  function trackEmail(email: string): string {
+    emails.add(email.toLowerCase());
+    return email;
+  }
+
+  function trackOrganization(organizationId: string): string {
+    organizationIds.add(organizationId);
+    return organizationId;
+  }
+
+  function reset(): void {
+    emails.clear();
+    organizationIds.clear();
+  }
+
+  async function cleanup(): Promise<void> {
+    const trackedEmails = [...emails];
+    const trackedOrganizationIds = [...organizationIds];
+    reset();
+    if (trackedEmails.length === 0 && trackedOrganizationIds.length === 0) {
+      return;
+    }
+
+    await withAdminDb(async (client) => {
+      await client.query("BEGIN");
+      try {
+        // RESTRICT cycles between organization/organization_member and the
+        // append-only audit trigger make ordinary deletes impossible. Disabling
+        // triggers is confined to this dedicated Client's transaction.
+        await client.query("SET LOCAL session_replication_role = replica");
+
+        const userIds =
+          trackedEmails.length > 0
+            ? (
+                await client.query<{ id: string }>(
+                  'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
+                  [trackedEmails],
+                )
+              ).rows.map((row) => row.id)
+            : [];
+
+        const orgIds = (
+          await client.query<{ id: string }>(
+            `SELECT DISTINCT id FROM organization
+              WHERE id = ANY($1::uuid[])
+                 OR owner_user_id = ANY($2::uuid[])
+             UNION
+             SELECT organization_id AS id FROM organization_member
+              WHERE user_id = ANY($2::uuid[])`,
+            [trackedOrganizationIds, userIds],
+          )
+        ).rows.map((row) => row.id);
+
+        if (orgIds.length > 0) {
+          await client.query(
+            "DELETE FROM lineage_projection WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM person_relation WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM person_name WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM person WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM project WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM audit_log WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM invite WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM organization_member WHERE organization_id = ANY($1::uuid[])",
+            [orgIds],
+          );
+          await client.query(
+            "DELETE FROM organization WHERE id = ANY($1::uuid[])",
+            [orgIds],
+          );
+        }
+
+        if (userIds.length > 0) {
+          await client.query(
+            "DELETE FROM organization_member WHERE user_id = ANY($1::uuid[])",
+            [userIds],
+          );
+          await client.query(
+            "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
+            [userIds],
+          );
+          await client.query(
+            "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
+            [userIds],
+          );
+          await client.query(
+            'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
+            [userIds],
+          );
+        }
+
+        if (trackedEmails.length > 0) {
+          await client.query(
+            "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
+            [trackedEmails],
+          );
+        }
+
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
+    });
+  }
+
+  return { trackEmail, trackOrganization, reset, cleanup };
+}
+
 function argValue(name: string): string | undefined {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;

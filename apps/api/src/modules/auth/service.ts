@@ -1,5 +1,5 @@
 import type { SignInInput, SignUpInput } from "@yunpu/shared";
-import { AppError } from "../../lib/errors";
+import { AppError, tryMapDatabaseError } from "../../lib/errors";
 import { logEvent } from "../../lib/logger";
 import type { SessionUser } from "../../types";
 import {
@@ -7,7 +7,7 @@ import {
   resolveDefaultOrganization,
 } from "../organization/service";
 import { auth } from "./better-auth";
-import { mapSignUpError } from "./errors";
+import { mapSignInError, mapSignUpError } from "./errors";
 import {
   deleteAuthUser,
   provisionDefaultOrganization,
@@ -61,7 +61,7 @@ export async function register(
   }
 
   const user = created.response?.user;
-  if (!user) throw new AppError("INTERNAL", "注册失败", 500);
+  if (!user) throw new AppError("INTERNAL", "注册失败");
 
   try {
     if (input.inviteToken) {
@@ -118,16 +118,17 @@ export async function register(
           cleanupError instanceof Error ? cleanupError.message : "unknown",
       });
     }
+    const mapped =
+      error instanceof AppError ? error : tryMapDatabaseError(error);
     logEvent({
       event: "auth.registered",
       request_id: requestId,
       user_id: user.id,
       result: "failed",
-      reason: error instanceof AppError ? error.code : "unknown",
+      reason: mapped ? mapped.code : "unknown",
     });
-    throw error instanceof AppError
-      ? error
-      : new AppError("INTERNAL", "注册失败", 500);
+    if (mapped) throw mapped;
+    throw error;
   }
 }
 
@@ -148,19 +149,13 @@ export async function signIn(
       result: "failed",
       reason: error instanceof Error ? error.message : "unknown",
     });
-    const record =
-      typeof error === "object" && error !== null
-        ? (error as { statusCode?: unknown; status?: unknown })
-        : undefined;
-    const status = Number(record?.statusCode ?? record?.status);
-    if (status === 400 || status === 401 || status === 422) {
-      throw new AppError("UNAUTHORIZED", "邮箱或密码错误", 401);
-    }
+    const mapped = mapSignInError(error);
+    if (mapped) throw mapped;
     throw error;
   }
 
   const user = result.response?.user;
-  if (!user) throw new AppError("UNAUTHORIZED", "邮箱或密码错误", 401);
+  if (!user) throw new AppError("UNAUTHORIZED", "邮箱或密码错误");
 
   const defaultOrganization = await resolveDefaultOrganization(user.id);
   logEvent({
@@ -210,14 +205,13 @@ export async function signOut(
 }
 
 export async function getSessionView(
-  headers: Headers,
+  user: SessionUser | null,
 ): Promise<AuthView | null> {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) return null;
+  if (!user) return null;
 
-  const defaultOrganization = await resolveDefaultOrganization(session.user.id);
+  const defaultOrganization = await resolveDefaultOrganization(user.id);
   return {
-    user: toSessionUser(session.user as BetterAuthUser),
+    user,
     defaultOrganization,
     onboarding: defaultOrganization === null,
   };

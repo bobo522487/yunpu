@@ -10,7 +10,6 @@ import {
 } from "@yunpu/shared";
 import { Hono } from "hono";
 import { config } from "../../config";
-import { AppError } from "../../lib/errors";
 import {
   parseJson,
   parseParams,
@@ -36,10 +35,6 @@ import {
   updateOrganizationForUser,
 } from "./service";
 
-const OrganizationMemberParamsSchema = MemberParamsSchema.pick({
-  organizationId: true,
-});
-
 export const organizationRouter = new Hono<ApiEnv>();
 
 organizationRouter.get("/organizations", async (c) => {
@@ -58,9 +53,6 @@ organizationRouter.get("/organizations/:organizationId", async (c) => {
   const user = requireUser(c);
   const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
   const organization = await getOrganization(user.id, organizationId);
-  if (!organization) {
-    throw new AppError("NOT_FOUND", "目标不存在或已失效", 404);
-  }
   return c.json({ ok: true, data: { organization } });
 });
 
@@ -117,7 +109,7 @@ organizationRouter.post("/invites/accept", async (c) => {
 
 organizationRouter.get("/organizations/:organizationId/members", async (c) => {
   const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationMemberParamsSchema);
+  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
   const query = parseQuery(c, PageQuerySchema);
   const page = await listMembersForOrg(user.id, organizationId, query);
   return c.json({ ok: true, data: page });
@@ -159,12 +151,35 @@ organizationRouter.get("/organizations/:organizationId/invites", async (c) => {
   return c.json({ ok: true, data: page });
 });
 
+function trustedInviteOrigin(headerOrigin: string | undefined): string {
+  const env = config();
+  const fallback = new URL(env.BETTER_AUTH_URL).origin;
+  if (!headerOrigin) return fallback;
+
+  let normalized: string;
+  try {
+    normalized = new URL(headerOrigin).origin;
+  } catch {
+    return fallback;
+  }
+
+  const allowed = new Set<string>([fallback]);
+  for (const candidate of env.CORS_ORIGINS) {
+    try {
+      allowed.add(new URL(candidate).origin);
+    } catch {
+      // Ignore malformed configured origin strings.
+    }
+  }
+  return allowed.has(normalized) ? normalized : fallback;
+}
+
 organizationRouter.post("/organizations/:organizationId/invites", async (c) => {
   const user = requireUser(c);
   const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
   const parsed = await parseJson(c, CreateInviteSchema);
-  // 邀请链接指向前端；浏览器同源代理会带上 Origin，缺省回退到已配置的应用地址。
-  const origin = c.req.header("origin") ?? config().BETTER_AUTH_URL;
+  // 邀请链接指向前端；仅信任已配置的 Origin，否则回退 BETTER_AUTH_URL。
+  const origin = trustedInviteOrigin(c.req.header("origin"));
   const result = await createInviteForOrg(
     user.id,
     organizationId,

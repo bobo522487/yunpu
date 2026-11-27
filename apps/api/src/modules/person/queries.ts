@@ -1,8 +1,8 @@
-import { person, personName, personRelation, project } from "@yunpu/db";
+import { person, personName, personRelation } from "@yunpu/db";
 import type { ApiRelationKind, PersonSex } from "@yunpu/shared";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
-import { validationError } from "../../lib/errors";
+import { parseUuidCursor, sliceCursorPage } from "../../lib/pagination";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
 export type PersonView = {
@@ -28,18 +28,6 @@ export type RelationView = {
   createdAt: string;
   updatedAt: string;
 };
-
-export async function getProjectScope(
-  db: TxDatabase,
-  projectId: string,
-): Promise<{ id: string; organizationId: string } | null> {
-  const rows = await db
-    .select({ id: project.id, organizationId: project.organizationId })
-    .from(project)
-    .where(eq(project.id, projectId))
-    .limit(1);
-  return rows[0] ?? null;
-}
 
 async function loadPersonView(
   db: TxDatabase,
@@ -87,24 +75,18 @@ export type ListPageOptions = {
   limit: number;
 };
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function listPersons(
   db: TxDatabase,
   organizationId: string,
   projectId: string,
   options: ListPageOptions,
 ): Promise<{ persons: PersonView[]; nextCursor: string | null }> {
-  if (options.cursor && !UUID_PATTERN.test(options.cursor)) {
-    throw validationError({ cursor: "游标格式不合法" });
-  }
   const conditions = [
     eq(person.organizationId, organizationId),
     eq(person.projectId, projectId),
   ];
   if (options.cursor) {
-    conditions.push(gt(person.id, options.cursor));
+    conditions.push(gt(person.id, parseUuidCursor(options.cursor)));
   }
   const rows = await db
     .select({
@@ -133,12 +115,10 @@ export async function listPersons(
     .where(and(...conditions))
     .orderBy(person.id)
     .limit(options.limit + 1);
-  const hasMore = rows.length > options.limit;
-  const persons = hasMore ? rows.slice(0, options.limit) : rows;
-  const last = persons[persons.length - 1];
+  const page = sliceCursorPage(rows, options.limit, (last) => last.id);
   return {
-    persons,
-    nextCursor: hasMore && last ? last.id : null,
+    persons: page.items,
+    nextCursor: page.nextCursor,
   };
 }
 
@@ -157,31 +137,60 @@ export async function insertPerson(
   projectId: string,
   values: CreatePersonValues,
 ): Promise<PersonView> {
-  const inserted = await db
-    .insert(person)
-    .values({
-      organizationId,
-      projectId,
-      sex: values.sex ?? "unknown",
-      surname: values.surname ?? null,
-      birthYear: values.birthYear ?? null,
-      deathYear: values.deathYear ?? null,
-      isLiving: values.isLiving ?? true,
-    })
-    .returning({ id: person.id });
-  const personId = inserted[0].id;
+  const sex = values.sex ?? "unknown";
+  const surname = values.surname ?? null;
+  const birthYear = values.birthYear ?? null;
+  const deathYear = values.deathYear ?? null;
+  const isLiving = values.isLiving ?? true;
 
-  await db.insert(personName).values({
-    organizationId,
-    projectId,
-    personId,
-    kind: "formal",
-    value: values.displayName,
-    isPrimary: true,
-  });
-
-  const view = await loadPersonView(db, projectId, personId);
-  if (!view) throw new Error("person insert failed to reload");
+  const executed = await db.execute<PersonView>(sql`
+    WITH inserted_person AS (
+      INSERT INTO person (
+        organization_id, project_id, sex, surname, birth_year, death_year, is_living
+      )
+      VALUES (
+        ${organizationId}::uuid,
+        ${projectId}::uuid,
+        ${sex},
+        ${surname},
+        ${birthYear},
+        ${deathYear},
+        ${isLiving}
+      )
+      RETURNING id, project_id, sex, surname, birth_year, death_year, is_living, version, created_at, updated_at
+    ),
+    inserted_name AS (
+      INSERT INTO person_name (
+        organization_id, project_id, person_id, kind, value, is_primary
+      )
+      SELECT
+        ${organizationId}::uuid,
+        ${projectId}::uuid,
+        ip.id,
+        'formal',
+        ${values.displayName},
+        true
+      FROM inserted_person ip
+      RETURNING person_id, value
+    )
+    SELECT
+      ip.id,
+      ip.project_id AS "projectId",
+      inm.value AS "displayName",
+      ip.sex,
+      ip.surname,
+      ip.birth_year AS "birthYear",
+      ip.death_year AS "deathYear",
+      ip.is_living AS "isLiving",
+      ip.version,
+      to_char(ip.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt",
+      to_char(ip.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "updatedAt"
+    FROM inserted_person ip
+    JOIN inserted_name inm ON inm.person_id = ip.id
+  `);
+  const rows = (executed as unknown as { rows: PersonView[] }).rows;
+  const view = rows[0];
+  if (!view) throw new Error("person insert failed");
   return view;
 }
 
@@ -192,6 +201,19 @@ export type UpdatePersonValues = {
   birthYear?: number | null;
   deathYear?: number | null;
   isLiving?: boolean;
+};
+
+const personBaseColumns = {
+  id: person.id,
+  projectId: person.projectId,
+  sex: person.sex,
+  surname: person.surname,
+  birthYear: person.birthYear,
+  deathYear: person.deathYear,
+  isLiving: person.isLiving,
+  version: person.version,
+  createdAt: timestamp(person.createdAt),
+  updatedAt: timestamp(person.updatedAt),
 };
 
 export async function casUpdatePerson(
@@ -206,26 +228,26 @@ export async function casUpdatePerson(
     updatedAt: sql`clock_timestamp()`,
   };
   if (values.sex !== undefined) set.sex = values.sex;
-  if ("surname" in values) set.surname = values.surname ?? null;
-  if ("birthYear" in values) set.birthYear = values.birthYear ?? null;
-  if ("deathYear" in values) set.deathYear = values.deathYear ?? null;
+  if (values.surname !== undefined) set.surname = values.surname;
+  if (values.birthYear !== undefined) set.birthYear = values.birthYear;
+  if (values.deathYear !== undefined) set.deathYear = values.deathYear;
   if (values.isLiving !== undefined) set.isLiving = values.isLiving;
 
-  const rows = await db
-    .update(person)
-    .set(set)
-    .where(
-      and(
-        eq(person.projectId, projectId),
-        eq(person.id, personId),
-        eq(person.version, expectedVersion),
-      ),
-    )
-    .returning({ id: person.id });
-
-  if (rows.length === 0) return null;
+  const whereClause = and(
+    eq(person.projectId, projectId),
+    eq(person.id, personId),
+    eq(person.version, expectedVersion),
+  );
 
   if (values.displayName !== undefined) {
+    const rows = await db
+      .update(person)
+      .set(set)
+      .where(whereClause)
+      .returning(personBaseColumns);
+    const updated = rows[0];
+    if (!updated) return null;
+
     await db
       .update(personName)
       .set({
@@ -239,9 +261,24 @@ export async function casUpdatePerson(
           eq(personName.isPrimary, true),
         ),
       );
+    return { ...updated, displayName: values.displayName };
   }
 
-  return loadPersonView(db, projectId, personId);
+  const rows = await db
+    .update(person)
+    .set(set)
+    .where(whereClause)
+    .returning({
+      ...personBaseColumns,
+      displayName: sql<string>`(
+        SELECT pn.value FROM person_name pn
+         WHERE pn.project_id = ${person.projectId}
+           AND pn.person_id = ${person.id}
+           AND pn.is_primary = true
+         LIMIT 1
+      )`,
+    });
+  return rows[0] ?? null;
 }
 
 export async function deletePerson(
@@ -267,6 +304,18 @@ export async function personExistsInProject(
     .where(and(eq(person.projectId, projectId), eq(person.id, personId)))
     .limit(1);
   return rows.length > 0;
+}
+
+export async function countPersonsInProject(
+  db: TxDatabase,
+  projectId: string,
+  personIds: string[],
+): Promise<number> {
+  const rows = await db
+    .select({ id: person.id })
+    .from(person)
+    .where(and(eq(person.projectId, projectId), inArray(person.id, personIds)));
+  return rows.length;
 }
 
 export async function insertRelation(
@@ -302,48 +351,21 @@ export async function insertRelation(
   return rows[0];
 }
 
-export async function getRelation(
-  db: TxDatabase,
-  projectId: string,
-  relationId: string,
-): Promise<RelationView | null> {
-  const rows = await db
-    .select({
-      id: personRelation.id,
-      projectId: personRelation.projectId,
-      fromPersonId: personRelation.fromPersonId,
-      toPersonId: personRelation.toPersonId,
-      kind: personRelation.kind,
-      createdAt: timestamp(personRelation.createdAt),
-      updatedAt: timestamp(personRelation.updatedAt),
-    })
-    .from(personRelation)
-    .where(
-      and(
-        eq(personRelation.projectId, projectId),
-        eq(personRelation.id, relationId),
-      ),
-    )
-    .limit(1);
-  return rows[0] ?? null;
-}
-
 export async function deleteRelation(
   db: TxDatabase,
   projectId: string,
   relationId: string,
-): Promise<RelationView | null> {
-  const existing = await getRelation(db, projectId, relationId);
-  if (!existing) return null;
-  await db
+): Promise<boolean> {
+  const rows = await db
     .delete(personRelation)
     .where(
       and(
         eq(personRelation.projectId, projectId),
         eq(personRelation.id, relationId),
       ),
-    );
-  return existing;
+    )
+    .returning({ id: personRelation.id });
+  return rows.length > 0;
 }
 
 export type SubgraphResult = {
@@ -394,13 +416,18 @@ export async function querySubgraph(
          AND a.depth < ${options.upDepth}
     ),
     descendants AS (
+      SELECT rp.person_id, 0 AS depth
+        FROM root_path rp
+      UNION ALL
       SELECT lp.person_id,
              (nlevel(lp.primary_path) - nlevel(rp.primary_path)) AS depth
         FROM lineage_projection lp
         JOIN root_path rp ON true
        WHERE lp.organization_id = ${organizationId}::uuid
          AND lp.project_id = ${projectId}::uuid
-         AND lp.primary_path <@ rp.primary_path
+         AND ${options.downDepth} > 0
+         AND lp.primary_path::text ~>=~ (rp.primary_path::text || '.')
+         AND lp.primary_path::text ~<~ (rp.primary_path::text || '/')
          AND nlevel(lp.primary_path) <= nlevel(rp.primary_path) + ${options.downDepth}
     ),
     spouse_of_core AS (
@@ -521,10 +548,8 @@ export async function querySubgraph(
             JOIN root_path rp ON true
            WHERE lp.organization_id = ${organizationId}::uuid
          AND lp.project_id = ${projectId}::uuid
-             AND (
-            lp.primary_path::text = rp.primary_path::text
-            OR lp.primary_path::text LIKE rp.primary_path::text || '.%'
-          )
+             AND lp.primary_path::text ~>=~ (rp.primary_path::text || '.')
+             AND lp.primary_path::text ~<~ (rp.primary_path::text || '/')
              AND nlevel(lp.primary_path) = nlevel(rp.primary_path) + ${options.downDepth}
              AND ${options.downDepth} > 0
              AND EXISTS (

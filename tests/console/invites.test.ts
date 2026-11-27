@@ -1,86 +1,25 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createOrganization,
+  createTenantCleanupTracker,
   signUp,
   uniqueEmail,
-  withAdminDb,
 } from "../auth/fixtures";
 import { call } from "../fixtures/http";
 import { addMember } from "../fixtures/members";
 
-let emails: Set<string>;
+const tracker = createTenantCleanupTracker();
 
 beforeEach(() => {
-  emails = new Set();
+  tracker.reset();
 });
 
 afterEach(async () => {
-  // Register the email before signUp so a partially created fixture is still
-  // cleaned up; derive organizations from their owner and never bind a
-  // non-uuid placeholder to a uuid parameter.
-  if (emails.size === 0) return;
-  const tracked = [...emails];
-  await withAdminDb(async (client) => {
-    await client.query("BEGIN");
-    try {
-      await client.query("SET LOCAL session_replication_role = replica");
-      const users = await client.query<{ id: string }>(
-        'SELECT id FROM auth."user" WHERE email = ANY($1::text[])',
-        [tracked],
-      );
-      const userIds = users.rows.map((row) => row.id);
-      if (userIds.length > 0) {
-        await client.query(
-          `DELETE FROM audit_log WHERE organization_id IN
-             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
-          [userIds],
-        );
-        await client.query(
-          `DELETE FROM invite WHERE organization_id IN
-             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
-          [userIds],
-        );
-        await client.query(
-          `DELETE FROM organization_member WHERE organization_id IN
-             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
-          [userIds],
-        );
-        await client.query(
-          `DELETE FROM project WHERE organization_id IN
-             (SELECT id FROM organization WHERE owner_user_id = ANY($1::uuid[]))`,
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM organization WHERE owner_user_id = ANY($1::uuid[])",
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM auth.session WHERE user_id = ANY($1::uuid[])",
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM auth.account WHERE user_id = ANY($1::uuid[])",
-          [userIds],
-        );
-        await client.query(
-          "DELETE FROM auth.verification WHERE identifier = ANY($1::text[])",
-          [tracked],
-        );
-        await client.query(
-          'DELETE FROM auth."user" WHERE id = ANY($1::uuid[])',
-          [userIds],
-        );
-      }
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    }
-  });
+  await tracker.cleanup();
 });
 
 function trackEmail(email: string): void {
-  emails.add(email.toLowerCase());
+  tracker.trackEmail(email);
 }
 
 async function trackedSignUp(email: string) {
@@ -434,5 +373,29 @@ describe("organization invites (console)", () => {
     expect(
       memberItems.find((entry) => entry.email === inviteeEmail)?.role,
     ).toBe("viewer");
+  });
+
+  test("untrusted Origin header does not poison generated inviteUrl", async () => {
+    const owner = await trackedSignUp(uniqueEmail("inv-origin-o"));
+    const organizationId = await trackedCreateOrganization(
+      owner.cookie,
+      "Origin校验组织",
+    );
+    const created = await call(
+      `/api/v1/organizations/${organizationId}/invites`,
+      owner.cookie,
+      {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+        body: JSON.stringify({
+          email: uniqueEmail("inv-origin-t"),
+          role: "viewer",
+        }),
+      },
+    );
+    expect(created.status).toBe(201);
+    const inviteUrl = created.data?.inviteUrl as string;
+    expect(inviteUrl).not.toContain("evil.example");
+    expect(inviteUrl).toContain("/#/invite/");
   });
 });

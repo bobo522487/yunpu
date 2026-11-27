@@ -6,7 +6,11 @@ import type {
 } from "@yunpu/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
-import { isoTimestamp as timestamp } from "../../lib/sql";
+import {
+  parseTimestampUuidCursor,
+  sliceCursorPage,
+} from "../../lib/pagination";
+import { nullableIsoTimestamp, isoTimestamp as timestamp } from "../../lib/sql";
 
 export type OrganizationSummary = {
   id: string;
@@ -16,7 +20,7 @@ export type OrganizationSummary = {
 };
 
 export type OrganizationListItem = OrganizationSummary & {
-  lastUsedAt: Date | null;
+  lastUsedAt: string | null;
 };
 
 const summaryColumns = {
@@ -58,7 +62,10 @@ export async function listOrganizations(
   userId: string,
 ): Promise<OrganizationListItem[]> {
   return db
-    .select({ ...summaryColumns, lastUsedAt: organizationMember.lastUsedAt })
+    .select({
+      ...summaryColumns,
+      lastUsedAt: nullableIsoTimestamp(organizationMember.lastUsedAt),
+    })
     .from(organizationMember)
     .innerJoin(
       organization,
@@ -233,9 +240,9 @@ export async function listMembers(
 ): Promise<{ items: MemberListItem[]; nextCursor: string | null }> {
   const conditions = [eq(organizationMember.organizationId, organizationId)];
   if (options.cursor) {
-    const separator = options.cursor.indexOf("|");
-    const joinedAt = options.cursor.slice(0, separator);
-    const userId = options.cursor.slice(separator + 1);
+    const { timestamp: joinedAt, id: userId } = parseTimestampUuidCursor(
+      options.cursor,
+    );
     conditions.push(
       sql`(${organizationMember.createdAt}, ${organizationMember.userId}) < (${joinedAt}::timestamptz, ${userId}::uuid)`,
     );
@@ -254,16 +261,13 @@ export async function listMembers(
       desc(organizationMember.createdAt),
       desc(organizationMember.userId),
     )
-    .limit(options.limit);
+    .limit(options.limit + 1);
 
-  const last = rows[rows.length - 1];
-  return {
-    items: rows,
-    nextCursor:
-      rows.length === options.limit && last
-        ? `${last.joinedAt}|${last.userId}`
-        : null,
-  };
+  return sliceCursorPage(
+    rows,
+    options.limit,
+    (last) => `${last.joinedAt}|${last.userId}`,
+  );
 }
 
 export async function getMemberRecord(
@@ -392,9 +396,9 @@ export async function listInvites(
 ): Promise<{ items: InviteListItem[]; nextCursor: string | null }> {
   const conditions = [eq(invite.organizationId, organizationId)];
   if (options.cursor) {
-    const separator = options.cursor.indexOf("|");
-    const createdAt = options.cursor.slice(0, separator);
-    const id = options.cursor.slice(separator + 1);
+    const { timestamp: createdAt, id } = parseTimestampUuidCursor(
+      options.cursor,
+    );
     conditions.push(
       sql`(${invite.createdAt}, ${invite.id}) < (${createdAt}::timestamptz, ${id}::uuid)`,
     );
@@ -405,16 +409,13 @@ export async function listInvites(
     .from(invite)
     .where(and(...conditions))
     .orderBy(desc(invite.createdAt), desc(invite.id))
-    .limit(options.limit);
+    .limit(options.limit + 1);
 
-  const last = rows[rows.length - 1];
-  return {
-    items: rows,
-    nextCursor:
-      rows.length === options.limit && last
-        ? `${last.createdAt}|${last.id}`
-        : null,
-  };
+  return sliceCursorPage(
+    rows,
+    options.limit,
+    (last) => `${last.createdAt}|${last.id}`,
+  );
 }
 
 export async function getInviteRecord(

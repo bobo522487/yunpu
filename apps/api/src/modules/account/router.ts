@@ -15,16 +15,17 @@ accountRouter.get("/account", async (c) => {
 });
 
 accountRouter.patch("/account", async (c) => {
-  requireUser(c);
+  const user = requireUser(c);
   const parsed = await parseJson(c, UpdateAccountSchema);
-  const account = await updateAccount(c.req.raw.headers, parsed.name);
+  const account = await updateAccount(user, c.req.raw.headers, parsed.name);
   return c.json({ ok: true, data: account });
 });
 
 accountRouter.post("/account/password", async (c) => {
-  requireUser(c);
+  const user = requireUser(c);
   const parsed = await parseJson(c, ChangePasswordSchema);
   await changePassword(
+    user,
     c.req.raw.headers,
     parsed.currentPassword,
     parsed.newPassword,

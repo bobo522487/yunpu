@@ -277,28 +277,39 @@ const CardTreeCanvasView: React.FC<CardTreeCanvasViewProps> = ({
 
   useEffect(() => {
     if (elkNonce === 0) return;
-    let cancelled = false;
+    const abortController = new AbortController();
+    let fitViewTimer: ReturnType<typeof setTimeout> | null = null;
+
     const run = async () => {
       callbacksRef.current.onIsLayoutingChange(true);
       try {
         const currentNodes = reactFlow.getNodes() as GenealogyFlowNode[];
         const currentEdges = reactFlow.getEdges() as GenealogyFlowEdge[];
-        const layoutedNodes = await layoutWithElk(currentNodes, currentEdges);
-        if (!cancelled) {
+        const layoutedNodes = await layoutWithElk(currentNodes, currentEdges, {
+          signal: abortController.signal,
+        });
+        if (!abortController.signal.aborted) {
           setNodes(layoutedNodes);
-          setTimeout(() => {
-            reactFlow.fitView({ padding: 0.15, duration: 500 });
+          fitViewTimer = setTimeout(() => {
+            if (!abortController.signal.aborted) {
+              reactFlow.fitView({ padding: 0.15, duration: 500 });
+            }
           }, 50);
         }
       } catch {
-        // Ignore auto-layout failures and keep existing positions
+        // Ignore cancellation or auto-layout failures and keep existing positions
       } finally {
-        if (!cancelled) callbacksRef.current.onIsLayoutingChange(false);
+        if (!abortController.signal.aborted) {
+          callbacksRef.current.onIsLayoutingChange(false);
+        }
       }
     };
     run();
     return () => {
-      cancelled = true;
+      abortController.abort();
+      if (fitViewTimer !== null) {
+        clearTimeout(fitViewTimer);
+      }
     };
   }, [elkNonce, reactFlow, setNodes]);
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { BookOpen, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { useBookStore } from '../../../store/useBookStore';
+import { useBookActions } from '../queries';
 import {
   BINDING_LABELS,
   formatPageNumberLabel,
@@ -72,11 +72,11 @@ export const BookLayoutStep: React.FC<BookLayoutStepProps> = ({
   onSaveAndGenerate,
 }) => {
   const activeProjectId = useProjectId();
-  const updateLayoutConfig = useBookStore((s) => s.updateLayoutConfig);
+  const { updateLayoutConfig } = useBookActions(activeProjectId);
 
   const cfg = book.layoutConfig;
   const patch = (updates: Partial<BookLayoutConfig>) => {
-    updateLayoutConfig(activeProjectId, book.id, updates);
+    void updateLayoutConfig(book.id, updates);
   };
 
   const borderClass =

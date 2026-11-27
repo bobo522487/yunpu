@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActiveProject } from '../../../../hooks/useActiveProject';
-import { useArticleStore } from '../../../../store/useArticleStore';
+import { useProjectArticlesSnapshot } from '../../../articles/queries';
 import type { CatalogArticleNode } from '../../types';
 import { flattenArticleTree } from './articleTreeUtils';
 
@@ -27,16 +27,16 @@ export const EditCatalogDocModal: React.FC<EditCatalogDocModalProps> = ({
   onSubmit,
 }) => {
   const { projectId: activeProjectId } = useActiveProject();
-  const articleTreesByProject = useArticleStore((s) => s.treesByProject);
-  const articlesByKey = useArticleStore((s) => s.articlesByKey);
+  const { articleTree, articlesByKey } =
+    useProjectArticlesSnapshot(activeProjectId);
 
   const [displayTitle, setDisplayTitle] = useState('');
   const [selectedSourceId, setSelectedSourceId] = useState('');
 
-  const allArticles = useMemo(() => {
-    const tree = articleTreesByProject[activeProjectId] || [];
-    return flattenArticleTree(tree, articlesByKey, activeProjectId);
-  }, [articleTreesByProject, activeProjectId, articlesByKey]);
+  const allArticles = useMemo(
+    () => flattenArticleTree(articleTree, articlesByKey, activeProjectId),
+    [articleTree, activeProjectId, articlesByKey],
+  );
 
   useEffect(() => {
     if (!open || !node) return;

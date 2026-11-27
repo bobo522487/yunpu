@@ -5,6 +5,10 @@ import { withAdminDb } from "../auth/fixtures";
 // RLS, while their write policies already used the single security-definer
 // helper. Keep both the catalog contract and the runtime plan honest.
 const LEAF_TABLES = [
+  "article",
+  "article_revision",
+  "book",
+  "book_edition",
   "folder",
   "invite",
   "lineage",

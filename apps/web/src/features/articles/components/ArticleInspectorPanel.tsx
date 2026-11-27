@@ -2,8 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, History, ListTree, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAuthStore } from '../../auth/useAuthStore';
-import { useArticleStore } from '../../../store/useArticleStore';
 import { useBookStore } from '../../../store/useBookStore';
+import { useBooksQuery } from '../../books/queries';
+import { useArticleActions } from '../queries';
 import { findBooksReferencingArticle } from '../../books/domain/bookArticleAudit';
 import { STATUS_LABELS } from '../articleLabels';
 import type { ArticleHeading } from '../domain/articleMetrics';
@@ -53,12 +54,12 @@ export const ArticleInspectorPanel: React.FC<ArticleInspectorPanelProps> = ({
   readingLabel: _readingLabel,
 }) => {
   const navigate = useNavigate();
-  const recordRevision = useArticleStore((s) => s.recordRevision);
-  const booksByProject = useBookStore((s) => s.booksByProject);
+  const { recordRevision } = useArticleActions(projectId);
+  const { data: projectBooks = [] } = useBooksQuery(projectId);
   const selectBook = useBookStore((s) => s.selectBook);
   const bookRefs = useMemo(
-    () => findBooksReferencingArticle(article.id, booksByProject[projectId] || []),
-    [article.id, booksByProject, projectId],
+    () => findBooksReferencingArticle(article.id, projectBooks),
+    [article.id, projectBooks],
   );
   const [revisionSummary, setRevisionSummary] = useState('');
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
@@ -73,8 +74,7 @@ export const ArticleInspectorPanel: React.FC<ArticleInspectorPanelProps> = ({
   const handleStatusChange = (status: ArticleStatus) => {
     onFlushPendingSave?.();
     onUpdateArticle({ status });
-    recordRevision(
-      projectId,
+    void recordRevision(
       article.id,
       `状态改为${STATUS_LABELS[status]}`,
       revisionAuthor,
@@ -84,7 +84,7 @@ export const ArticleInspectorPanel: React.FC<ArticleInspectorPanelProps> = ({
   const handleRecordRevision = () => {
     onFlushPendingSave?.();
     const summary = revisionSummary.trim() || '手动记入修订';
-    recordRevision(projectId, article.id, summary, revisionAuthor);
+    void recordRevision(article.id, summary, revisionAuthor);
     setRevisionSummary('');
   };
 

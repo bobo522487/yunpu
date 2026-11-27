@@ -35,7 +35,7 @@ yunpu/
 │   │   │   │   └── sql.ts        # 统一 SQL 时间格式等片段助手
 │   │   │   ├── middleware/
 │   │   │   │   └── auth.ts  # 会话校验中间件
-│   │   │   └── modules/     # 业务领域模块：auth / organization / project / account / folder / lineage / person
+│   │   │   └── modules/     # 业务领域模块：auth / organization / project / account / folder / lineage / person / article / book
 │   │   └── test/            # API 单元与集成测试
 │   └── web/                 # @yunpu/web 前端应用（Vite + React 19 + TanStack）
 │       ├── src/             # 路由、组件、业务域模块（仅消费 @yunpu/shared，严禁导入 db/api）
@@ -43,7 +43,7 @@ yunpu/
 ├── contracts/
 │   └── openapi.json         # 只读契约，由 scripts/export-contract.ts 生成
 ├── packages/
-│   ├── db/                  # PostgreSQL Drizzle schema（auth / tenant / genealogy）与 SQL 迁移（0000~0027）
+│   ├── db/                  # PostgreSQL Drizzle schema（auth / tenant / genealogy / documents）与 SQL 迁移（0000~0028）
 │   └── shared/              # 跨端共享枚举（enums.ts）、错误定义（errors.ts）、校验 Schema（schemas.ts）
 ├── scripts/                 # env.sh、ts-ext-register.mjs、export-contract.ts
 └── tests/                   # 端到端集成测试（env / auth / console / genealogy / runtime / security）
@@ -58,10 +58,12 @@ yunpu/
 | `auth` | 登录、注册、登出、Better Auth 集成、默认组织上下文与新用户个人默认组织范例家族数据初始化 | `better-auth.ts`, `router.ts`, `service.ts`, `provisioning.ts`, `demo-seed.ts` |
 | `organization` | 组织创建、切换、成员角色管理、所有权转移、邀请创建/撤回/兑换 | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
 | `project` | 组织下谱系项目 CRUD、项目元数据（姓氏、始迁祖 `ancestor`、堂号、源流、配色主题等）与已鉴权项目媒体（`/projects/:projectId/media`）S3 上传（含魔数校验）/防嗅探读取与离线对账 GC | `router.ts`, `service.ts`, `queries.ts`, `media-gc.ts` |
-| `folder` | 家族项目内平铺一级目录分组（`Folder`）CRUD 与排序，删除时仅解绑下属 `Lineage` | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
-| `lineage` | 家族项目内世系谱表（`Lineage`）CRUD、始祖联动生成与整数 `version` CAS | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
+| `folder` | 家族项目内平铺一级目录分组（`Folder`，支持 `kind` 区分 `lineage` / `article` / `book`）CRUD 与排序，删除时仅解绑下属内容 `folderId` | `router.ts`, `service.ts`, `queries.ts` |
+| `lineage` | 家族项目内世系谱表（`Lineage`）CRUD、始祖联动生成与整数 `version` CAS | `router.ts`, `service.ts`, `queries.ts` |
 | `account` | 当前登录用户个人资料与账户操作 | `router.ts`, `service.ts` |
-| `person` | 谱系人物 CRUD（含生卒葬地结构化字段与 `avatarKey`）、多姓名（`person_name`）、全部 7 类人物关系（`person_relation`）、生平事件（`person_event`）、整张谱系图加载与受控子图查询 | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
+| `person` | 谱系人物 CRUD（含生卒葬地结构化字段与 `avatarKey`）、多姓名（`person_name`）、全部 7 类人物关系（`person_relation`）、生平事件（`person_event`）、整张谱系图加载与受控子图查询 | `router.ts`, `service.ts`, `queries.ts` |
+| `article` | 谱文（`Article`）CRUD 与整数 `version` CAS（冲突返回 409 及服务端最新文档）、修订快照（`ArticleRevision`）记录与恢复、已鉴权谱文富文本图片资产（`/projects/:projectId/article-assets`）S3 上传/防嗅探读取 | `router.ts`, `service.ts`, `queries.ts` |
+| `book` | 谱书（`Book`）CRUD、排序、复制与整数 `version` CAS，以及成书谱例快照（`BookEdition`）生成、印刷状态更新与删除 | `router.ts`, `service.ts`, `queries.ts` |
 
 ---
 
@@ -84,8 +86,9 @@ yunpu/
 - **`public` 租户与谱系 schema**（启用 `FORCE ROW LEVEL SECURITY`）：
   - **组织与协作**：`organization`、`organization_member`、`invite`、`project`、`audit_log`。
   - **谱系核心**：`folder`、`lineage`、`person`、`person_name`、`person_relation`、`person_event`、`lineage_projection`（使用 `ltree` 存储主脉路径与世代）。
+  - **谱文与谱书**：`article`、`article_revision`、`book`、`book_edition`。
 
-数据库级不变量（在 `0012`~`0027` 迁移中落地）包括：平铺 `folder` 同项目名称唯一与删除 `ON DELETE SET NULL` 解绑、人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环/禁跨谱系连边与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、所有者角色防降级（`GX013`）、环检测立即约束触发器（`trg_person_relation_no_cycle` `INITIALLY IMMEDIATE` / `GX001`）与基于角色的行级写策略。谱系投影由 0017 之后的逐边增量 reflow 维护，不再全表重建，也不再静默截断 64 代；路径前缀索引为 btree `text_pattern_ops`（`idx_lineage_projection_path_text`），子图查询以 `~>=~` / `~<~` 关联前缀走索引扫描。项目、谱系图与人物统一使用整数 `version` 做 CAS（0019 / 0027），不再用 `updated_at` 字符串作为并发令牌。`@yunpu/web` 谱系工作区经 TanStack Query 直接消费上述真实 API 与已鉴权 S3 肖像端点，已彻底移除前端 Mock 分支，`useLineageStore` 仅保留纯界面交互状态（详见 [ADR-0018](adr/ADR-0018-lineage-persistence-and-no-mock.md)）。
+数据库级不变量（在 `0012`~`0028` 迁移中落地）包括：平铺 `folder` 同项目同 `kind` 名称唯一与删除 `ON DELETE SET NULL` 解绑、目录分组类型匹配触发器（`trg_*_folder_kind`）、人物在世/生卒年份约束、同名类型唯一与唯一主名部分索引、关系防自环/禁跨谱系连边与配偶规范序（`from_person_id < to_person_id`）、父母边上限（`GX011`）、归档组织禁止写入（`GX012`）、所有者角色防降级（`GX013`）、环检测立即约束触发器（`trg_person_relation_no_cycle` `INITIALLY IMMEDIATE` / `GX001`）与基于角色的行级写策略。谱系投影由 0017 之后的逐边增量 reflow 维护，不再全表重建，也不再静默截断 64 代；路径前缀索引为 btree `text_pattern_ops`（`idx_lineage_projection_path_text`），子图查询以 `~>=~` / `~<~` 关联前缀走索引扫描。项目、谱系图、人物、谱文与谱书统一使用整数 `version` 做 CAS（0019 / 0027 / 0028），不再用 `updated_at` 字符串作为并发令牌。`@yunpu/web` 谱系、谱文与谱书工作区均经 TanStack Query 直接消费上述真实 API 与已鉴权 S3 媒体/资产端点，已彻底移除前端 IndexedDB 业务持久化与 Mock 分支，`useLineageStore`、`useArticleStore` 与 `useBookStore` 仅保留纯界面交互状态（详见 [ADR-0018](adr/ADR-0018-lineage-persistence-and-no-mock.md)）。
 
 HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/export-contract.ts` 从注册表生成 `contracts/openapi.json`，CI 的 `contract:check` 与运行时契约测试 `tests/runtime/contract-conformance.test.ts` 防止路由、Schema 与响应漂移。校验错误统一为裸 `fieldErrors`（顶层 `.refine()` 错误保留在 `details._form`），详见 ADR-0012。
 

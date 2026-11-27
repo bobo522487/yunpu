@@ -14,7 +14,7 @@ import {
   WidthType,
 } from 'docx';
 import mammoth from 'mammoth';
-import type { ArticleAssetRecord } from '../assets/articleAssetStore';
+import type { ArticleAssetRecord } from '../types';
 import { contentJsonToHtml, htmlToContentJson } from './htmlProjection';
 import {
   mapContentJsonPersonMentionsForOutput,

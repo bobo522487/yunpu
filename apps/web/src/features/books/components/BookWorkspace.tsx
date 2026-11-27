@@ -9,12 +9,14 @@ import {
   Save,
   Sparkles,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useActiveProject } from '../../../hooks/useActiveProject';
-import { useEnsureBookInitialized } from '../../../hooks/useEnsureBookInitialized';
-import { useArticleStore } from '../../../store/useArticleStore';
+import { errorMessage } from '../../../lib/api';
 import { useBookStore } from '../../../store/useBookStore';
+import { useProjectArticlesSnapshot } from '../../articles/queries';
 import { useProjectLineageSnapshot } from '../../lineage/queries';
+import { useBookActions, useBooksQuery } from '../queries';
 import { auditBookArticles } from '../domain/bookArticleAudit';
 import type { BookStep } from '../types';
 import { BookCatalogStep } from './BookCatalogStep';
@@ -60,35 +62,28 @@ export const BookWorkspace: React.FC = () => {
     surname: projectSurname,
   } = useActiveProject();
 
-  useEnsureBookInitialized();
-
-  const articlesByKey = useArticleStore((s) => s.articlesByKey);
+  const { articlesByKey } = useProjectArticlesSnapshot(activeProjectId);
   const { lineageTree, personsByChart } = useProjectLineageSnapshot(activeProjectId);
 
-  const booksByProject = useBookStore((s) => s.booksByProject);
+  const { data: books = [], isPending: booksLoading } =
+    useBooksQuery(activeProjectId);
   const selectedBookIdByProject = useBookStore(
-    (s) => s.selectedBookIdByProject
+    (s) => s.selectedBookIdByProject,
   );
   const activeStepByBook = useBookStore((s) => s.activeStepByBook);
   const setActiveStep = useBookStore((s) => s.setActiveStep);
-  const touchBookSaved = useBookStore((s) => s.touchBookSaved);
-  const generateEdition = useBookStore((s) => s.generateEdition);
-  const createBook = useBookStore((s) => s.createBook);
+  const { touchBookSaved, generateEdition, createBook } =
+    useBookActions(activeProjectId);
 
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  const books = useMemo(
-    () => booksByProject[activeProjectId] || [],
-    [booksByProject, activeProjectId]
-  );
 
   const selectedBookId =
     selectedBookIdByProject[activeProjectId] || books[0]?.id || '';
 
   const activeBook = useMemo(
     () => books.find((b) => b.id === selectedBookId) || books[0] || null,
-    [books, selectedBookId]
+    [books, selectedBookId],
   );
 
   const activeStep: BookStep = activeBook
@@ -100,23 +95,41 @@ export const BookWorkspace: React.FC = () => {
     return auditBookArticles(activeProjectId, activeBook, articlesByKey);
   }, [activeProjectId, activeBook, articlesByKey]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!activeBook) return;
-    touchBookSaved(activeProjectId, activeBook.id);
-    setSavedFeedback(true);
-    setTimeout(() => setSavedFeedback(false), 2000);
+    try {
+      await touchBookSaved(activeBook.id);
+      setSavedFeedback(true);
+      setTimeout(() => setSavedFeedback(false), 2000);
+    } catch (err) {
+      toast.error(`保存谱书失败：${errorMessage(err)}`);
+    }
   };
 
-  const handleGenerateEdition = () => {
+  const handleGenerateEdition = async () => {
     if (!activeBook) return;
-    generateEdition(activeProjectId, activeBook.id, {
-      articlesByKey,
-      lineageTree,
-      personsByChart,
-      projectSurname: projectSurname || undefined,
-    });
-    setActiveStep(activeBook.id, 'editions');
+    try {
+      const created = await generateEdition(activeBook.id, {
+        articlesByKey,
+        lineageTree,
+        personsByChart,
+        projectSurname: projectSurname || undefined,
+      });
+      if (created) {
+        setActiveStep(activeBook.id, 'editions');
+      }
+    } catch (err) {
+      toast.error(`生成谱例失败：${errorMessage(err)}`);
+    }
   };
+
+  if (booksLoading && !activeBook) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6 bg-background text-[13px] text-muted-foreground">
+        正在加载谱书...
+      </div>
+    );
+  }
 
   if (!activeBook) {
     return (
@@ -160,7 +173,9 @@ export const BookWorkspace: React.FC = () => {
           }}
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={(values) => {
-            createBook(activeProjectId, values);
+            void createBook(values).catch((err) =>
+              toast.error(`创建谱书失败：${errorMessage(err)}`),
+            );
             setIsCreateModalOpen(false);
           }}
         />

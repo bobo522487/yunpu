@@ -51,7 +51,7 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 - _Avoid_: Workspace, Genealogy record, App
 
 ### Folder
-归属于特定 `Project` 的平铺一级内容分组（带同项目唯一 `name` 与排序号 `seq >= 0`，无嵌套子文件夹），用于收纳同一项目内的多张 `Lineage`（以及后续谱文与谱书）；删除 `Folder` 仅解除其下内容根的 `folderId` 关联，不删除内容本身。
+归属于特定 `Project` 的平铺一级内容分组（带 `kind`：`lineage`、`article` 或 `book`，同项目同 `kind` 唯一 `name` 与排序号 `seq >= 0`，无嵌套子文件夹），用于收纳同一项目内的多张 `Lineage`、`Article` 与 `Book`；删除 `Folder` 仅解除其下内容根的 `folderId` 关联，不删除内容本身。
 - _Avoid_: Category, Tree node（与嵌套树节点混淆时）, Subfolder
 
 ### Lineage
@@ -78,6 +78,22 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 ### LineageProjection
 针对 `Project` 内人物的派生世系投影视图，记录基于 PostgreSQL `ltree` 的主脉路径（`primaryPath`）与世代号（`generation`），随人物及亲子关系变更在同一事务内维护，用于受控子图与世系树快速查询。
 - _Avoid_: Tree cache, Primary node
+
+### Article
+归属于特定 `Project`（可选挂载至同项目 `kind = 'article'` 的某个 `Folder`）的谱文正文实体，记录标题（`title`）、副标题（`subtitle`）、作者（`author`）、文体分类（`docType`）、审校状态（`status`：`draft` / `review` / `approved`）、可见范围（`privacy`：`public` / `clan` / `editors`）、富文本 JSON/HTML 正文（`contentJson` / `contentHtml`）、关联人物/世系引用（`linkedPersonIds` / `linkedChartIds`）、资料出处（`citations`）、字数统计（`wordCount`）、排序序号 `seq >= 0` 与乐观锁版本号 `version`（`version > 0`）。富文本内嵌图注资产经鉴权端点持久化于对象存储。
+- _Avoid_: Document, Post, Note
+
+### ArticleRevision
+隶属于某篇 `Article` 的只读历史正文快照（含当时的版本号 `version`、标题、审校状态、`contentJson`、`contentHtml`、字数、修订说明 `summary` 与记录人 `authorName`），用于版本对比与按当前 `Article` 版本号 CAS 恢复；随所属 `Article` 物理删除一并清理。
+- _Avoid_: Version history item, Draft snapshot
+
+### Book
+归属于特定 `Project`（可选挂载至同项目 `kind = 'book'` 的某个 `Folder`）的谱书编排实体，包含书名（`bookName`）、谱眉名（`headerName`）、堂号（`hallName`）、卷次（`volumeNo`）、编者（`editor`）、编修日期（`compilationDate`）、四部目录结构（`sections`：`preface` / `body` / `lineage` / `appendix`，可引用同项目 `Article` 与 `Lineage`）、排版样式配置（`layoutConfig`）、排序序号 `seq >= 0` 与乐观锁版本号 `version`。
+- _Avoid_: Publication, Volume file
+
+### BookEdition
+隶属于某部 `Book` 的已编译成书快照（每部 `Book` 最多保留最新 9 份），固化生成时的装帧/世系体例/纸张参数、`layoutSnapshot`、逐页排版载荷 `pages`、页数/人数/字数统计与印刷状态（`printStatus`：`none` / `finalized`）；随所属 `Book` 物理删除一并清理。
+- _Avoid_: PDF export, Print draft
 
 ---
 

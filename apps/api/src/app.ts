@@ -14,7 +14,9 @@ import { logEvent } from "./lib/logger";
 import media from "./media";
 import { authMiddleware } from "./middleware/auth";
 import { accountRouter } from "./modules/account/router";
+import { articleRouter } from "./modules/article/router";
 import { authRouter } from "./modules/auth";
+import { bookRouter } from "./modules/book/router";
 import { folderRouter } from "./modules/folder/router";
 import { lineageRouter } from "./modules/lineage/router";
 import { organizationRouter } from "./modules/organization/router";
@@ -195,7 +197,9 @@ const apiRoutes = new Hono<ApiEnv>()
   .route("/", folderRouter)
   .route("/", lineageRouter)
   .route("/", accountRouter)
-  .route("/", personRouter);
+  .route("/", personRouter)
+  .route("/", articleRouter)
+  .route("/", bookRouter);
 
 app.route("/api/v1", apiRoutes);
 app.route("/", media);

@@ -24,6 +24,8 @@ const mounts: { file: string; prefix: string }[] = [
   { file: "apps/api/src/modules/folder/router.ts", prefix: "/api/v1" },
   { file: "apps/api/src/modules/lineage/router.ts", prefix: "/api/v1" },
   { file: "apps/api/src/modules/person/router.ts", prefix: "/api/v1" },
+  { file: "apps/api/src/modules/article/router.ts", prefix: "/api/v1" },
+  { file: "apps/api/src/modules/book/router.ts", prefix: "/api/v1" },
   { file: "apps/api/src/media.ts", prefix: "" },
 ];
 

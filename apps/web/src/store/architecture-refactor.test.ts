@@ -3,17 +3,21 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import type { JSONContent } from '@tiptap/core';
 import type { TreeItem } from '../components/common/Tree/types.ts';
-import { createArticleSaveQueue } from '../features/articles/domain/articleSaveQueue.ts';
+import {
+  articleDirectoryToTreeItems,
+  buildArticlesByKey,
+} from '../features/articles/adapter.ts';
 import { makeArticleStorageKey } from '../features/articles/articleData.ts';
+import { createArticleSaveQueue } from '../features/articles/domain/articleSaveQueue.ts';
+import type { ArticleDocument } from '../features/articles/types.ts';
+import { createEmptySections } from '../features/books/bookDefaults.ts';
 import { preserveCollapsedChildren } from '../lib/treeOps.ts';
+import { useArticleStore } from './useArticleStore.ts';
+import { useBookStore } from './useBookStore.ts';
 import {
   resolveChartSurname,
   useLineageStore,
 } from './useLineageStore.ts';
-import { useArticleRevisionStore } from './useArticleRevisionStore.ts';
-import { useArticleStore } from './useArticleStore.ts';
-import { useBookEditionStore } from './useBookEditionStore.ts';
-import { createEmptySections, useBookStore } from './useBookStore.ts';
 
 test('preserveCollapsedChildren preserves nested collapsed subtrees in O(N)', () => {
   const prev: TreeItem[] = [
@@ -37,7 +41,6 @@ test('preserveCollapsedChildren preserves nested collapsed subtrees in O(N)', ()
     },
   ];
 
-  // dnd-kit flatten/projection flattens collapsed folders to children: []
   const nextFromDrag: TreeItem[] = [
     {
       id: 'folder-a',
@@ -76,7 +79,6 @@ test('articleSaveQueue captures source projectId across rapid edits and project 
   };
 
   queue.noteEdit('article-preface', () => doc, 'proj-alpha');
-  // Simulate timer/flush firing after user has switched projects
   queue.flush();
 
   assert.deepEqual(commits, [
@@ -111,13 +113,23 @@ test('resolveChartSurname reads explicit chart surname before project fallback w
   assert.equal(resolveChartSurname(undefined, '林'), '林');
 });
 
-test('useLineageStore holds only pure UI selection, viewMode, and collapsed folder state', () => {
-  const projectId = 'test-lineage-ui-proj';
+test('useLineageStore, useArticleStore, and useBookStore hold only pure UI state', () => {
+  const projectId = 'test-ui-proj';
   useLineageStore.setState({
     selectedNodeIdByProject: {},
     selectedPersonIdByChart: {},
     viewModeByProject: {},
     collapsedFoldersByProject: {},
+  });
+  useArticleStore.setState({
+    selectedNodeIdByProject: {},
+    collapsedFoldersByProject: {},
+    articleConflict: null,
+    saveError: null,
+  });
+  useBookStore.setState({
+    selectedBookIdByProject: {},
+    activeStepByBook: {},
   });
 
   useLineageStore.getState().selectNode(projectId, 'chart-1');
@@ -125,144 +137,79 @@ test('useLineageStore holds only pure UI selection, viewMode, and collapsed fold
   useLineageStore.getState().setViewMode(projectId, 'grid');
   useLineageStore.getState().setFolderCollapsed(projectId, 'folder-1', true);
 
-  const state = useLineageStore.getState();
-  assert.equal(state.selectedNodeIdByProject[projectId], 'chart-1');
-  assert.equal(state.selectedPersonIdByChart[`${projectId}::chart-1`], 'person-1');
-  assert.equal(state.viewModeByProject[projectId], 'grid');
-  assert.equal(state.collapsedFoldersByProject[projectId]?.['folder-1'], true);
-  assert.equal('treesByProject' in state, false);
-  assert.equal('personsByChart' in state, false);
+  const linState = useLineageStore.getState();
+  assert.equal(linState.selectedNodeIdByProject[projectId], 'chart-1');
+  assert.equal(linState.selectedPersonIdByChart[`${projectId}::chart-1`], 'person-1');
+  assert.equal(linState.viewModeByProject[projectId], 'grid');
+  assert.equal(linState.collapsedFoldersByProject[projectId]?.['folder-1'], true);
+  assert.equal('treesByProject' in linState, false);
+  assert.equal('personsByChart' in linState, false);
+
+  useArticleStore.getState().selectNode(projectId, 'art-1');
+  useArticleStore.getState().setFolderCollapsed(projectId, 'art-folder-1', true);
+  useArticleStore.getState().setSaveError('conflict');
+  const artState = useArticleStore.getState();
+  assert.equal(artState.selectedNodeIdByProject[projectId], 'art-1');
+  assert.equal(artState.collapsedFoldersByProject[projectId]?.['art-folder-1'], true);
+  assert.equal(artState.saveError, 'conflict');
+  assert.equal('treesByProject' in artState, false);
+  assert.equal('articlesByKey' in artState, false);
+
+  useBookStore.getState().selectBook(projectId, 'book-1');
+  useBookStore.getState().setActiveStep('book-1', 'layout');
+  const bookState = useBookStore.getState();
+  assert.equal(bookState.selectedBookIdByProject[projectId], 'book-1');
+  assert.equal(bookState.activeStepByBook['book-1'], 'layout');
+  assert.equal('booksByProject' in bookState, false);
 });
 
-test('useArticleStore unifies rename/meta updates and isolates revisions by projectId::articleId', () => {
-  useArticleStore.setState({
-    _hasHydrated: true,
-    treesByProject: {},
-    selectedNodeIdByProject: {},
-    articlesByKey: {},
-    articleConflict: null,
+test('articleDirectoryToTreeItems and buildArticlesByKey isolate articles by projectId', () => {
+  const sampleDoc = (id: string, title: string, folderId: string | null): ArticleDocument => ({
+    id,
+    projectId: 'proj-1',
+    folderId,
+    seq: 0,
+    title,
+    subtitle: '',
+    author: '编委会',
+    docType: 'preface',
+    status: 'draft',
+    privacy: 'clan',
+    contentHtml: '<p>正文</p>',
+    linkedPersonIds: [],
+    linkedChartIds: [],
+    citations: [],
+    version: 1,
+    wordCount: 2,
+    updatedAt: '2026-11-27 12:00',
   });
-  useArticleRevisionStore.setState({ revisionsByKey: {} });
 
-  const ctx = { familyName: '测试族' };
-  useArticleStore.getState().ensureProjectInitialized('proj-1', ctx);
-  useArticleStore.getState().ensureProjectInitialized('proj-2', ctx);
-
-  // Both projects share the same seed article ID ('article-preface')
-  useArticleStore.getState().renameNode('proj-1', 'article-preface', '甲项目序');
-  useArticleStore.getState().updateArticleMeta('proj-2', 'article-preface', {
-    title: '乙项目序',
-    status: 'approved',
-  });
-
-  const doc1 =
-    useArticleStore.getState().articlesByKey[
-      makeArticleStorageKey('proj-1', 'article-preface')
-    ];
-  const doc2 =
-    useArticleStore.getState().articlesByKey[
-      makeArticleStorageKey('proj-2', 'article-preface')
-    ];
-
-  assert.equal(doc1.title, '甲项目序');
-  assert.equal(doc2.title, '乙项目序');
-  assert.equal(doc2.status, 'approved');
-
-  useArticleStore.getState().recordRevision('proj-1', 'article-preface', '甲修订', '甲');
-  useArticleStore.getState().recordRevision('proj-2', 'article-preface', '乙修订', '乙');
-
-  const revs1 = useArticleRevisionStore.getState().getRevisions('proj-1', 'article-preface');
-  const revs2 = useArticleRevisionStore.getState().getRevisions('proj-2', 'article-preface');
-
-  assert.equal(revs1.length, 1);
-  assert.equal(revs1[0].summary, '甲修订');
-  assert.equal(revs2.length, 1);
-  assert.equal(revs2[0].summary, '乙修订');
-
-  // Removing article from proj-1 clears proj-1 revisions without touching proj-2
-  useArticleStore.getState().removeNode('proj-1', 'article-preface');
-  assert.equal(
-    useArticleRevisionStore.getState().getRevisions('proj-1', 'article-preface').length,
-    0,
+  const tree = articleDirectoryToTreeItems(
+    [
+      {
+        id: 'folder-1',
+        projectId: 'proj-1',
+        name: '卷一',
+        seq: 0,
+        createdAt: '2026-11-27T00:00:00Z',
+        updatedAt: '2026-11-27T00:00:00Z',
+      },
+    ],
+    [sampleDoc('art-1', '宗谱序言', 'folder-1'), sampleDoc('art-2', '凡例', null)],
+    { 'folder-1': true },
   );
-  assert.equal(
-    useArticleRevisionStore.getState().getRevisions('proj-2', 'article-preface').length,
-    1,
-  );
-});
 
-test('useBookStore keeps catalog mutations consistent and delegates editions to cold store', () => {
-  useBookStore.setState({
-    _hasHydrated: true,
-    booksByProject: {},
-    selectedBookIdByProject: {},
-    activeStepByBook: {},
-  });
-  useBookEditionStore.setState({ editionsByBookId: {} });
+  assert.equal(tree.length, 2);
+  assert.equal(tree[0].type, 'folder');
+  assert.equal(tree[0].collapsed, true);
+  assert.equal(tree[0].children.length, 1);
+  assert.equal(tree[1].id, 'art-2');
 
-  const projectId = 'proj-book-test';
-  const bookId = useBookStore.getState().createBook(projectId, {
-    bookName: '陈氏测试谱',
-    headerName: '陈氏宗谱',
-    hallName: '德星堂',
-    volumeNo: '卷一',
-    editor: '修谱委',
-    compilationDate: '2026-01-01',
-  });
+  const map1 = buildArticlesByKey('proj-1', [sampleDoc('shared-id', '甲谱', null)]);
+  const map2 = buildArticlesByKey('proj-2', [sampleDoc('shared-id', '乙谱', null)]);
+  assert.equal(map1[makeArticleStorageKey('proj-1', 'shared-id')].title, '甲谱');
+  assert.equal(map2[makeArticleStorageKey('proj-2', 'shared-id')].title, '乙谱');
 
-  const chId = useBookStore.getState().addChapter(projectId, bookId, 'body', '旧章');
-  useBookStore.getState().renameChapter(projectId, bookId, chId, '新章');
-  useBookStore.getState().addArticleRefs(projectId, bookId, 'body', chId, [
-    { sourceArticleId: 'art-1', sourceTitle: '源流考' },
-  ]);
-
-  let book = useBookStore
-    .getState()
-    .booksByProject[projectId]
-    .find((b) => b.id === bookId)!;
-  const chapterNode = book.sections.body.items[0];
-  assert.equal(chapterNode.nodeType, 'chapter');
-  assert.equal(chapterNode.title, '新章');
-
-  // Deleting non-empty chapter must be blocked
-  const blockedRes = useBookStore.getState().removeCatalogNode(projectId, bookId, chId);
-  assert.equal(blockedRes.blocked, true);
-
-  // Transfer article leaf out of chapter to appendix, then chapter can be deleted
-  const artNodeId = chapterNode.children[0].id;
-  useBookStore.getState().transferCatalogNode(projectId, bookId, artNodeId, 'appendix');
-  useBookStore.getState().updateArticleRef(projectId, bookId, artNodeId, {
-    displayTitle: '附录源流考',
-    sourceArticleId: 'art-1',
-    sourceTitle: '源流考',
-  });
-
-  const unblockedRes = useBookStore.getState().removeCatalogNode(projectId, bookId, chId);
-  assert.equal(unblockedRes.blocked, false);
-
-  book = useBookStore
-    .getState()
-    .booksByProject[projectId]
-    .find((b) => b.id === bookId)!;
-  assert.equal(book.sections.body.items.length, 0);
-  assert.equal(book.sections.appendix.items.length, 1);
-  assert.equal(book.sections.appendix.items[0].nodeType, 'article');
-  if (book.sections.appendix.items[0].nodeType === 'article') {
-    assert.equal(book.sections.appendix.items[0].displayTitle, '附录源流考');
-  }
-
-  // Edition compilation writes to yunpu:book-editions and keeps book.editions empty
-  const edition = useBookStore.getState().generateEdition(projectId, bookId, {
-    articlesByKey: {},
-    lineageTree: [],
-    personsByChart: {},
-    projectSurname: '陈',
-  });
-  assert.ok(edition);
-  assert.equal(useBookEditionStore.getState().editionsByBookId[bookId]?.length, 1);
-  assert.equal(
-    useBookStore.getState().booksByProject[projectId].find((b) => b.id === bookId)?.editions.length,
-    0,
-  );
-  void createEmptySections;
+  const sections = createEmptySections();
+  assert.deepEqual(Object.keys(sections), ['preface', 'body', 'lineage', 'appendix']);
 });

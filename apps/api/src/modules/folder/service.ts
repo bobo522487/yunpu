@@ -1,4 +1,8 @@
-import type { CreateFolderInput, UpdateFolderInput } from "@yunpu/shared";
+import type {
+  CreateFolderInput,
+  FolderKind,
+  UpdateFolderInput,
+} from "@yunpu/shared";
 import { requireProjectMember } from "../../access";
 import {
   type TxDatabase,
@@ -20,8 +24,9 @@ export type { FolderRecord };
 export async function listFoldersInTx(
   db: TxDatabase,
   projectId: string,
+  kind: FolderKind = "lineage",
 ): Promise<FolderRecord[]> {
-  return listFolders(db, projectId);
+  return listFolders(db, projectId, kind);
 }
 
 /** Check folder existence inside a project within an existing transaction. */
@@ -29,8 +34,9 @@ export async function folderExistsInTx(
   db: TxDatabase,
   projectId: string,
   folderId: string,
+  kind: FolderKind = "lineage",
 ): Promise<boolean> {
-  return folderExists(db, projectId, folderId);
+  return folderExists(db, projectId, folderId, kind);
 }
 
 /** Create a flat folder within an existing tenant transaction. */
@@ -46,10 +52,11 @@ export async function insertFolderInTx(
 export async function listFoldersForProject(
   userId: string,
   projectId: string,
+  kind?: FolderKind,
 ): Promise<FolderRecord[]> {
   return withTenantTransaction({ userId, readOnly: true }, async (db) => {
     await requireProjectMember(db, projectId, userId, null);
-    return listFolders(db, projectId);
+    return listFolders(db, projectId, kind);
   });
 }
 

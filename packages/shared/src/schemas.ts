@@ -1,6 +1,20 @@
 import { z } from "zod";
 import {
   API_RELATION_KINDS,
+  ARTICLE_CITATION_SOURCE_TYPES,
+  ARTICLE_DOC_TYPES,
+  ARTICLE_PRIVACIES,
+  ARTICLE_STATUSES,
+  BOOK_BINDING_STYLES,
+  BOOK_BORDER_STYLES,
+  BOOK_DENSITIES,
+  BOOK_EDITION_PRINT_STATUSES,
+  BOOK_FISHTAIL_STYLES,
+  BOOK_FONT_FAMILIES,
+  BOOK_LINEAGE_STYLES,
+  BOOK_PAGE_NUMBER_STYLES,
+  BOOK_PAPER_SIZES,
+  FOLDER_KINDS,
   INVITE_STATUSES,
   MEMBER_ROLES,
   ORGANIZATION_STATUSES,
@@ -274,9 +288,15 @@ export type PersonDeathInfoInput = z.infer<typeof PersonDeathInfoSchema>;
 
 export const CreateFolderSchema = z.object({
   name: z.string().trim().min(1, "分组名不能为空").max(120),
+  kind: z.enum(FOLDER_KINDS).optional(),
   seq: z.coerce.number().int().min(0).optional(),
 });
 export type CreateFolderInput = z.infer<typeof CreateFolderSchema>;
+
+export const ListFoldersQuerySchema = z.object({
+  kind: z.enum(FOLDER_KINDS).optional(),
+});
+export type ListFoldersQueryInput = z.infer<typeof ListFoldersQuerySchema>;
 
 export const UpdateFolderSchema = z
   .object({
@@ -653,4 +673,263 @@ export const ListPersonsQuerySchema = PageQuerySchema.extend({
 
 export const ListProjectsQuerySchema = PageQuerySchema.extend({
   sort: z.literal("recent").optional(),
+});
+
+// ---- Article & ArticleRevision ----
+
+export const ArticleCitationSchema = z.object({
+  id: z.string().trim().min(1).max(120),
+  label: z.string().max(240),
+  sourceType: z.enum(ARTICLE_CITATION_SOURCE_TYPES),
+  detail: z.string().max(2000).optional(),
+  mediaAssetId: z.string().max(255).optional(),
+});
+export type ArticleCitationInput = z.infer<typeof ArticleCitationSchema>;
+
+export const ArticleContentJsonSchema = z
+  .object({
+    type: z.string().min(1),
+  })
+  .passthrough();
+
+export const CreateArticleSchema = z.object({
+  folderId: z.uuid().nullable().optional(),
+  seq: z.coerce.number().int().min(0).optional(),
+  title: z.string().trim().min(1, "谱文标题不能为空").max(200),
+  subtitle: z.string().trim().max(300).optional(),
+  author: z.string().trim().max(120).optional(),
+  docType: z.enum(ARTICLE_DOC_TYPES).optional(),
+  status: z.enum(ARTICLE_STATUSES).optional(),
+  privacy: z.enum(ARTICLE_PRIVACIES).optional(),
+  contentJson: ArticleContentJsonSchema.optional(),
+  contentHtml: z.string().max(2_000_000).optional(),
+  linkedPersonIds: z.array(z.string().min(1).max(120)).optional(),
+  linkedChartIds: z.array(z.string().min(1).max(120)).optional(),
+  citations: z.array(ArticleCitationSchema).optional(),
+  wordCount: z.coerce.number().int().min(0).optional(),
+});
+export type CreateArticleInput = z.infer<typeof CreateArticleSchema>;
+
+export const UpdateArticleSchema = z
+  .object({
+    version: z.coerce.number().int().positive(),
+    folderId: z.uuid().nullable().optional(),
+    seq: z.coerce.number().int().min(0).optional(),
+    title: z.string().trim().min(1, "谱文标题不能为空").max(200).optional(),
+    subtitle: z.string().trim().max(300).optional(),
+    author: z.string().trim().max(120).optional(),
+    docType: z.enum(ARTICLE_DOC_TYPES).optional(),
+    status: z.enum(ARTICLE_STATUSES).optional(),
+    privacy: z.enum(ARTICLE_PRIVACIES).optional(),
+    contentJson: ArticleContentJsonSchema.optional(),
+    contentHtml: z.string().max(2_000_000).optional(),
+    linkedPersonIds: z.array(z.string().min(1).max(120)).optional(),
+    linkedChartIds: z.array(z.string().min(1).max(120)).optional(),
+    citations: z.array(ArticleCitationSchema).optional(),
+    wordCount: z.coerce.number().int().min(0).optional(),
+  })
+  .refine((value) => Object.keys(value).some((key) => key !== "version"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type UpdateArticleInput = z.infer<typeof UpdateArticleSchema>;
+
+export const CreateArticleRevisionSchema = z.object({
+  summary: z.string().trim().max(300).optional(),
+  authorName: z.string().trim().max(120).optional(),
+});
+export type CreateArticleRevisionInput = z.infer<
+  typeof CreateArticleRevisionSchema
+>;
+
+export const RestoreArticleRevisionSchema = z.object({
+  version: z.coerce.number().int().positive(),
+  authorName: z.string().trim().max(120).optional(),
+});
+export type RestoreArticleRevisionInput = z.infer<
+  typeof RestoreArticleRevisionSchema
+>;
+
+export const ArticleIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  articleId: z.uuid(),
+});
+
+export const ArticleRevisionIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  articleId: z.uuid(),
+  revisionId: z.uuid(),
+});
+
+// ---- Book & BookEdition ----
+
+export const LineageSubTableConfigSchema = z.object({
+  enabled: z.boolean(),
+  inToc: z.boolean(),
+  tocTitle: z.string().max(120),
+});
+
+export const CatalogArticleNodeSchema = z.object({
+  id: z.string().min(1).max(120),
+  nodeType: z.literal("article"),
+  sourceArticleId: z.string().min(1).max(120),
+  sourceTitle: z.string().max(300),
+  displayTitle: z.string().max(300),
+});
+
+export const CatalogLineageNodeSchema = z.object({
+  id: z.string().min(1).max(120),
+  nodeType: z.literal("lineage"),
+  totalTitle: z.string().max(300),
+  eyebrowTitle: z.string().max(300),
+  chartId: z.string().min(1).max(120),
+  chartName: z.string().max(200),
+  startMemberId: z.string().min(1).max(120),
+  startMemberName: z.string().max(200),
+  descendantScope: z.enum(["all", "member", "member_inclusive", "generations"]),
+  endMemberId: z.string().max(120).optional(),
+  endMemberName: z.string().max(200).optional(),
+  maxGenerations: z.coerce.number().int().min(1).max(100).optional(),
+  indexConfig: LineageSubTableConfigSchema,
+  diaoxianConfig: LineageSubTableConfigSchema,
+  shixiConfig: LineageSubTableConfigSchema,
+});
+
+export const CatalogLeafNodeSchema = z.discriminatedUnion("nodeType", [
+  CatalogArticleNodeSchema,
+  CatalogLineageNodeSchema,
+]);
+
+export const CatalogChapterNodeSchema = z.object({
+  id: z.string().min(1).max(120),
+  nodeType: z.literal("chapter"),
+  title: z.string().min(1).max(200),
+  collapsed: z.boolean().optional(),
+  children: z.array(CatalogLeafNodeSchema),
+});
+
+export const CatalogNodeSchema = z.discriminatedUnion("nodeType", [
+  CatalogChapterNodeSchema,
+  CatalogArticleNodeSchema,
+  CatalogLineageNodeSchema,
+]);
+
+export const CatalogSectionStateSchema = z.object({
+  code: z.enum(["preface", "body", "lineage", "appendix"]),
+  label: z.string().max(60),
+  hint: z.string().max(200),
+  collapsed: z.boolean(),
+  items: z.array(CatalogNodeSchema),
+});
+
+export const BookSectionsSchema = z.object({
+  preface: CatalogSectionStateSchema,
+  body: CatalogSectionStateSchema,
+  lineage: CatalogSectionStateSchema,
+  appendix: CatalogSectionStateSchema,
+});
+export type BookSectionsInput = z.infer<typeof BookSectionsSchema>;
+
+export const BookLayoutConfigSchema = z.object({
+  bindingStyle: z.enum(BOOK_BINDING_STYLES),
+  lineageStyle: z.enum(BOOK_LINEAGE_STYLES),
+  paperSize: z.enum(BOOK_PAPER_SIZES),
+  borderStyle: z.enum(BOOK_BORDER_STYLES),
+  fontFamily: z.enum(BOOK_FONT_FAMILIES),
+  density: z.enum(BOOK_DENSITIES),
+  fishtailStyle: z.enum(BOOK_FISHTAIL_STYLES),
+  showHallName: z.boolean(),
+  showHeaderName: z.boolean(),
+  pageNumberStyle: z.enum(BOOK_PAGE_NUMBER_STYLES),
+});
+export type BookLayoutConfigInput = z.infer<typeof BookLayoutConfigSchema>;
+
+export const CreateBookSchema = z.object({
+  folderId: z.uuid().nullable().optional(),
+  seq: z.coerce.number().int().min(0).optional(),
+  bookName: z.string().trim().min(1, "谱书名称不能为空").max(200),
+  headerName: z.string().trim().max(200).optional(),
+  hallName: z.string().trim().max(120).optional(),
+  volumeNo: z.string().trim().min(1).max(60).optional(),
+  editor: z.string().trim().max(120).optional(),
+  compilationDate: z.string().trim().max(40).optional(),
+  sections: BookSectionsSchema.optional(),
+  layoutConfig: BookLayoutConfigSchema.optional(),
+});
+export type CreateBookInput = z.infer<typeof CreateBookSchema>;
+
+export const UpdateBookSchema = z
+  .object({
+    version: z.coerce.number().int().positive(),
+    folderId: z.uuid().nullable().optional(),
+    seq: z.coerce.number().int().min(0).optional(),
+    bookName: z.string().trim().min(1, "谱书名称不能为空").max(200).optional(),
+    headerName: z.string().trim().max(200).optional(),
+    hallName: z.string().trim().max(120).optional(),
+    volumeNo: z.string().trim().min(1).max(60).optional(),
+    editor: z.string().trim().max(120).optional(),
+    compilationDate: z.string().trim().max(40).optional(),
+    sections: BookSectionsSchema.optional(),
+    layoutConfig: BookLayoutConfigSchema.optional(),
+  })
+  .refine((value) => Object.keys(value).some((key) => key !== "version"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type UpdateBookInput = z.infer<typeof UpdateBookSchema>;
+
+export const ReorderBooksSchema = z.object({
+  bookIds: z.array(z.uuid()).min(1),
+});
+export type ReorderBooksInput = z.infer<typeof ReorderBooksSchema>;
+
+export const CompiledPageSchema = z
+  .object({
+    pageNo: z.coerce.number().int().positive(),
+    type: z.enum([
+      "cover",
+      "toc",
+      "article",
+      "lineage_index",
+      "lineage_tree",
+      "lineage_table",
+    ]),
+    sectionCode: z.enum([
+      "preface",
+      "body",
+      "lineage",
+      "appendix",
+      "cover",
+      "toc",
+    ]),
+    headerTitle: z.string(),
+    eyebrowTitle: z.string(),
+    hallName: z.string(),
+  })
+  .passthrough();
+
+export const CreateBookEditionSchema = z.object({
+  bindingStyle: z.enum(BOOK_BINDING_STYLES),
+  lineageStyle: z.enum(BOOK_LINEAGE_STYLES),
+  paperSize: z.enum(BOOK_PAPER_SIZES),
+  pageCount: z.coerce.number().int().min(0),
+  memberCount: z.coerce.number().int().min(0),
+  wordCount: z.coerce.number().int().min(0),
+  layoutSnapshot: BookLayoutConfigSchema,
+  pages: z.array(CompiledPageSchema),
+});
+export type CreateBookEditionInput = z.infer<typeof CreateBookEditionSchema>;
+
+export const UpdateBookEditionSchema = z.object({
+  printStatus: z.enum(BOOK_EDITION_PRINT_STATUSES),
+});
+export type UpdateBookEditionInput = z.infer<typeof UpdateBookEditionSchema>;
+
+export const BookIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  bookId: z.uuid(),
+});
+
+export const BookEditionIdParamsSchema = z.object({
+  projectId: z.uuid(),
+  bookId: z.uuid(),
+  editionId: z.uuid(),
 });

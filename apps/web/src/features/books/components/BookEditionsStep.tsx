@@ -10,9 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { useBookStore } from '../../../store/useBookStore';
-import { useBookEditionStore } from '../../../store/useBookEditionStore';
 import ConfirmDialog from '../../dashboard/components/ConfirmDialog';
+import { useBookActions, useBookEditionsQuery } from '../queries';
 import {
   BINDING_LABELS,
   generateProofHtmlDocument,
@@ -51,10 +50,12 @@ export const BookEditionsStep: React.FC<BookEditionsStepProps> = ({
   onGenerateNewEdition,
 }) => {
   const activeProjectId = useProjectId();
-  const deleteEdition = useBookStore((s) => s.deleteEdition);
-  const finalizeEditionPrint = useBookStore((s) => s.finalizeEditionPrint);
-  const storedEditions = useBookEditionStore((s) => s.editionsByBookId[book.id]);
-  const editions = storedEditions ?? (book.editions?.length ? book.editions : EMPTY_EDITIONS);
+  const { deleteEdition, finalizeEditionPrint } =
+    useBookActions(activeProjectId);
+  const { data: editions = EMPTY_EDITIONS } = useBookEditionsQuery(
+    activeProjectId,
+    book.id,
+  );
 
   const [readerEdition, setReaderEdition] = useState<BookEdition | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BookEdition | null>(null);
@@ -74,7 +75,7 @@ export const BookEditionsStep: React.FC<BookEditionsStepProps> = ({
   };
 
   const handleGeneratePrint = (edition: BookEdition) => {
-    finalizeEditionPrint(activeProjectId, book.id, edition.id);
+    void finalizeEditionPrint(book.id, edition.id);
     const html = generateProofHtmlDocument(book, edition, 'print');
     triggerHtmlDownload(`${book.bookName}-高清印刷版-${edition.createdAt.slice(0, 10)}.html`, html);
     notify('已生成高清印刷版并开始下载');
@@ -257,7 +258,7 @@ export const BookEditionsStep: React.FC<BookEditionsStepProps> = ({
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {
           if (deleteTarget) {
-            deleteEdition(activeProjectId, book.id, deleteTarget.id);
+            void deleteEdition(book.id, deleteTarget.id);
           }
           setDeleteTarget(null);
         }}

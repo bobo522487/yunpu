@@ -15,8 +15,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { useBookStore } from '../../../store/useBookStore';
 import ConfirmDialog from '../../dashboard/components/ConfirmDialog';
+import { useBookActions } from '../queries';
 import type { BookArticleAuditIssue } from '../domain/bookArticleAudit';
 import type {
   BookRecord,
@@ -68,19 +68,19 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
 }) => {
   const activeProjectId = useProjectId();
 
-  const toggleSectionCollapsed = useBookStore((s) => s.toggleSectionCollapsed);
-  const toggleChapterCollapsed = useBookStore((s) => s.toggleChapterCollapsed);
-  const addChapter = useBookStore((s) => s.addChapter);
-  const renameChapter = useBookStore((s) => s.renameChapter);
-  const addArticleRefs = useBookStore((s) => s.addArticleRefs);
-  const updateArticleRef = useBookStore((s) => s.updateArticleRef);
-  const addLineageRef = useBookStore((s) => s.addLineageRef);
-  const updateLineageRefSettings = useBookStore(
-    (s) => s.updateLineageRefSettings
-  );
-  const removeCatalogNode = useBookStore((s) => s.removeCatalogNode);
-  const moveCatalogNodeOrder = useBookStore((s) => s.moveCatalogNodeOrder);
-  const transferCatalogNode = useBookStore((s) => s.transferCatalogNode);
+  const {
+    toggleSectionCollapsed,
+    toggleChapterCollapsed,
+    addChapter,
+    renameChapter,
+    addArticleRefs,
+    updateArticleRef,
+    addLineageRef,
+    updateLineageRefSettings,
+    removeCatalogNode,
+    moveCatalogNodeOrder,
+    transferCatalogNode,
+  } = useBookActions(activeProjectId);
 
   // Modal states
   const [chapterModal, setChapterModal] = useState<{
@@ -204,8 +204,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
             disabled={isFirst}
             title="上移"
             onClick={() =>
-              moveCatalogNodeOrder(
-                activeProjectId,
+              void moveCatalogNodeOrder(
                 book.id,
                 sectionCode,
                 parentChapterId,
@@ -222,8 +221,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
             disabled={isLast}
             title="下移"
             onClick={() =>
-              moveCatalogNodeOrder(
-                activeProjectId,
+              void moveCatalogNodeOrder(
                 book.id,
                 sectionCode,
                 parentChapterId,
@@ -297,8 +295,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
             <button
               type="button"
               onClick={() =>
-                toggleChapterCollapsed(
-                  activeProjectId,
+                void toggleChapterCollapsed(
                   book.id,
                   sectionCode,
                   chapter.id
@@ -360,8 +357,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
               disabled={isFirst}
               title="上移"
               onClick={() =>
-                moveCatalogNodeOrder(
-                  activeProjectId,
+                void moveCatalogNodeOrder(
                   book.id,
                   sectionCode,
                   undefined,
@@ -378,8 +374,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
               disabled={isLast}
               title="下移"
               onClick={() =>
-                moveCatalogNodeOrder(
-                  activeProjectId,
+                void moveCatalogNodeOrder(
                   book.id,
                   sectionCode,
                   undefined,
@@ -486,7 +481,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
               <button
                 type="button"
                 onClick={() =>
-                  toggleSectionCollapsed(activeProjectId, book.id, sec.code)
+                  void toggleSectionCollapsed(book.id, sec.code)
                 }
                 className="flex items-center gap-2 min-w-0 text-left cursor-pointer"
               >
@@ -602,15 +597,13 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
         }
         onSubmit={(title) => {
           if (chapterModal.mode === 'create') {
-            addChapter(
-              activeProjectId,
+            void addChapter(
               book.id,
               chapterModal.sectionCode,
               title
             );
           } else if (chapterModal.chapterId) {
-            renameChapter(
-              activeProjectId,
+            void renameChapter(
               book.id,
               chapterModal.chapterId,
               title
@@ -627,8 +620,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
           setAddTextTarget((prev) => ({ ...prev, open: false }))
         }
         onConfirm={(selected) => {
-          addArticleRefs(
-            activeProjectId,
+          void addArticleRefs(
             book.id,
             addTextTarget.sectionCode,
             addTextTarget.chapterId,
@@ -644,8 +636,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
         onClose={() => setEditDocNode(null)}
         onSubmit={(updates) => {
           if (editDocNode) {
-            updateArticleRef(
-              activeProjectId,
+            void updateArticleRef(
               book.id,
               editDocNode.id,
               updates
@@ -663,8 +654,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
           setAddLineageTarget((prev) => ({ ...prev, open: false }))
         }
         onSubmit={(payload) => {
-          addLineageRef(
-            activeProjectId,
+          void addLineageRef(
             book.id,
             addLineageTarget.sectionCode,
             addLineageTarget.chapterId,
@@ -680,8 +670,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
         onClose={() => setLineageSettingsNode(null)}
         onSave={(updates) => {
           if (lineageSettingsNode) {
-            updateLineageRefSettings(
-              activeProjectId,
+            void updateLineageRefSettings(
               book.id,
               lineageSettingsNode.id,
               updates
@@ -702,8 +691,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
         }
         onConfirm={(targetSectionCode, targetChapterId) => {
           if (moveModal.nodeId) {
-            transferCatalogNode(
-              activeProjectId,
+            void transferCatalogNode(
               book.id,
               moveModal.nodeId,
               targetSectionCode,
@@ -729,7 +717,6 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
         onConfirm={() => {
           if (deleteTarget) {
             const res = removeCatalogNode(
-              activeProjectId,
               book.id,
               deleteTarget.id
             );

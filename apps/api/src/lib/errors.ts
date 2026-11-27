@@ -66,7 +66,10 @@ export function tryMapDatabaseError(error: unknown): AppError | null {
       if (dbError.constraint === "uk_person_relation_kind") {
         return new AppError("CONFLICT", "这条关系已存在");
       }
-      if (dbError.constraint === "uq_folder_project_name") {
+      if (
+        dbError.constraint === "uq_folder_project_name" ||
+        dbError.constraint === "uq_folder_project_kind_name"
+      ) {
         return new AppError("CONFLICT", "同项目下分组名称已存在");
       }
       if (dbError.constraint === "uq_person_name_kind_value") {

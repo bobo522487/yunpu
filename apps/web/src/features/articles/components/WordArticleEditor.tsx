@@ -6,7 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { EditorContent, useEditor } from '@tiptap/react';
+import { EditorContent, useEditor, type JSONContent } from '@tiptap/react';
 import { Check, Minus, Plus } from 'lucide-react';
 import '../styles/puwen-prose.css';
 import { ArticleInspectorPanel } from './ArticleInspectorPanel';
@@ -19,7 +19,8 @@ import { useProjectId } from '../../../hooks/useProjectId';
 import { useProjectLineageSnapshot } from '../../lineage/queries';
 import { contentJsonToHtml, htmlToContentJson } from '../domain/htmlProjection';
 import { createArticleSaveQueue } from '../domain/articleSaveQueue';
-import { useArticleStore } from '../../../store/useArticleStore';
+import { uploadArticleAssetRequest } from '../api';
+import { useArticleActions } from '../queries';
 import {
   nextArticleTheme,
   type ArticleTheme,
@@ -28,7 +29,26 @@ import {
   extractArticleMetrics,
   readingTimeLabel,
 } from '../domain/articleMetrics';
-import { createIndexedDbArticleAssetStore } from '../assets/articleAssetStore';
+
+function rewriteArticleAssetIds(
+  node: JSONContent,
+  keyMap: Map<string, string>,
+): JSONContent {
+  const nextAttrs =
+    node.attrs &&
+    typeof node.attrs.assetId === 'string' &&
+    keyMap.has(node.attrs.assetId)
+      ? { ...node.attrs, assetId: keyMap.get(node.attrs.assetId) }
+      : node.attrs;
+  const nextContent = Array.isArray(node.content)
+    ? node.content.map((child) => rewriteArticleAssetIds(child, keyMap))
+    : node.content;
+  return {
+    ...node,
+    ...(nextAttrs !== undefined ? { attrs: nextAttrs } : {}),
+    ...(nextContent !== undefined ? { content: nextContent } : {}),
+  };
+}
 
 interface WordArticleEditorProps {
   article: ArticleDocument;
@@ -94,7 +114,7 @@ export const WordArticleEditor: React.FC<WordArticleEditorProps> = ({
   const isSyncingContentRef = useRef(false);
 
   const { personsByChart } = useProjectLineageSnapshot(activeProjectId ?? '');
-  const updateArticleContent = useArticleStore((s) => s.updateArticleContent);
+  const { updateArticleContent } = useArticleActions(activeProjectId ?? '');
   const activeProjectIdRef = useRef(activeProjectId);
   activeProjectIdRef.current = activeProjectId;
   const updateArticleContentRef = useRef(updateArticleContent);
@@ -133,7 +153,7 @@ export const WordArticleEditor: React.FC<WordArticleEditorProps> = ({
       onCommit: (commit) => {
         const projectId = commit.projectId ?? activeProjectIdRef.current;
         if (!projectId) return;
-        updateArticleContentRef.current(projectId, commit.articleId, {
+        updateArticleContentRef.current(commit.articleId, {
           contentJson: commit.contentJson,
         });
         setSaveState('saved');
@@ -320,12 +340,30 @@ export const WordArticleEditor: React.FC<WordArticleEditorProps> = ({
       const arrayBuffer = await file.arrayBuffer();
       const { importDocxArrayBuffer } = await import('../domain/docxCodec');
       const { contentJson, images } = await importDocxArrayBuffer(arrayBuffer);
-      const assetStore = createIndexedDbArticleAssetStore();
-      await Promise.all(images.map((img) => assetStore.put(img)));
+      let resolvedJson = contentJson;
+      if (images.length > 0 && activeProjectId) {
+        const uploadedPairs = await Promise.all(
+          images.map(async (img) => {
+            const blob = new Blob([new Uint8Array(img.bytes)], {
+              type: img.contentType || 'image/png',
+            });
+            const uploaded = await uploadArticleAssetRequest(
+              activeProjectId,
+              blob,
+              img.contentType || 'image/png',
+            );
+            return [img.assetId, uploaded.key] as const;
+          }),
+        );
+        resolvedJson = rewriteArticleAssetIds(
+          contentJson,
+          new Map(uploadedPairs),
+        );
+      }
       saveQueueRef.current?.flush();
       isSyncingContentRef.current = true;
-      onUpdateArticle({ contentJson });
-      editor?.commands.setContent(contentJson, false);
+      onUpdateArticle({ contentJson: resolvedJson });
+      editor?.commands.setContent(resolvedJson, false);
       isSyncingContentRef.current = false;
       setSaveState('saved');
       setWordIoError(null);

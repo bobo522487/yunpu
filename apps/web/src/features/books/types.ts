@@ -153,6 +153,8 @@ export interface BookEdition {
 
 export interface BookRecord {
   id: string;
+  projectId?: string;
+  folderId?: string | null;
   bookName: string;
   headerName: string;
   hallName: string;
@@ -161,7 +163,10 @@ export interface BookRecord {
   compilationDate: string;
   sections: Record<CatalogSectionCode, CatalogSectionState>;
   layoutConfig: BookLayoutConfig;
-  editions: BookEdition[];
+  editions?: BookEdition[];
+  seq?: number;
+  version?: number;
+  createdAt?: string;
   updatedAt: string;
 }
 

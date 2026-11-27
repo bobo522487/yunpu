@@ -4,10 +4,12 @@ import { FolderPlus, X } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
-import { useArticleStore } from '../../../store/useArticleStore';
-import { useBookStore } from '../../../store/useBookStore';
 import { useCurrentUserProfile } from '../../../hooks/useCurrentUserProfile';
-import { countArticlesInTree } from '../../articles/articleData';
+import { articleDirectoryToTreeItems } from '../../articles/adapter';
+import { fetchArticlesDirectory } from '../../articles/api';
+import { articlesKeys } from '../../articles/queries';
+import { fetchBooks } from '../../books/api';
+import { booksKeys } from '../../books/queries';
 import { errorMessage } from '../../../lib/api';
 import { directoryToTreeItems, graphToPersonRecords } from '../../lineage/adapter';
 import { fetchLineageDirectory, fetchLineageGraph } from '../../lineage/api';
@@ -53,10 +55,6 @@ const DashboardPage: React.FC = () => {
   const dropProject = useWorkspaceStore((s) => s.dropProject);
   const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
 
-  const articleTreesByProject = useArticleStore((s) => s.treesByProject);
-  const articlesByKey = useArticleStore((s) => s.articlesByKey);
-  const booksByProject = useBookStore((s) => s.booksByProject);
-
   const [formDialog, setFormDialog] = useState<{
     mode: 'create' | 'edit';
     project?: ProjectRecord;
@@ -93,6 +91,32 @@ const DashboardPage: React.FC = () => {
     (q) => q.data?.lineages.length ?? 0,
   );
 
+  const articleDirQueries = useQueries({
+    queries: projects.map((proj) => ({
+      queryKey: articlesKeys.directory(proj.id),
+      queryFn: () => fetchArticlesDirectory(proj.id),
+      enabled: Boolean(proj.id),
+    })),
+  });
+  const articleDirSignature = articleDirQueries
+    .map((q) => `${q.dataUpdatedAt}:${q.data?.articles.length ?? 0}`)
+    .join('|');
+  const articleCounts = articleDirQueries.map(
+    (q) => q.data?.articles.length ?? 0,
+  );
+
+  const booksQueries = useQueries({
+    queries: projects.map((proj) => ({
+      queryKey: booksKeys.list(proj.id),
+      queryFn: () => fetchBooks(proj.id).then((res) => res.books),
+      enabled: Boolean(proj.id),
+    })),
+  });
+  const booksSignature = booksQueries
+    .map((q) => `${q.dataUpdatedAt}:${q.data?.length ?? 0}`)
+    .join('|');
+  const bookCounts = booksQueries.map((q) => q.data?.length ?? 0);
+
   useEffect(() => {
     if (activeWorkspaceId && projectsQuery.data) {
       syncWorkspaceProjects(activeWorkspaceId, projects);
@@ -121,9 +145,8 @@ const DashboardPage: React.FC = () => {
     const map: Record<string, FamilyCardMetrics> = {};
     projects.forEach((project, idx) => {
       const lineageCount = directoryCounts[idx] ?? 0;
-      const articleTree = articleTreesByProject[project.id];
-      const articleCount = articleTree ? countArticlesInTree(articleTree) : 0;
-      const bookCount = booksByProject[project.id]?.length ?? 0;
+      const articleCount = articleCounts[idx] ?? 0;
+      const bookCount = bookCounts[idx] ?? 0;
 
       map[project.id] = {
         lineageCount,
@@ -137,8 +160,8 @@ const DashboardPage: React.FC = () => {
   }, [
     projects,
     directorySignature,
-    articleTreesByProject,
-    booksByProject,
+    articleDirSignature,
+    booksSignature,
   ]);
 
   const handleOpen = (
@@ -161,7 +184,11 @@ const DashboardPage: React.FC = () => {
 
   const handleExportFamily = async (project: ProjectRecord) => {
     try {
-      const directory = await fetchLineageDirectory(project.id);
+      const [directory, articleDir, booksPayload] = await Promise.all([
+        fetchLineageDirectory(project.id),
+        fetchArticlesDirectory(project.id),
+        fetchBooks(project.id),
+      ]);
       const lineageTree = directoryToTreeItems(
         directory.folders,
         directory.lineages,
@@ -178,10 +205,6 @@ const DashboardPage: React.FC = () => {
         };
       });
 
-      const projectArticles = Object.entries(articlesByKey)
-        .filter(([k]) => k.startsWith(`${project.id}::`))
-        .map(([, doc]) => doc);
-
       const backupPayload = {
         schema: 'yunpu-family-backup/v1',
         exportedAt: new Date().toISOString(),
@@ -189,9 +212,12 @@ const DashboardPage: React.FC = () => {
         zibei: zibeiByProject[project.id] ?? [],
         lineageTree,
         lineageCharts,
-        articleTree: articleTreesByProject[project.id] ?? [],
-        articles: projectArticles,
-        books: booksByProject[project.id] ?? [],
+        articleTree: articleDirectoryToTreeItems(
+          articleDir.folders,
+          articleDir.articles,
+        ),
+        articles: articleDir.articles,
+        books: booksPayload.books,
       };
 
       const blob = new Blob([JSON.stringify(backupPayload, null, 2)], {

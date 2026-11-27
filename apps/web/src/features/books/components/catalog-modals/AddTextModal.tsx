@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, Plus, ScrollText, Search, Trash2, X } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useActiveProject } from '../../../../hooks/useActiveProject';
-import { useArticleStore } from '../../../../store/useArticleStore';
+import { useProjectArticlesSnapshot } from '../../../articles/queries';
 import { type ArticleListItem, flattenArticleTree } from './articleTreeUtils';
 
 interface AddTextModalProps {
@@ -22,35 +22,23 @@ export const AddTextModal: React.FC<AddTextModalProps> = ({
   onClose,
   onConfirm,
 }) => {
-  const { projectId: activeProjectId, articleSeedContext } = useActiveProject();
-  const articleHydrated = useArticleStore((s) => s._hasHydrated);
-  const articleTreesByProject = useArticleStore((s) => s.treesByProject);
-  const articlesByKey = useArticleStore((s) => s.articlesByKey);
-  const ensureInitialized = useArticleStore((s) => s.ensureProjectInitialized);
+  const { projectId: activeProjectId } = useActiveProject();
+  const { articleTree, articlesByKey } =
+    useProjectArticlesSnapshot(activeProjectId);
 
   const [search, setSearch] = useState('');
   const [queue, setQueue] = useState<ArticleListItem[]>([]);
 
   useEffect(() => {
-    if (!open || !activeProjectId) return;
+    if (!open) return;
     setSearch('');
     setQueue([]);
-    if (articleHydrated && !articleTreesByProject[activeProjectId]) {
-      ensureInitialized(activeProjectId, articleSeedContext);
-    }
-  }, [
-    open,
-    activeProjectId,
-    articleHydrated,
-    articleTreesByProject,
-    articleSeedContext,
-    ensureInitialized,
-  ]);
+  }, [open]);
 
-  const allArticles = useMemo(() => {
-    const tree = articleTreesByProject[activeProjectId] || [];
-    return flattenArticleTree(tree, articlesByKey, activeProjectId);
-  }, [articleTreesByProject, activeProjectId, articlesByKey]);
+  const allArticles = useMemo(
+    () => flattenArticleTree(articleTree, articlesByKey, activeProjectId),
+    [articleTree, activeProjectId, articlesByKey],
+  );
 
   const filteredArticles = useMemo(() => {
     const q = search.trim().toLowerCase();

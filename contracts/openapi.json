@@ -1114,7 +1114,15 @@
       "get": {
         "operationId": "get_api_v1_projects_projectId_folders",
         "summary": "列出项目平铺分组",
-        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {"type":"string","enum":["lineage","article","book"]}
+          }
+        ],
         "responses": {
           "200": {
             "description": "列出项目平铺分组",
@@ -2134,6 +2142,836 @@
         "x-source": "apps/api/src/modules/person/router.ts"
       }
     },
+    "/api/v1/projects/{projectId}/articles": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_articles",
+        "summary": "列出项目谱文目录与正文",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "200": {
+            "description": "列出项目谱文目录与正文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "folders": {"type":"array","items":{"$ref":"#/components/schemas/Folder"}},
+                        "articles": {"type":"array","items":{"$ref":"#/components/schemas/Article"}}
+                      },
+                      "required": ["folders","articles"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      },
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_articles",
+        "summary": "创建谱文",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "201": {
+            "description": "创建谱文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "required": ["article"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/CreateArticleSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/articles/{articleId}": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_articles_articleId",
+        "summary": "读取单篇谱文",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "读取单篇谱文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "required": ["article"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      },
+      "patch": {
+        "operationId": "patch_api_v1_projects_projectId_articles_articleId",
+        "summary": "按版本号 CAS 更新谱文",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "按版本号 CAS 更新谱文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "required": ["article"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/UpdateArticleSchema"}}}
+        }
+      },
+      "delete": {
+        "operationId": "delete_api_v1_projects_projectId_articles_articleId",
+        "summary": "删除谱文",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除谱文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"deleted":{"type":"boolean","const":true}},
+                      "required": ["deleted"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/articles/{articleId}/duplicate": {
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_articles_articleId_duplicate",
+        "summary": "复制谱文",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "201": {
+            "description": "复制谱文",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "required": ["article"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/articles/{articleId}/revisions": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_articles_articleId_revisions",
+        "summary": "列出谱文修订记录",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "列出谱文修订记录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"revisions":{"type":"array","items":{"$ref":"#/components/schemas/ArticleRevision"}}},
+                      "required": ["revisions"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      },
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_articles_articleId_revisions",
+        "summary": "记入谱文修订快照",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "201": {
+            "description": "记入谱文修订快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"revision":{"$ref":"#/components/schemas/ArticleRevision"}},
+                      "required": ["revision"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/CreateArticleRevisionSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/articles/{articleId}/revisions/{revisionId}/restore": {
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_articles_articleId_revisions_revisionId_restore",
+        "summary": "按版本号回滚到指定修订",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"articleId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"revisionId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "按版本号回滚到指定修订",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "article": {"$ref":"#/components/schemas/Article"},
+                        "revision": {"$ref":"#/components/schemas/ArticleRevision"}
+                      },
+                      "required": ["article","revision"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/RestoreArticleRevisionSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/article-assets": {
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_article_assets",
+        "summary": "上传谱文图片资产",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "201": {
+            "description": "上传谱文图片资产",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"key":{"type":"string"},"url":{"type":"string"}},
+                      "required": ["key","url"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/article-assets/{fileName}": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_article_assets_fileName",
+        "summary": "读取谱文图片资产",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {
+            "name": "fileName",
+            "in": "path",
+            "required": true,
+            "schema": {"type":"string","pattern":"^[0-9a-f-]{36}\\.(png|jpg|jpeg|webp|gif)$"}
+          }
+        ],
+        "responses": {
+          "200": {"description":"读取谱文图片资产","content":{"application/octet-stream":{"schema":{"type":"string"}}}},
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/article/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/books": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_books",
+        "summary": "列出项目谱书",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "200": {
+            "description": "列出项目谱书",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/Book"}}},
+                      "required": ["books"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      },
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_books",
+        "summary": "创建谱书",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "201": {
+            "description": "创建谱书",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "required": ["book"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/CreateBookSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/books/reorder": {
+      "put": {
+        "operationId": "put_api_v1_projects_projectId_books_reorder",
+        "summary": "调整项目内谱书排序",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "200": {
+            "description": "调整项目内谱书排序",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/Book"}}},
+                      "required": ["books"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ReorderBooksSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/books/{bookId}": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_books_bookId",
+        "summary": "读取单部谱书",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "读取单部谱书",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "required": ["book"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      },
+      "patch": {
+        "operationId": "patch_api_v1_projects_projectId_books_bookId",
+        "summary": "按版本号 CAS 更新谱书",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "按版本号 CAS 更新谱书",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "required": ["book"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/UpdateBookSchema"}}}
+        }
+      },
+      "delete": {
+        "operationId": "delete_api_v1_projects_projectId_books_bookId",
+        "summary": "删除谱书",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除谱书",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"deleted":{"type":"boolean","const":true}},
+                      "required": ["deleted"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/books/{bookId}/duplicate": {
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_books_bookId_duplicate",
+        "summary": "复制谱书及谱例快照",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "201": {
+            "description": "复制谱书及谱例快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "required": ["book"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      }
+    },
+    "/api/v1/projects/{projectId}/books/{bookId}/editions": {
+      "get": {
+        "operationId": "get_api_v1_projects_projectId_books_bookId_editions",
+        "summary": "列出谱书谱例快照",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "列出谱书谱例快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"editions":{"type":"array","items":{"$ref":"#/components/schemas/BookEdition"}}},
+                      "required": ["editions"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      },
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_books_bookId_editions",
+        "summary": "生成并保存谱例快照",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "201": {
+            "description": "生成并保存谱例快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"edition":{"$ref":"#/components/schemas/BookEdition"}},
+                      "required": ["edition"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/CreateBookEditionSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/books/{bookId}/editions/{editionId}": {
+      "patch": {
+        "operationId": "patch_api_v1_projects_projectId_books_bookId_editions_editionId",
+        "summary": "更新谱例打印状态",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"editionId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "更新谱例打印状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"edition":{"$ref":"#/components/schemas/BookEdition"}},
+                      "required": ["edition"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/UpdateBookEditionSchema"}}}
+        }
+      },
+      "delete": {
+        "operationId": "delete_api_v1_projects_projectId_books_bookId_editions_editionId",
+        "summary": "删除谱例快照",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"bookId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"editionId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除谱例快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {"deleted":{"type":"boolean","const":true}},
+                      "required": ["deleted"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/book/router.ts"
+      }
+    },
     "/api/media": {
       "post": {
         "operationId": "post_api_media",
@@ -2205,6 +3043,155 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "ArticleCitationSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type":"string","minLength":1,"maxLength":120},
+          "label": {"type":"string","maxLength":240},
+          "sourceType": {"type":"string","enum":["old_genealogy","stele","gazetteer","oral","archive"]},
+          "detail": {"type":"string","maxLength":2000},
+          "mediaAssetId": {"type":"string","maxLength":255}
+        },
+        "required": ["id","label","sourceType"],
+        "additionalProperties": false
+      },
+      "ArticleContentJsonSchema": {
+        "type": "object",
+        "properties": {"type":{"type":"string","minLength":1}},
+        "required": ["type"],
+        "additionalProperties": {}
+      },
+      "ArticleIdParamsSchema": {
+        "type": "object",
+        "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"articleId":{"$ref":"#/components/schemas/Uuid"}},
+        "required": ["projectId","articleId"],
+        "additionalProperties": false
+      },
+      "ArticleRevisionIdParamsSchema": {
+        "type": "object",
+        "properties": {
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "articleId": {"$ref":"#/components/schemas/Uuid"},
+          "revisionId": {"$ref":"#/components/schemas/Uuid"}
+        },
+        "required": ["projectId","articleId","revisionId"],
+        "additionalProperties": false
+      },
+      "BookEditionIdParamsSchema": {
+        "type": "object",
+        "properties": {
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "bookId": {"$ref":"#/components/schemas/Uuid"},
+          "editionId": {"$ref":"#/components/schemas/Uuid"}
+        },
+        "required": ["projectId","bookId","editionId"],
+        "additionalProperties": false
+      },
+      "BookIdParamsSchema": {
+        "type": "object",
+        "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"bookId":{"$ref":"#/components/schemas/Uuid"}},
+        "required": ["projectId","bookId"],
+        "additionalProperties": false
+      },
+      "BookLayoutConfigSchema": {
+        "type": "object",
+        "properties": {
+          "bindingStyle": {"type":"string","enum":["thread","hardcover"]},
+          "lineageStyle": {"type":"string","enum":["euler","su","modern_double"]},
+          "paperSize": {"type":"string","enum":["thread_185x290","a4_210x297","k16_185x260"]},
+          "borderStyle": {"type":"string","enum":["double","single","none"]},
+          "fontFamily": {"type":"string","enum":["song","kai","fangsong","hei"]},
+          "density": {"type":"string","enum":["loose","standard","compact"]},
+          "fishtailStyle": {"type":"string","enum":["black","white","double","none"]},
+          "showHallName": {"type":"boolean"},
+          "showHeaderName": {"type":"boolean"},
+          "pageNumberStyle": {"type":"string","enum":["chinese","arabic"]}
+        },
+        "required": ["bindingStyle","lineageStyle","paperSize","borderStyle","fontFamily","density","fishtailStyle","showHallName","showHeaderName","pageNumberStyle"],
+        "additionalProperties": false
+      },
+      "BookSectionsSchema": {
+        "type": "object",
+        "properties": {
+          "preface": {"$ref":"#/components/schemas/CatalogSectionStateSchema"},
+          "body": {"$ref":"#/components/schemas/CatalogSectionStateSchema"},
+          "lineage": {"$ref":"#/components/schemas/CatalogSectionStateSchema"},
+          "appendix": {"$ref":"#/components/schemas/CatalogSectionStateSchema"}
+        },
+        "required": ["preface","body","lineage","appendix"],
+        "additionalProperties": false
+      },
+      "CatalogArticleNodeSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type":"string","minLength":1,"maxLength":120},
+          "nodeType": {"type":"string","const":"article"},
+          "sourceArticleId": {"type":"string","minLength":1,"maxLength":120},
+          "sourceTitle": {"type":"string","maxLength":300},
+          "displayTitle": {"type":"string","maxLength":300}
+        },
+        "required": ["id","nodeType","sourceArticleId","sourceTitle","displayTitle"],
+        "additionalProperties": false
+      },
+      "CatalogChapterNodeSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type":"string","minLength":1,"maxLength":120},
+          "nodeType": {"type":"string","const":"chapter"},
+          "title": {"type":"string","minLength":1,"maxLength":200},
+          "collapsed": {"type":"boolean"},
+          "children": {"type":"array","items":{"$ref":"#/components/schemas/CatalogLeafNodeSchema"}}
+        },
+        "required": ["id","nodeType","title","children"],
+        "additionalProperties": false
+      },
+      "CatalogLeafNodeSchema": {
+        "oneOf": [
+          {"$ref":"#/components/schemas/CatalogArticleNodeSchema"},
+          {"$ref":"#/components/schemas/CatalogLineageNodeSchema"}
+        ]
+      },
+      "CatalogLineageNodeSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type":"string","minLength":1,"maxLength":120},
+          "nodeType": {"type":"string","const":"lineage"},
+          "totalTitle": {"type":"string","maxLength":300},
+          "eyebrowTitle": {"type":"string","maxLength":300},
+          "chartId": {"type":"string","minLength":1,"maxLength":120},
+          "chartName": {"type":"string","maxLength":200},
+          "startMemberId": {"type":"string","minLength":1,"maxLength":120},
+          "startMemberName": {"type":"string","maxLength":200},
+          "descendantScope": {"type":"string","enum":["all","member","member_inclusive","generations"]},
+          "endMemberId": {"type":"string","maxLength":120},
+          "endMemberName": {"type":"string","maxLength":200},
+          "maxGenerations": {"type":"integer","minimum":1,"maximum":100},
+          "indexConfig": {"$ref":"#/components/schemas/LineageSubTableConfigSchema"},
+          "diaoxianConfig": {"$ref":"#/components/schemas/LineageSubTableConfigSchema"},
+          "shixiConfig": {"$ref":"#/components/schemas/LineageSubTableConfigSchema"}
+        },
+        "required": ["id","nodeType","totalTitle","eyebrowTitle","chartId","chartName","startMemberId","startMemberName","descendantScope","indexConfig","diaoxianConfig","shixiConfig"],
+        "additionalProperties": false
+      },
+      "CatalogNodeSchema": {
+        "oneOf": [
+          {"$ref":"#/components/schemas/CatalogChapterNodeSchema"},
+          {"$ref":"#/components/schemas/CatalogArticleNodeSchema"},
+          {"$ref":"#/components/schemas/CatalogLineageNodeSchema"}
+        ]
+      },
+      "CatalogSectionStateSchema": {
+        "type": "object",
+        "properties": {
+          "code": {"type":"string","enum":["preface","body","lineage","appendix"]},
+          "label": {"type":"string","maxLength":60},
+          "hint": {"type":"string","maxLength":200},
+          "collapsed": {"type":"boolean"},
+          "items": {"type":"array","items":{"$ref":"#/components/schemas/CatalogNodeSchema"}}
+        },
+        "required": ["code","label","hint","collapsed","items"],
+        "additionalProperties": false
+      },
       "ChangePasswordSchema": {
         "type": "object",
         "properties": {
@@ -2214,10 +3201,82 @@
         "required": ["currentPassword","newPassword"],
         "additionalProperties": false
       },
+      "CompiledPageSchema": {
+        "type": "object",
+        "properties": {
+          "pageNo": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "type": {"type":"string","enum":["cover","toc","article","lineage_index","lineage_tree","lineage_table"]},
+          "sectionCode": {"type":"string","enum":["preface","body","lineage","appendix","cover","toc"]},
+          "headerTitle": {"type":"string"},
+          "eyebrowTitle": {"type":"string"},
+          "hallName": {"type":"string"}
+        },
+        "required": ["pageNo","type","sectionCode","headerTitle","eyebrowTitle","hallName"],
+        "additionalProperties": {}
+      },
+      "CreateArticleRevisionSchema": {
+        "type": "object",
+        "properties": {"summary":{"type":"string","maxLength":300},"authorName":{"type":"string","maxLength":120}},
+        "additionalProperties": false
+      },
+      "CreateArticleSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "title": {"type":"string","minLength":1,"maxLength":200},
+          "subtitle": {"type":"string","maxLength":300},
+          "author": {"type":"string","maxLength":120},
+          "docType": {"type":"string","enum":["preface","rules","origin","motto","biography","inscription","custom"]},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "privacy": {"type":"string","enum":["public","clan","editors"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string","maxLength":2000000},
+          "linkedPersonIds": {"type":"array","items":{"type":"string","minLength":1,"maxLength":120}},
+          "linkedChartIds": {"type":"array","items":{"type":"string","minLength":1,"maxLength":120}},
+          "citations": {"type":"array","items":{"$ref":"#/components/schemas/ArticleCitationSchema"}},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991}
+        },
+        "required": ["title"],
+        "additionalProperties": false
+      },
+      "CreateBookEditionSchema": {
+        "type": "object",
+        "properties": {
+          "bindingStyle": {"type":"string","enum":["thread","hardcover"]},
+          "lineageStyle": {"type":"string","enum":["euler","su","modern_double"]},
+          "paperSize": {"type":"string","enum":["thread_185x290","a4_210x297","k16_185x260"]},
+          "pageCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "layoutSnapshot": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
+          "pages": {"type":"array","items":{"$ref":"#/components/schemas/CompiledPageSchema"}}
+        },
+        "required": ["bindingStyle","lineageStyle","paperSize","pageCount","memberCount","wordCount","layoutSnapshot","pages"],
+        "additionalProperties": false
+      },
+      "CreateBookSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "bookName": {"type":"string","minLength":1,"maxLength":200},
+          "headerName": {"type":"string","maxLength":200},
+          "hallName": {"type":"string","maxLength":120},
+          "volumeNo": {"type":"string","minLength":1,"maxLength":60},
+          "editor": {"type":"string","maxLength":120},
+          "compilationDate": {"type":"string","maxLength":40},
+          "sections": {"$ref":"#/components/schemas/BookSectionsSchema"},
+          "layoutConfig": {"$ref":"#/components/schemas/BookLayoutConfigSchema"}
+        },
+        "required": ["bookName"],
+        "additionalProperties": false
+      },
       "CreateFolderSchema": {
         "type": "object",
         "properties": {
           "name": {"type":"string","minLength":1,"maxLength":120},
+          "kind": {"type":"string","enum":["lineage","article","book"]},
           "seq": {"type":"integer","minimum":0,"maximum":9007199254740991}
         },
         "required": ["name"],
@@ -2699,6 +3758,21 @@
         "required": ["projectId","lineageId"],
         "additionalProperties": false
       },
+      "LineageSubTableConfigSchema": {
+        "type": "object",
+        "properties": {
+          "enabled": {"type":"boolean"},
+          "inToc": {"type":"boolean"},
+          "tocTitle": {"type":"string","maxLength":120}
+        },
+        "required": ["enabled","inToc","tocTitle"],
+        "additionalProperties": false
+      },
+      "ListFoldersQuerySchema": {
+        "type": "object",
+        "properties": {"kind":{"type":"string","enum":["lineage","article","book"]}},
+        "additionalProperties": false
+      },
       "ListPersonsQuerySchema": {
         "type": "object",
         "properties": {
@@ -2862,6 +3936,21 @@
         "required": ["projectId","relationId"],
         "additionalProperties": false
       },
+      "ReorderBooksSchema": {
+        "type": "object",
+        "properties": {"bookIds":{"minItems":1,"type":"array","items":{"$ref":"#/components/schemas/Uuid"}}},
+        "required": ["bookIds"],
+        "additionalProperties": false
+      },
+      "RestoreArticleRevisionSchema": {
+        "type": "object",
+        "properties": {
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "authorName": {"type":"string","maxLength":120}
+        },
+        "required": ["version"],
+        "additionalProperties": false
+      },
       "RoleSchema": {"type":"string","enum":["admin","editor","viewer"]},
       "SignInSchema": {
         "type": "object",
@@ -2903,6 +3992,52 @@
         "type": "object",
         "properties": {"name":{"type":"string","minLength":1,"maxLength":100}},
         "required": ["name"],
+        "additionalProperties": false
+      },
+      "UpdateArticleSchema": {
+        "type": "object",
+        "properties": {
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "title": {"type":"string","minLength":1,"maxLength":200},
+          "subtitle": {"type":"string","maxLength":300},
+          "author": {"type":"string","maxLength":120},
+          "docType": {"type":"string","enum":["preface","rules","origin","motto","biography","inscription","custom"]},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "privacy": {"type":"string","enum":["public","clan","editors"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string","maxLength":2000000},
+          "linkedPersonIds": {"type":"array","items":{"type":"string","minLength":1,"maxLength":120}},
+          "linkedChartIds": {"type":"array","items":{"type":"string","minLength":1,"maxLength":120}},
+          "citations": {"type":"array","items":{"$ref":"#/components/schemas/ArticleCitationSchema"}},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991}
+        },
+        "required": ["version"],
+        "additionalProperties": false
+      },
+      "UpdateBookEditionSchema": {
+        "type": "object",
+        "properties": {"printStatus":{"type":"string","enum":["none","finalized"]}},
+        "required": ["printStatus"],
+        "additionalProperties": false
+      },
+      "UpdateBookSchema": {
+        "type": "object",
+        "properties": {
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "bookName": {"type":"string","minLength":1,"maxLength":200},
+          "headerName": {"type":"string","maxLength":200},
+          "hallName": {"type":"string","maxLength":120},
+          "volumeNo": {"type":"string","minLength":1,"maxLength":60},
+          "editor": {"type":"string","maxLength":120},
+          "compilationDate": {"type":"string","maxLength":40},
+          "sections": {"$ref":"#/components/schemas/BookSectionsSchema"},
+          "layoutConfig": {"$ref":"#/components/schemas/BookLayoutConfigSchema"}
+        },
+        "required": ["version"],
         "additionalProperties": false
       },
       "UpdateFolderSchema": {
@@ -3146,12 +4281,13 @@
         "properties": {
           "id": {"$ref":"#/components/schemas/Uuid"},
           "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["lineage","article","book"]},
           "name": {"type":"string"},
           "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
           "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
           "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
         },
-        "required": ["id","projectId","name","seq","createdAt","updatedAt"],
+        "required": ["id","projectId","kind","name","seq","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "Lineage": {
@@ -3171,6 +4307,95 @@
           "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
         },
         "required": ["id","projectId","folderId","name","surname","hallName","progenitor","region","seq","version","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
+      "Article": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "title": {"type":"string"},
+          "subtitle": {"type":"string"},
+          "author": {"type":"string"},
+          "docType": {"type":"string","enum":["preface","rules","origin","motto","biography","inscription","custom"]},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "privacy": {"type":"string","enum":["public","clan","editors"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string"},
+          "linkedPersonIds": {"type":"array","items":{"type":"string"}},
+          "linkedChartIds": {"type":"array","items":{"type":"string"}},
+          "citations": {"type":"array","items":{"$ref":"#/components/schemas/ArticleCitationSchema"}},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "updatedBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","folderId","seq","title","subtitle","author","docType","status","privacy","contentJson","contentHtml","linkedPersonIds","linkedChartIds","citations","wordCount","version","updatedBy","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
+      "ArticleRevision": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "articleId": {"$ref":"#/components/schemas/Uuid"},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "title": {"type":"string"},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string"},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "summary": {"type":"string"},
+          "authorName": {"type":"string"},
+          "createdBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","articleId","version","title","status","contentJson","contentHtml","wordCount","summary","authorName","createdBy","createdAt"],
+        "additionalProperties": false
+      },
+      "Book": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "bookName": {"type":"string"},
+          "headerName": {"type":"string"},
+          "hallName": {"type":"string"},
+          "volumeNo": {"type":"string"},
+          "editor": {"type":"string"},
+          "compilationDate": {"type":"string"},
+          "sections": {"$ref":"#/components/schemas/BookSectionsSchema"},
+          "layoutConfig": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","folderId","bookName","headerName","hallName","volumeNo","editor","compilationDate","sections","layoutConfig","seq","version","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
+      "BookEdition": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "bookId": {"$ref":"#/components/schemas/Uuid"},
+          "bindingStyle": {"type":"string","enum":["thread","hardcover"]},
+          "lineageStyle": {"type":"string","enum":["euler","su","modern_double"]},
+          "paperSize": {"type":"string","enum":["thread_185x290","a4_210x297","k16_185x260"]},
+          "pageCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "printStatus": {"type":"string","enum":["none","finalized"]},
+          "layoutSnapshot": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
+          "pages": {"type":"array","items":{"$ref":"#/components/schemas/CompiledPageSchema"}},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","bookId","bindingStyle","lineageStyle","paperSize","pageCount","memberCount","wordCount","printStatus","layoutSnapshot","pages","createdAt"],
         "additionalProperties": false
       },
       "PersonName": {
@@ -3330,6 +4555,10 @@
       "FolderParams": {"$ref":"#/components/schemas/FolderIdParamsSchema"},
       "LineageParams": {"$ref":"#/components/schemas/LineageIdParamsSchema"},
       "ProjectMediaParams": {"$ref":"#/components/schemas/ProjectMediaParamsSchema"},
+      "ArticleParams": {"$ref":"#/components/schemas/ArticleIdParamsSchema"},
+      "ArticleRevisionParams": {"$ref":"#/components/schemas/ArticleRevisionIdParamsSchema"},
+      "BookParams": {"$ref":"#/components/schemas/BookIdParamsSchema"},
+      "BookEditionParams": {"$ref":"#/components/schemas/BookEditionIdParamsSchema"},
       "PersonNameParams": {"$ref":"#/components/schemas/PersonNameIdParamsSchema"},
       "PersonEventParams": {"$ref":"#/components/schemas/PersonEventIdParamsSchema"}
     }

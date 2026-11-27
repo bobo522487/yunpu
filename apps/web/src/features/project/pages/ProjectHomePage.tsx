@@ -24,9 +24,8 @@ import {
   ASSET_COLOR_PALETTES,
   useWorkspaceStore,
 } from '../../../store/useWorkspaceStore';
-import { useArticleStore } from '../../../store/useArticleStore';
-import { countArticlesInTree } from '../../articles/articleData';
-import { useBookStore } from '../../../store/useBookStore';
+import { useArticlesDirectoryQuery } from '../../articles/queries';
+import { useBooksQuery } from '../../books/queries';
 import {
   fetchProject,
   updateProjectRequest,
@@ -52,10 +51,6 @@ const ProjectHomePage: React.FC = () => {
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const projects = useWorkspaceStore((s) => s.projects);
   const syncProject = useWorkspaceStore((s) => s.syncProject);
-  const articleTreesByProject = useArticleStore((s) => s.treesByProject);
-
-  const booksByProject = useBookStore((s) => s.booksByProject);
-  const projectBooks = booksByProject[activeProjectId];
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,6 +64,9 @@ const ProjectHomePage: React.FC = () => {
 
   // 本地种子或离线项目未能命中服务端时保留本地展示。
   const projectQuery = useProjectQuery(targetProjectId, { retry: false });
+  const articlesDirQuery = useArticlesDirectoryQuery(targetProjectId);
+  const booksQuery = useBooksQuery(targetProjectId);
+  const projectBooks = booksQuery.data;
 
   useEffect(() => {
     if (projectQuery.data) {
@@ -84,9 +82,8 @@ const ProjectHomePage: React.FC = () => {
     ASSET_COLOR_PALETTES[activeProject?.colorTheme || 'sky'] ||
     ASSET_COLOR_PALETTES.sky;
 
-  const projectArticleTree = articleTreesByProject[activeProjectId];
-  const articleCount = projectArticleTree
-    ? countArticlesInTree(projectArticleTree)
+  const articleCount = articlesDirQuery.data
+    ? articlesDirQuery.data.articles.length
     : null;
 
   const workbenchModules: {

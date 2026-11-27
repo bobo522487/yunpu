@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { History, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ModalShell } from '@/components/ui/modal';
-import { useArticleStore } from '../../../store/useArticleStore';
-import { useArticleRevisionStore } from '../../../store/useArticleRevisionStore';
 import { useAuthStore } from '../../auth/useAuthStore';
-import { makeArticleStorageKey } from '../articleData';
+import { useArticleActions, useArticleRevisionsQuery } from '../queries';
 import {
   diffArticleParagraphs,
   type ArticleBlockDiff,
@@ -29,11 +27,12 @@ export const ArticleRevisionModal: React.FC<ArticleRevisionModalProps> = ({
   article,
   onFlushPendingSave,
 }) => {
-  const scopedKey = makeArticleStorageKey(projectId, article.id);
-  const revisions = useArticleRevisionStore(
-    (s) => s.revisionsByKey[scopedKey] ?? s.revisionsByKey[article.id] ?? EMPTY_REVISIONS,
+  const { data: revisions = EMPTY_REVISIONS } = useArticleRevisionsQuery(
+    projectId,
+    article.id,
+    open,
   );
-  const restoreRevision = useArticleStore((s) => s.restoreRevision);
+  const { restoreRevision } = useArticleActions(projectId);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -58,7 +57,7 @@ export const ArticleRevisionModal: React.FC<ArticleRevisionModalProps> = ({
     onFlushPendingSave?.();
     const authorName =
       useAuthStore.getState().user?.name || '家族编委会';
-    restoreRevision(projectId, article.id, selected.id, authorName);
+    void restoreRevision(article.id, selected.id, authorName);
     onClose();
   };
 

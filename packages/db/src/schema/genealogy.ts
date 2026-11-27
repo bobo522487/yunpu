@@ -1,4 +1,5 @@
 import {
+  FOLDER_KINDS,
   PERSON_EVENT_TYPES,
   PERSON_NAME_KINDS,
   PERSON_SEXES,
@@ -41,6 +42,7 @@ export const folder = pgTable(
     projectId: uuid("project_id").notNull(),
     id: uuid("id").notNull().default(sql`uuidv7()`),
     organizationId: uuid("organization_id").notNull(),
+    kind: text("kind", { enum: FOLDER_KINDS }).notNull().default("lineage"),
     name: text("name").notNull(),
     seq: integer("seq").notNull().default(0),
     createdAt,
@@ -48,15 +50,24 @@ export const folder = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.projectId, table.id], name: "pk_folder" }),
-    uniqueIndex("uq_folder_project_name").on(table.projectId, table.name),
+    uniqueIndex("uq_folder_project_kind_name").on(
+      table.projectId,
+      table.kind,
+      table.name,
+    ),
     foreignKey({
       columns: [table.organizationId, table.projectId],
       foreignColumns: [project.organizationId, project.id],
       name: "fk_folder_project",
     }).onDelete("cascade"),
+    check(
+      "ck_folder_kind",
+      sql`${table.kind} IN ('lineage', 'article', 'book')`,
+    ),
     check("ck_folder_name_not_blank", sql`btrim(${table.name}) <> ''`),
     check("ck_folder_seq_non_negative", sql`${table.seq} >= 0`),
     index("idx_folder_org_project").on(table.organizationId, table.projectId),
+    index("idx_folder_project_kind").on(table.projectId, table.kind),
   ],
 );
 

@@ -23,9 +23,12 @@ import {
 import {
   extractPlainTextFromHtml,
   findFirstArticleId,
-  makeArticleStorageKey,
 } from '../articleData';
 import { getArticleTemplate } from '../domain/articleTemplates';
+import {
+  useArticleActions,
+  useProjectArticlesSnapshot,
+} from '../queries';
 import type { ArticleStatus } from '../types';
 import { WordArticleEditor } from '../components/WordArticleEditor';
 import { ArticleConflictDialog } from '../components/ArticleConflictDialog';
@@ -44,25 +47,22 @@ const ArticlesPage: React.FC = () => {
     ArticleStatus | 'all'
   >('all');
 
-  const articleHydrated = useArticleStore((s) => s._hasHydrated);
-  const articleTreesByProject = useArticleStore((s) => s.treesByProject);
   const selectedArticleNodeIdByProject = useArticleStore(
-    (s) => s.selectedNodeIdByProject
-  );
-  const articlesByKey = useArticleStore((s) => s.articlesByKey);
-  const ensureArticleInitialized = useArticleStore(
-    (s) => s.ensureProjectInitialized
+    (s) => s.selectedNodeIdByProject,
   );
   const selectArticleNode = useArticleStore((s) => s.selectNode);
-  const addArticleFolder = useArticleStore((s) => s.addFolder);
-  const addArticle = useArticleStore((s) => s.addArticle);
-  const updateArticleContent = useArticleStore((s) => s.updateArticleContent);
   const articleConflict = useArticleStore((s) => s.articleConflict);
   const saveError = useArticleStore((s) => s.saveError);
   const clearSaveError = useArticleStore((s) => s.clearSaveError);
-  const chooseArticleConflictResolution = useArticleStore(
-    (s) => s.chooseArticleConflictResolution,
-  );
+
+  const { articleTree, articlesById } =
+    useProjectArticlesSnapshot(activeProjectId);
+  const {
+    addFolder: addArticleFolder,
+    addArticle,
+    updateArticleContent,
+    chooseArticleConflictResolution,
+  } = useArticleActions(activeProjectId);
 
   useEffect(() => {
     if (!saveError) return;
@@ -70,21 +70,11 @@ const ArticlesPage: React.FC = () => {
     clearSaveError();
   }, [saveError, clearSaveError]);
 
-  useEffect(() => {
-    if (!activeProjectId || !articleHydrated) return;
-    ensureArticleInitialized(activeProjectId, seedContext);
-  }, [activeProjectId, articleHydrated, seedContext, ensureArticleInitialized]);
-
-  const articleTree = useMemo(
-    () => articleTreesByProject[activeProjectId] || [],
-    [articleTreesByProject, activeProjectId]
-  );
-
   const defaultArticleId = useMemo(
     () =>
       findFirstArticleId(articleTree) ||
       (articleTree[0]?.id ? String(articleTree[0].id) : ''),
-    [articleTree]
+    [articleTree],
   );
 
   const selectedArticleNodeId =
@@ -98,15 +88,14 @@ const ArticlesPage: React.FC = () => {
       (defaultArticleId ? findItemDeep(articleTree, defaultArticleId) : null) ||
       articleTree[0] ||
       null,
-    [articleTree, selectedArticleNodeId, defaultArticleId]
+    [articleTree, selectedArticleNodeId, defaultArticleId],
   );
 
   const filteredVolumeChildren = useMemo(() => {
     if (!selectedArticleNode?.children?.length) return [];
     const withDocs = selectedArticleNode.children.map((child) => {
       const childId = String(child.id);
-      const doc =
-        articlesByKey[makeArticleStorageKey(activeProjectId, childId)];
+      const doc = articlesById.get(childId);
       return { child, doc };
     });
     if (volumeStatusFilter === 'all') {
@@ -117,26 +106,21 @@ const ArticlesPage: React.FC = () => {
         withDocs
           .map((item) => item.doc)
           .filter((doc): doc is NonNullable<typeof doc> => Boolean(doc)),
-        volumeStatusFilter
-      ).map((doc) => doc.id)
+        volumeStatusFilter,
+      ).map((doc) => doc.id),
     );
     return withDocs.filter(
-      (item) => item.doc && matching.has(item.doc.id)
+      (item) => item.doc && matching.has(item.doc.id),
     );
-  }, [
-    selectedArticleNode,
-    articlesByKey,
-    activeProjectId,
-    volumeStatusFilter,
-  ]);
+  }, [selectedArticleNode, articlesById, volumeStatusFilter]);
 
   const activeArticleDoc = useMemo(() => {
     if (!selectedArticleNode || selectedArticleNode.type !== 'article') {
       return null;
     }
     const id = String(selectedArticleNode.id);
-    return articlesByKey[makeArticleStorageKey(activeProjectId, id)] ?? null;
-  }, [selectedArticleNode, activeProjectId, articlesByKey]);
+    return articlesById.get(id) ?? null;
+  }, [selectedArticleNode, articlesById]);
 
   if (activeArticleDoc) {
     return (
@@ -146,7 +130,7 @@ const ArticlesPage: React.FC = () => {
           familyName={activeProject?.name}
           hallName={activeProject?.hallName ?? undefined}
           onUpdateArticle={(updates) =>
-            updateArticleContent(activeProjectId, activeArticleDoc.id, updates)
+            updateArticleContent(activeArticleDoc.id, updates)
           }
         />
         {articleConflict ? (
@@ -353,7 +337,11 @@ const ArticlesPage: React.FC = () => {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => addArticleFolder(activeProjectId)}
+                onClick={() => {
+                  void addArticleFolder().catch((err) =>
+                    toast.error(`新建卷目失败：${err instanceof Error ? err.message : '未知错误'}`),
+                  );
+                }}
                 className="h-8 gap-1.5 text-[13px]"
               >
                 <FolderPlus size={14} /> 新建卷目
@@ -404,11 +392,13 @@ const ArticlesPage: React.FC = () => {
           const contentHtml = template
             ? template.buildContent(seedContext)
             : undefined;
-          addArticle(activeProjectId, targetParentId, {
+          void addArticle(targetParentId, {
             ...values,
             docType: template?.docType ?? 'custom',
             contentHtml,
-          });
+          }).catch((err) =>
+            toast.error(`创建谱文失败：${err instanceof Error ? err.message : '未知错误'}`),
+          );
           setIsCreateArticleOpen(false);
         }}
       />

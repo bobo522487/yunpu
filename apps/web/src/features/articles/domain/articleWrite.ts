@@ -51,6 +51,7 @@ export type ResolveConflictInput = {
 };
 
 function readRequest(
+  projectId: string,
   articleId: string,
   fallback: ArticleDocument,
   readCurrent: () => ArticleDocument | undefined,
@@ -58,6 +59,7 @@ function readRequest(
   const current = readCurrent() ?? fallback;
   const acceptedVersion = current.version;
   return {
+    projectId,
     articleId,
     expectedVersion: acceptedVersion,
     article: { ...current, version: acceptedVersion },
@@ -138,7 +140,7 @@ export function createArticleWrite(save: ArticleSavePort) {
       const key = makeArticleStorageKey(input.projectId, input.articleId);
       const attemptId = bump(key);
       const resolveRequest = () =>
-        readRequest(input.articleId, doc, input.readCurrent);
+        readRequest(input.projectId, input.articleId, doc, input.readCurrent);
       enqueue(key, attemptId, input.handlers, resolveRequest);
       return doc;
     },
@@ -153,7 +155,7 @@ export function createArticleWrite(save: ArticleSavePort) {
       if (input.mode !== 'network') return resolved;
       const attemptId = bump(key);
       const resolveRequest = () =>
-        readRequest(input.articleId, resolved, input.readCurrent);
+        readRequest(input.projectId, input.articleId, resolved, input.readCurrent);
       enqueue(key, attemptId, input.handlers, resolveRequest);
       return resolved;
     },

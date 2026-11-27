@@ -1,11 +1,17 @@
 import {
   CreateFolderSchema,
   FolderIdParamsSchema,
+  ListFoldersQuerySchema,
   ProjectIdParamsSchema,
   UpdateFolderSchema,
 } from "@yunpu/shared";
 import { Hono } from "hono";
-import { parseJson, parseParams, requireUser } from "../../lib/http";
+import {
+  parseJson,
+  parseParams,
+  parseQuery,
+  requireUser,
+} from "../../lib/http";
 import type { ApiEnv } from "../../types";
 import {
   createFolderForProject,
@@ -19,7 +25,8 @@ export const folderRouter = new Hono<ApiEnv>();
 folderRouter.get("/projects/:projectId/folders", async (c) => {
   const user = requireUser(c);
   const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const folders = await listFoldersForProject(user.id, projectId);
+  const query = parseQuery(c, ListFoldersQuerySchema);
+  const folders = await listFoldersForProject(user.id, projectId, query.kind);
   return c.json({ ok: true, data: { folders } });
 });
 

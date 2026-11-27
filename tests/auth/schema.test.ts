@@ -11,7 +11,11 @@ describe("database foundation", () => {
     });
 
     expect(tables).toEqual([
+      "article",
+      "article_revision",
       "audit_log",
+      "book",
+      "book_edition",
       "folder",
       "invite",
       "lineage",
@@ -44,7 +48,11 @@ describe("database foundation", () => {
     });
 
     expect(rows.map((row) => row.relname)).toEqual([
+      "article",
+      "article_revision",
       "audit_log",
+      "book",
+      "book_edition",
       "folder",
       "invite",
       "lineage",

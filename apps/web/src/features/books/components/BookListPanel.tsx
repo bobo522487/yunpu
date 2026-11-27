@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   ArrowDown,
   ArrowUp,
@@ -8,9 +9,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useActiveProject } from '../../../hooks/useActiveProject';
-import { useEnsureBookInitialized } from '../../../hooks/useEnsureBookInitialized';
+import { errorMessage } from '../../../lib/api';
 import { useBookStore } from '../../../store/useBookStore';
 import ConfirmDialog from '../../dashboard/components/ConfirmDialog';
+import { useBookActions, useBooksQuery } from '../queries';
 import type { BookMetaInput, BookRecord } from '../types';
 import { BookCoverThumb } from './BookCoverThumb';
 import { BookMetaModal } from './BookMetaModal';
@@ -29,29 +31,24 @@ export const BookListPanel: React.FC = () => {
     surname: projectSurname,
   } = useActiveProject();
 
-  useEnsureBookInitialized();
-
-  const booksByProject = useBookStore((s) => s.booksByProject);
+  const { data: books = [] } = useBooksQuery(activeProjectId);
   const selectedBookIdByProject = useBookStore(
-    (s) => s.selectedBookIdByProject
+    (s) => s.selectedBookIdByProject,
   );
   const selectBook = useBookStore((s) => s.selectBook);
-  const createBook = useBookStore((s) => s.createBook);
-  const updateBookMeta = useBookStore((s) => s.updateBookMeta);
-  const duplicateBook = useBookStore((s) => s.duplicateBook);
-  const deleteBook = useBookStore((s) => s.deleteBook);
-  const moveBook = useBookStore((s) => s.moveBook);
+  const {
+    createBook,
+    updateBookMeta,
+    duplicateBook,
+    deleteBook,
+    moveBook,
+  } = useBookActions(activeProjectId);
 
   const [modalState, setModalState] = useState<BookModalState>({
     open: false,
     mode: 'create',
   });
   const [deleteTarget, setDeleteTarget] = useState<BookRecord | null>(null);
-
-  const books = useMemo(
-    () => booksByProject[activeProjectId] || [],
-    [booksByProject, activeProjectId]
-  );
 
   const selectedBookId =
     selectedBookIdByProject[activeProjectId] || books[0]?.id || '';
@@ -182,7 +179,11 @@ export const BookListPanel: React.FC = () => {
                       type="button"
                       disabled={isFirst}
                       title="上移"
-                      onClick={() => moveBook(activeProjectId, book.id, -1)}
+                      onClick={() => {
+                        void moveBook(book.id, -1).catch((err) =>
+                          toast.error(`调整顺序失败：${errorMessage(err)}`),
+                        );
+                      }}
                       className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ArrowUp size={13} />
@@ -191,7 +192,11 @@ export const BookListPanel: React.FC = () => {
                       type="button"
                       disabled={isLast}
                       title="下移"
-                      onClick={() => moveBook(activeProjectId, book.id, 1)}
+                      onClick={() => {
+                        void moveBook(book.id, 1).catch((err) =>
+                          toast.error(`调整顺序失败：${errorMessage(err)}`),
+                        );
+                      }}
                       className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ArrowDown size={13} />
@@ -207,7 +212,11 @@ export const BookListPanel: React.FC = () => {
                     <button
                       type="button"
                       title="复制"
-                      onClick={() => duplicateBook(activeProjectId, book.id)}
+                      onClick={() => {
+                        void duplicateBook(book.id).catch((err) =>
+                          toast.error(`复制谱书失败：${errorMessage(err)}`),
+                        );
+                      }}
                       className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                     >
                       <Copy size={13} />
@@ -245,9 +254,13 @@ export const BookListPanel: React.FC = () => {
         onClose={() => setModalState((prev) => ({ ...prev, open: false }))}
         onSubmit={(values) => {
           if (modalState.mode === 'create') {
-            createBook(activeProjectId, values);
+            void createBook(values).catch((err) =>
+              toast.error(`创建谱书失败：${errorMessage(err)}`),
+            );
           } else if (modalState.bookId) {
-            updateBookMeta(activeProjectId, modalState.bookId, values);
+            void updateBookMeta(modalState.bookId, values).catch((err) =>
+              toast.error(`修改谱书失败：${errorMessage(err)}`),
+            );
           }
           setModalState((prev) => ({ ...prev, open: false }));
         }}
@@ -261,7 +274,9 @@ export const BookListPanel: React.FC = () => {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {
           if (deleteTarget) {
-            deleteBook(activeProjectId, deleteTarget.id);
+            void deleteBook(deleteTarget.id).catch((err) =>
+              toast.error(`删除谱书失败：${errorMessage(err)}`),
+            );
           }
           setDeleteTarget(null);
         }}

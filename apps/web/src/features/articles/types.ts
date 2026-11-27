@@ -21,8 +21,17 @@ export interface ArticleCitation {
   mediaAssetId?: string;
 }
 
+export interface ArticleAssetRecord {
+  assetId: string;
+  contentType: string;
+  bytes: Uint8Array;
+}
+
 export interface ArticleDocument {
   id: string;
+  projectId?: string;
+  folderId?: string | null;
+  seq?: number;
   title: string;
   subtitle?: string;
   author?: string;
@@ -36,11 +45,13 @@ export interface ArticleDocument {
   citations: ArticleCitation[];
   version: number;
   wordCount: number;
+  createdAt?: string;
   updatedAt: string;
 }
 
 export interface ArticleRevision {
   id: string;
+  projectId?: string;
   articleId: string;
   version: number;
   title: string;

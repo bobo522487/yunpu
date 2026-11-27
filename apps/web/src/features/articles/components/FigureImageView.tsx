@@ -1,35 +1,15 @@
-import { useEffect, useState } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
-import { createIndexedDbArticleAssetStore } from '../assets/articleAssetStore';
+import { useProjectId } from '../../../hooks/useProjectId';
+import { articleAssetUrl } from '../api';
 
 export function FigureImageView({ node }: NodeViewProps) {
+  const projectId = useProjectId();
   const assetId = String(node.attrs.assetId ?? '');
   const caption = String(node.attrs.caption ?? '');
   const widthPct = Number(node.attrs.widthPct ?? 80);
   const align = String(node.attrs.align ?? 'center');
-  const [src, setSrc] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!assetId) {
-      setSrc(null);
-      return;
-    }
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    const store = createIndexedDbArticleAssetStore();
-    void store.get(assetId).then((record) => {
-      if (cancelled || !record) return;
-      const blob = new Blob([new Uint8Array(record.bytes)], {
-        type: record.contentType || 'image/png',
-      });
-      objectUrl = URL.createObjectURL(blob);
-      setSrc(objectUrl);
-    });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [assetId]);
+  const src = assetId ? articleAssetUrl(projectId ?? '', assetId) : null;
 
   const justify =
     align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';

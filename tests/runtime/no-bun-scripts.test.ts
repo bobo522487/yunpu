@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
 
@@ -10,19 +11,26 @@ async function readJson(
 }
 
 describe("US1 no bun business scripts", () => {
-  test("root and api package scripts have no bun business commands", async () => {
+  test("root, api, and web package scripts have no bun commands", async () => {
     const root = await readJson(
       new URL("../../package.json", import.meta.url).pathname,
     );
     const api = await readJson(
       new URL("../../apps/api/package.json", import.meta.url).pathname,
     );
+    const web = await readJson(
+      new URL("../../apps/web/package.json", import.meta.url).pathname,
+    );
     for (const [name, script] of Object.entries({
       ...root.scripts,
       ...api.scripts,
+      ...web.scripts,
     })) {
       expect(script, name).not.toMatch(/(^|[\s;&|])bun(\s|$)/);
     }
+    expect(
+      existsSync(new URL("../../apps/web/bun.lock", import.meta.url).pathname),
+    ).toBe(false);
   });
 
   test("verify workflow does not setup bun", async () => {

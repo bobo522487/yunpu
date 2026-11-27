@@ -1,0 +1,539 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  FolderOpen,
+  GitFork,
+  Plus,
+  Settings,
+} from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { Button } from '@/components/ui/button';
+import { findItemDeep } from '../../../components/common/Tree/utilities';
+import { useActiveProject } from '../../../hooks/useActiveProject';
+import { useResizable } from '../../../hooks/useResizable';
+import {
+  findFirstChartId,
+  makeChartStorageKey,
+  resolveChartSurname,
+  useLineageStore,
+} from '../../../store/useLineageStore';
+import type { PersonRecord } from '../types';
+import {
+  applyAddRelative,
+  createDirectPersonRecord,
+} from '../domain/relativeMutations';
+import { LineageTreeView } from '../components/LineageTreeView';
+import { PersonDetailPanel } from '../components/PersonDetailPanel';
+import { AddRelativeModal } from '../components/AddRelativeModal';
+import type {
+  AddRelativeContext,
+  AddRelativeSubmitPayload,
+} from '../domain/addRelativeTypes';
+import { LineageEditorModal } from '../../project/components/LineageEditorModal';
+
+const LineagePage: React.FC = () => {
+  const navigate = useNavigate();
+  const {
+    projectId: activeProjectId,
+    project: activeProject,
+    surname: projectSurname,
+  } = useActiveProject();
+
+  const hasHydrated = useLineageStore((s) => s._hasHydrated);
+  const ensureProjectInitialized = useLineageStore(
+    (s) => s.ensureProjectInitialized
+  );
+  const treesByProject = useLineageStore((s) => s.treesByProject);
+  const selectedNodeIdByProject = useLineageStore(
+    (s) => s.selectedNodeIdByProject
+  );
+  const personsByChart = useLineageStore((s) => s.personsByChart);
+  const selectedPersonIdByChart = useLineageStore(
+    (s) => s.selectedPersonIdByChart
+  );
+  const selectNode = useLineageStore((s) => s.selectNode);
+  const addChart = useLineageStore((s) => s.addChart);
+  const importDemoLineage = useLineageStore((s) => s.importDemoLineage);
+  const selectPersonStore = useLineageStore((s) => s.selectPerson);
+  const commitChartPersons = useLineageStore((s) => s.commitChartPersons);
+  const updatePersonStore = useLineageStore((s) => s.updatePerson);
+  const deletePersonStore = useLineageStore((s) => s.deletePerson);
+
+  const [isCreateLineageOpen, setIsCreateLineageOpen] = useState(false);
+
+  const { width: inspectorWidth, startResizing } = useResizable({
+    initialWidth: 440,
+    minWidth: 360,
+    maxWidth: 640,
+    edge: 'right',
+  });
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    ensureProjectInitialized(activeProjectId);
+  }, [hasHydrated, activeProjectId, ensureProjectInitialized]);
+
+  const lineageTree = useMemo(
+    () => treesByProject[activeProjectId] ?? [],
+    [treesByProject, activeProjectId]
+  );
+
+  const defaultChartId = useMemo(
+    () =>
+      findFirstChartId(lineageTree) ||
+      String(lineageTree[0]?.id || ''),
+    [lineageTree]
+  );
+
+  const selectedLineageId =
+    selectedNodeIdByProject[activeProjectId] ?? defaultChartId;
+
+  const selectedLineageNode = useMemo(
+    () =>
+      findItemDeep(lineageTree, selectedLineageId) ||
+      findItemDeep(lineageTree, defaultChartId) ||
+      lineageTree[0],
+    [lineageTree, selectedLineageId, defaultChartId]
+  );
+
+  const chartId = String(selectedLineageNode?.id || '');
+  const chartName = selectedLineageNode?.data?.name || '世系图谱';
+  const chartStorageKey = makeChartStorageKey(activeProjectId, chartId);
+
+  const effectiveSurname = useMemo(
+    () => resolveChartSurname(selectedLineageNode, projectSurname),
+    [selectedLineageNode, projectSurname]
+  );
+
+  const chartPersons = useMemo(() => {
+    if (!chartId || selectedLineageNode?.type === 'folder') return [];
+    return personsByChart[chartStorageKey] ?? [];
+  }, [
+    chartId,
+    chartStorageKey,
+    personsByChart,
+    selectedLineageNode?.type,
+  ]);
+
+  const selectedPersonId =
+    selectedPersonIdByChart[chartStorageKey] ?? null;
+
+  const selectedPerson = useMemo(
+    () =>
+      selectedPersonId
+        ? chartPersons.find((p) => p.id === selectedPersonId) ?? null
+        : null,
+    [chartPersons, selectedPersonId]
+  );
+
+  const [addRelativeContext, setAddRelativeContext] =
+    useState<AddRelativeContext | null>(null);
+
+  useEffect(() => {
+    setAddRelativeContext(null);
+  }, [activeProjectId, chartId]);
+
+  const handleSelectPerson = (personId: string | null) => {
+    if (!chartId) return;
+    selectPersonStore(activeProjectId, chartId, personId);
+  };
+
+  const handleUpdatePerson = (
+    personId: string,
+    updates: Partial<PersonRecord>
+  ) => {
+    if (!chartId) return;
+    updatePersonStore(
+      activeProjectId,
+      chartId,
+      personId,
+      updates,
+      chartName,
+      effectiveSurname
+    );
+  };
+
+  const handleDeletePerson = (personId: string) => {
+    if (!chartId) return;
+    deletePersonStore(
+      activeProjectId,
+      chartId,
+      personId,
+      chartName,
+      effectiveSurname
+    );
+  };
+
+  const handleOpenAddChild = (
+    parentId: string,
+    gender: 'male' | 'female' = 'male',
+    motherInfo?: { motherId?: string; motherName?: string }
+  ) => {
+    if (!chartId) return;
+    const rawParent = chartPersons.find((p) => p.id === parentId);
+    if (!rawParent) return;
+    const isSpouseNode = Boolean(rawParent.spouseOfId);
+    const resolvedPartnerId = rawParent.spouseOfId || rawParent.id;
+    const anchor =
+      chartPersons.find((p) => p.id === resolvedPartnerId) || rawParent;
+    const resolvedMotherId =
+      motherInfo?.motherId || (isSpouseNode ? rawParent.id : undefined);
+    const resolvedMotherName =
+      motherInfo?.motherName ||
+      (isSpouseNode
+        ? [rawParent.surname?.trim() || '', rawParent.name?.trim() || '']
+            .filter(Boolean)
+            .join('') || undefined
+        : undefined);
+
+    setAddRelativeContext({
+      relation: 'child',
+      targetPerson: anchor,
+      defaultGender: gender,
+      initiatedFrom: isSpouseNode ? 'mother' : 'father',
+      motherInfo:
+        resolvedMotherId || resolvedMotherName
+          ? { motherId: resolvedMotherId, motherName: resolvedMotherName }
+          : undefined,
+    });
+  };
+
+  const handleOpenAddSibling = (
+    refPersonId: string,
+    gender: 'male' | 'female' = 'male'
+  ) => {
+    if (!chartId) return;
+    const rawTarget = chartPersons.find((p) => p.id === refPersonId);
+    if (!rawTarget) return;
+    const resolvedRefId = rawTarget.spouseOfId || rawTarget.id;
+    const refPerson =
+      chartPersons.find((p) => p.id === resolvedRefId) || rawTarget;
+
+    setAddRelativeContext({
+      relation: 'sibling',
+      targetPerson: refPerson,
+      defaultGender: gender,
+    });
+  };
+
+  const handleOpenAddSpouse = (personId: string) => {
+    if (!chartId) return;
+    const rawTarget = chartPersons.find((p) => p.id === personId);
+    if (!rawTarget) return;
+    const partnerId = rawTarget.spouseOfId || rawTarget.id;
+    const partner = chartPersons.find((p) => p.id === partnerId) || rawTarget;
+
+    setAddRelativeContext({
+      relation: 'spouse',
+      targetPerson: partner,
+      defaultGender: partner.gender === 'male' ? 'female' : 'male',
+    });
+  };
+
+  const handleOpenAddParent = (personId: string) => {
+    if (!chartId) return;
+    const target = chartPersons.find((p) => p.id === personId);
+    if (!target) return;
+
+    const existingFather = target.fatherId
+      ? chartPersons.find((p) => p.id === target.fatherId)
+      : null;
+
+    const existingFatherSpouses = existingFather
+      ? chartPersons.filter((p) => p.spouseOfId === existingFather.id)
+      : [];
+
+    const defaultGender: 'male' | 'female' =
+      existingFather && existingFatherSpouses.length === 0 ? 'female' : 'male';
+
+    setAddRelativeContext({
+      relation: 'parent',
+      targetPerson: target,
+      defaultGender,
+    });
+  };
+
+  const handleConfirmAddRelative = (
+    context: AddRelativeContext,
+    payload: AddRelativeSubmitPayload
+  ) => {
+    if (!chartId) return;
+    const keepSelection = Boolean(selectedPersonId);
+    const { persons: nextPersons, selectId } = applyAddRelative(
+      chartPersons,
+      chartId,
+      effectiveSurname,
+      context,
+      payload,
+      keepSelection
+    );
+    commitChartPersons(activeProjectId, chartId, nextPersons, selectId);
+    setAddRelativeContext(null);
+  };
+
+  const handleAddPersonDirectly = (initialData: Partial<PersonRecord>) => {
+    if (!chartId) return;
+    const newPerson = createDirectPersonRecord(
+      chartId,
+      effectiveSurname,
+      chartPersons.length,
+      initialData
+    );
+    commitChartPersons(
+      activeProjectId,
+      chartId,
+      [...chartPersons, newPerson],
+      newPerson.id
+    );
+  };
+
+  const handleUpdatePersonFather = (
+    childId: string,
+    fatherId: string | null
+  ) => {
+    const father = chartPersons.find((p) => p.id === fatherId);
+    handleUpdatePerson(childId, {
+      fatherId,
+      generation: father ? father.generation + 1 : 1,
+    });
+  };
+
+  if (lineageTree.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+        <div className="max-w-md w-full rounded-xl border border-dashed border-border bg-card p-8 text-center space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-[var(--surface-subtle)] border border-border mx-auto flex items-center justify-center text-primary">
+            <GitFork size={22} />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="yp-h2 text-foreground">暂无世系图谱</h2>
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
+              为当前家族新建一份世系图以录入始迁祖及后裔脉络，或先导入范例世系参考模板。
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-2.5 pt-1">
+            <Button size="sm" onClick={() => setIsCreateLineageOpen(true)}>
+              <Plus size={14} /> 新建世系图
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void importDemoLineage(activeProjectId)}
+            >
+              导入皇族范例世系
+            </Button>
+          </div>
+        </div>
+
+        <LineageEditorModal
+          open={isCreateLineageOpen}
+          mode="create"
+          initialValue={{
+            name: '',
+            surname: projectSurname,
+            hallName: activeProject?.hallName || '',
+            progenitor: '',
+            region: null,
+          }}
+          onClose={() => setIsCreateLineageOpen(false)}
+          onSubmit={(values) => {
+            addChart(activeProjectId, undefined, values);
+            setIsCreateLineageOpen(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (selectedLineageNode?.type !== 'folder') {
+    return (
+      <div className="fs-lineage-theme flex-1 flex flex-col min-h-0 h-full min-w-0 overflow-hidden bg-background">
+        <div className="flex-1 flex min-h-0 overflow-hidden relative">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative bg-muted/10">
+            <LineageTreeView
+              persons={chartPersons}
+              selectedPersonId={selectedPerson?.id ?? null}
+              branchTitle={chartName}
+              clanSurname={effectiveSurname}
+              onSelectPerson={handleSelectPerson}
+              onAddChild={handleOpenAddChild}
+              onAddSibling={handleOpenAddSibling}
+              onAddSpouse={handleOpenAddSpouse}
+              onAddParent={handleOpenAddParent}
+              onDeletePerson={handleDeletePerson}
+              onAddPersonDirectly={handleAddPersonDirectly}
+              onUpdatePersonFather={handleUpdatePersonFather}
+            />
+          </div>
+
+          {selectedPerson && (
+            <>
+              <div
+                className="w-[1px] bg-border hover:bg-primary cursor-col-resize z-40 relative transition-colors shrink-0"
+                onMouseDown={startResizing}
+              >
+                <div className="absolute inset-y-0 -left-1 w-3 cursor-col-resize z-40" />
+              </div>
+
+              <PersonDetailPanel
+                person={selectedPerson}
+                allPersons={chartPersons}
+                clanSurname={effectiveSurname}
+                onSelectPerson={handleSelectPerson}
+                onUpdatePerson={handleUpdatePerson}
+                onCommitPersons={(nextPersons) =>
+                  commitChartPersons(activeProjectId, chartId, nextPersons)
+                }
+                onDeletePerson={handleDeletePerson}
+                onAddChild={handleOpenAddChild}
+                onAddSpouse={handleOpenAddSpouse}
+                onAddSibling={handleOpenAddSibling}
+                onAddParent={handleOpenAddParent}
+                width={inspectorWidth}
+                onClose={() => handleSelectPerson(null)}
+              />
+            </>
+          )}
+        </div>
+
+        <AddRelativeModal
+          context={addRelativeContext}
+          allPersons={chartPersons}
+          clanSurname={effectiveSurname}
+          onClose={() => setAddRelativeContext(null)}
+          onSubmit={handleConfirmAddRelative}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 h-full overflow-y-auto bg-background">
+      <div className="max-w-5xl mx-auto px-4 md:px-8 py-7 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-xl border border-border bg-[var(--surface-subtle)] flex items-center justify-center text-primary shrink-0">
+              <GitFork size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="yp-h2 text-foreground truncate">
+                  {selectedLineageNode.data?.name || '世系'}
+                </h1>
+                <span className="text-[12px] text-muted-foreground truncate">
+                  {activeProject?.hallName || activeProject?.name}
+                </span>
+              </div>
+              <p className="text-[13px] text-muted-foreground mt-0.5">
+                梳理家族世代传承、支派脉络与成员亲属关系树。
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                void navigate({
+                  to: '/projects/$projectId',
+                  params: { projectId: activeProjectId },
+                })
+              }
+              className="h-8 gap-1.5 text-[13px] whitespace-nowrap"
+            >
+              <ArrowLeft size={14} /> 返回工作台概览
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                void navigate({
+                  to: '/projects/$projectId/settings',
+                  params: { projectId: activeProjectId },
+                })
+              }
+              className="h-8 gap-1.5 text-[13px] whitespace-nowrap"
+            >
+              <Settings size={14} /> 家族设置
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[14px] font-semibold text-foreground">
+              <FolderOpen size={16} className="text-primary" />
+              <span>{selectedLineageNode.data?.name}</span>
+              <span className="text-[12px] font-medium text-muted-foreground tabular-nums">
+                ({selectedLineageNode.children?.length || 0} 份世系图)
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsCreateLineageOpen(true)}
+              className="h-8 gap-1.5 text-[13px]"
+            >
+              <Plus size={14} /> 新增世系图
+            </Button>
+          </div>
+
+          {selectedLineageNode.children?.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {selectedLineageNode.children.map((child) => (
+                <button
+                  key={String(child.id)}
+                  type="button"
+                  onClick={() => selectNode(activeProjectId, String(child.id))}
+                  className="flex items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-card-hover)] transition-all text-left cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-subtle)] border border-border flex items-center justify-center text-primary shrink-0">
+                      <GitFork size={15} />
+                    </div>
+                    <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                      {child.data?.name || String(child.id)}
+                    </span>
+                  </div>
+                  <ArrowRight
+                    size={14}
+                    className="text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-card/50 py-12 px-6 text-center space-y-3">
+              <p className="text-[13px] text-muted-foreground">
+                该分组下暂无世系图，可直接点击上方「新增世系图」或从左侧拖拽节点移入。
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <LineageEditorModal
+        open={isCreateLineageOpen}
+        mode="create"
+        initialValue={{
+          name: '',
+          surname: projectSurname,
+          hallName: activeProject?.hallName || '',
+          progenitor: '',
+          region: null,
+        }}
+        onClose={() => setIsCreateLineageOpen(false)}
+        onSubmit={(values) => {
+          if (selectedLineageNode) {
+            addChart(activeProjectId, String(selectedLineageNode.id), values);
+          }
+          setIsCreateLineageOpen(false);
+        }}
+      />
+    </div>
+  );
+};
+
+export default LineagePage;

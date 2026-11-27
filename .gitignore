@@ -1,5 +1,6 @@
 # agent-local scaffolding (spec-kit init warned about credential leakage)
 .dsh/
+.agents/
 # SDD scratch (self-ignored too) and linked worktrees
 .superpowers/
 .worktrees/
@@ -23,3 +24,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+# web test artifacts
+playwright-report/
+test-results/
+.vitest-attachments/

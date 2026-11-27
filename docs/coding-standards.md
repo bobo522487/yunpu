@@ -10,14 +10,15 @@
 
 | 规则域 | 唯一权威 | 自动门禁 |
 | :--- | :--- | :--- |
-| 格式、Lint、导入边界 | `biome.json` | `pnpm lint`（`biome check .`） |
-| TypeScript 类型 | `apps/api/tsconfig.json` | `pnpm lint`（`tsc --noEmit -p apps/api/tsconfig.json`） |
-| 跨模块/包依赖方向 | `biome.json` `noRestrictedImports` | `tests/runtime/`、`tests/security/` |
+| 后端/共享包格式、Lint、导入边界 | `biome.json` | `pnpm run lint:api`（`biome check .`） |
+| 后端 TypeScript 类型 | `apps/api/tsconfig.json` | `pnpm run lint:api`（`tsc --noEmit -p apps/api/tsconfig.json`） |
+| 前端 Lint、边界与类型检查 | `apps/web/eslint.config.js`、`apps/web/tsconfig.json` | `pnpm run lint:web`（`eslint .` + `tsr generate && tsc -b`） |
+| 跨模块/包依赖方向 | `biome.json`、`apps/web/eslint.config.js` | `tests/runtime/`、`tests/security/` |
 | 错误码与 HTTP 状态 | `packages/shared/src/errors.ts`、`apps/api/src/lib/errors.ts` | `apps/api/test/error-mapping.test.ts`、`tests/runtime/error-envelope.test.ts` |
 | 租户隔离与事务 | `apps/api/src/db/with-tenant-transaction.ts` | `tests/security/tenant-isolation.test.ts`、`tests/security/tenant-connection-reuse.test.ts` |
 | HTTP 契约 | `apps/api/src/openapi/operations.ts` | `pnpm contract:check` |
 
-- 不新增 ESLint、Prettier 或第二套格式化工具；Biome 是唯一格式化与 Lint 入口。
+- 后端与共享包使用 Biome 作为唯一格式化与 Lint 入口，不在根目录或 `apps/api` 新增 ESLint/Prettier；`apps/web` 使用 ESLint（含 React Hooks、TanStack Query 规则及禁止导入 `@yunpu/db`/`apps/api`/`bun` 的边界规则）与 Prettier（含 Tailwind 排序）。
 - 规范类规则优先落在配置、类型或测试中；不能自动化的约定才写入本文。
 
 ---
@@ -32,7 +33,7 @@
    - 开启 `strict`，禁止用 `any` 绕过边界类型；外部输入一律先收窄为 `unknown`，再交给 Zod 校验。
    - 禁止无理由的 `@ts-ignore`；确需抑制时使用 `@ts-expect-error` 并注明原因，且不得长期保留。
 4. **格式化**：Biome `2.2.6`，2 空格缩进，启用 `recommended` 规则。不得用 `biome-ignore` 静默违规；确需例外时必须写明理由并限定最小范围。
-5. **前端边界**：`yunpu-web` 是独立仓库（Bun + Vite + React），其类型检查不在本仓库 `pnpm lint` 范围内；本仓库只负责生成并校验 `contracts/openapi.json`。
+5. **前端边界**：`@yunpu/web` 已纳入 `pnpm-workspace.yaml`（Node 26 + Vite + React），通过 `"@yunpu/shared": "workspace:*"` 直接消费共享枚举、错误码与校验 Schema，严禁导入 `@yunpu/db` 或 `apps/api` 运行时代码。`pnpm lint` 同时覆盖前后端检查（`lint:api` + `lint:web`），`contracts/openapi.json` 继续作为 HTTP 契约校验产物。
 
 ---
 
@@ -44,6 +45,7 @@
 | :--- | :--- | :--- |
 | `packages/shared` | 纯类型、枚举、Zod Schema、错误定义 | `apps/**`、`**/modules/**` 或任何运行时模块 |
 | `packages/db` | Drizzle schema、迁移、数据库客户端 | 业务 service、HTTP 层 |
+| `apps/web` | 本应用源码、`@yunpu/shared`（纯类型/枚举/校验） | `@yunpu/db`、`apps/api` 运行时代码、`bun`/`bun:test` |
 | `apps/api/src/modules/<module>` | 本模块文件、其他模块 `service.ts`、`@yunpu/shared`、`@yunpu/db` schema | 其他模块的 `queries.ts`、`*.repo`、`*.route`；`createDb`/裸连接池 |
 | `apps/api/src/app.ts` | 中间件、路由挂载、统一错误兜底、`AppType` | 具体业务规则 |
 
@@ -53,7 +55,7 @@
 - 跨模块协作只能调用目标模块 `service.ts` 的对外函数，不得穿透到其内部查询。
 - **禁止空转中间层**：不新增只做字段原样拷贝的 `mapper`、`.repo.ts` 或 `.route.ts`（`tests/runtime/no-passthrough-layer.test.ts`）。
 - 复杂业务不变量优先交给数据库约束；跨系统与角色权限校验集中在 `service.ts` 与 `apps/api/src/access.ts`。
-- API 对外类型通过 `apps/api/src/app.ts` 导出的 `AppType` 暴露，前端从独立仓库 `yunpu-web` 消费契约。
+- API 对外类型通过 `apps/api/src/app.ts` 导出的 `AppType` 与 `contracts/openapi.json` 暴露；`@yunpu/web` 直接通过 `@yunpu/shared` 复用共享枚举、错误码与 Schema。
 
 ---
 
@@ -135,8 +137,11 @@
 | :--- | :--- |
 | `scripts/env.sh up development` / `scripts/env.sh up test` | 启动 PostgreSQL 18 与 `pgsty/silo` 对象存储 |
 | `pnpm test` | 环境检查、迁移、认证与 `apps/api/test` 基础测试 |
-| `pnpm test:all` | 全量套件：`tests/env`、`auth`、`console`、`genealogy`、`security`、`runtime`、`apps/api/test` |
-| `pnpm lint` | Biome + API 类型检查 |
+| `pnpm test:all` | 全量后端套件：`tests/env`、`auth`、`console`、`genealogy`、`security`、`runtime`、`apps/api/test` |
+| `pnpm run test:web` | 前端单元测试（Vitest） |
+| `pnpm run test:web:browser` | 前端组件浏览器测试（Vitest + Playwright） |
+| `pnpm lint` | 全仓检查：`lint:api`（Biome + API `tsc --noEmit`）与 `lint:web`（ESLint + `tsr generate && tsc -b`） |
+| `pnpm dev` | 一键并行启动本地 API（`3001`）与带 `/api` 代理的前端开发服务器（`3000`） |
 | `pnpm contract:check` | 校验 `contracts/openapi.json` 未漂移 |
 
 ### 2. 测试要求

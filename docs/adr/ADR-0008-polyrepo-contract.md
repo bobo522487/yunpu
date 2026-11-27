@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+supersededBy: ADR-0013-monorepo-web-integration
 ---
 
 # ADR-0008: Split the frontend into its own repository
@@ -27,4 +28,4 @@ A monorepo pays for itself only when one change atomically updates a shared cont
 
 ## Status
 
-Accepted & Implemented.
+Superseded by [ADR-0013-monorepo-web-integration](ADR-0013-monorepo-web-integration.md).

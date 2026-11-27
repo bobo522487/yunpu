@@ -6,11 +6,11 @@
 
 ## 一、运行环境与技术栈
 
-- **运行时与包管理**：Node.js `>=26.13.0`（原生 TypeScript 类型剥离，经 `scripts/ts-ext-register.mjs` 通过同步 `module.registerHooks` 注册），`pnpm@12.18.0`（workspace 只包含 `apps/api` 与 `packages/*`）。本仓库禁止使用 Bun 运行时或 `bun:test`。
+- **运行时与包管理**：Node.js `>=26.13.0`（原生 TypeScript 类型剥离，经 `scripts/ts-ext-register.mjs` 通过同步 `module.registerHooks` 注册），`pnpm@12.18.0`（workspace 包含 `apps/api`、`apps/web` 与 `packages/*`）。本仓库禁止使用 Bun 运行时或 `bun:test`。
 - **后端（`@yunpu/api`）**：Hono `4.13.19` + `@hono/node-server` + Zod `4.6.7` + Better Auth `1.7.27` + Drizzle ORM `0.45.4` + `pg` `8.23.1` + `@aws-sdk/client-s3`。只提供 `/api/*` JSON，不渲染登录页。
-- **前端**：独立仓库 `yunpu-web`（Bun + Vite + React）。本仓库通过 `pnpm contract:export` 生成 `contracts/openapi.json`（Hono 路由 + `@yunpu/shared` Zod schema）。跨源联调可配置 `CORS_ORIGINS`；同源联调优先走前端 dev server 的 `/api` 代理。见 [ADR-0008](adr/ADR-0008-polyrepo-contract.md)。
+- **前端（`@yunpu/web`）**：React 19 + Vite 8 + TanStack Router / Query + Tailwind CSS 4 + Zustand，位于 `apps/web`。通过 `"@yunpu/shared": "workspace:*"` 直接复用共享枚举、错误码与 Schema，并继续由 `pnpm contract:export` 导出 `contracts/openapi.json`（Hono 路由 + `@yunpu/shared` Zod schema）作为跨端契约权威。本地开发默认通过 `pnpm dev` 同时启动 API 与 Vite `/api` 同源代理，跨源联调可配置 `CORS_ORIGINS`。见 [ADR-0013](adr/ADR-0013-monorepo-web-integration.md)。
 - **数据存储与基础设施**：PostgreSQL 18（启用 `ltree` 扩展与 `FORCE ROW LEVEL SECURITY`）、S3 兼容对象存储（测试/开发环境由 `scripts/env.sh` 拉起容器，使用 `pgsty/silo`）。
-- **代码检查与测试**：Biome `2.2.6`（`pnpm lint`）、Vitest `5.1.0`。`apps/api/tsconfig.json` 使用 `moduleResolution: bundler`，与仓库里的无扩展名 `.ts` 导入一致。
+- **代码检查与测试**：后端与共享包使用 Biome `2.2.6` + `tsc --noEmit`（`pnpm run lint:api`）+ Vitest `5.1.0`；前端使用 ESLint + `tsc -b`（`pnpm run lint:web`）+ Vitest（单元测试 + Playwright Browser 组件测试）。`apps/api/tsconfig.json` 使用 `moduleResolution: bundler`，与仓库里的无扩展名 `.ts` 导入一致。
 
 ---
 
@@ -37,6 +37,9 @@ yunpu/
 │   │   │   │   └── auth.ts  # 会话校验中间件
 │   │   │   └── modules/     # 业务领域模块：auth / organization / project / account / person
 │   │   └── test/            # API 单元与集成测试
+│   └── web/                 # @yunpu/web 前端应用（Vite + React 19 + TanStack）
+│       ├── src/             # 路由、组件、业务域模块（仅消费 @yunpu/shared，严禁导入 db/api）
+│       └── e2e/             # Playwright 端到端测试
 ├── contracts/
 │   └── openapi.json         # 只读契约，由 scripts/export-contract.ts 生成
 ├── packages/
@@ -64,7 +67,7 @@ yunpu/
 
 由根目录 `biome.json` 的 `noRestrictedImports` 与 `tests/runtime/` 共同强制约束：
 
-1. **包级单向依赖**：`packages/shared` 不得导入 `apps/**` 或 `**/modules/**`。
+1. **包级单向依赖**：`packages/shared` 不得导入 `apps/**` 或 `**/modules/**`；`apps/web` 只能依赖 `@yunpu/shared`，严禁导入 `@yunpu/db`、`apps/api` 运行时代码或 `bun` API（由 `apps/web/eslint.config.js` 与 `tests/runtime/web-workspace-boundary.test.ts` 强制拦截）。
 2. **模块封装边界**：任意文件不得跨模块导入其他模块的 `queries.ts`、`*.repo` 或 `*.route`，模块间协作只能调用对方的 `service.ts` 对外 API。
 3. **禁止无意义中间层**：请求链路直接为 `router`（Zod 参数校验）→ `service`（事务与领域逻辑）→ `queries`（Drizzle 查询），禁止引入只做原样拷贝的 `mapper` 或 `.repo.ts` 层（由 `tests/runtime/no-passthrough-layer.test.ts` 验证）。
 4. **唯一租户数据库入口**：`apps/api/src/modules/**` 禁止导入 `db/pool`、`businessPool`、`withUser` 或调用 `createDb`（`modules/auth/better-auth.ts` 访问独立 `auth` schema 除外），统一经 `withTenantTransaction` 访问租户表。

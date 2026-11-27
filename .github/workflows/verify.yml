@@ -23,7 +23,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm run lint:api
 
       - name: OpenAPI contract drift
         run: pnpm contract:check
@@ -41,3 +41,32 @@ jobs:
 
       - name: Full test suite
         run: pnpm test:all
+
+  verify-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint and typecheck web
+        run: pnpm run lint:web
+
+      - name: Build web
+        run: pnpm run build:web
+
+      - name: Web unit tests
+        run: pnpm run test:web
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @yunpu/web exec playwright install chromium --with-deps
+
+      - name: Web browser tests
+        run: pnpm run test:web:browser

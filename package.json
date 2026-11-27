@@ -12,11 +12,19 @@
     "test:auth": "node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts --env test && vitest run --config vitest.config.ts --fileParallelism=false tests/auth apps/api/test",
     "db:generate": "pnpm --filter @yunpu/db exec drizzle-kit generate",
     "db:migrate": "node --import ./scripts/ts-ext-register.mjs packages/db/src/migrate.ts",
-    "lint": "pnpm exec biome check . && tsc --noEmit -p apps/api/tsconfig.json",
+    "lint:api": "pnpm exec biome check . && tsc --noEmit -p apps/api/tsconfig.json",
+    "lint:web": "pnpm --filter @yunpu/web run lint && pnpm --filter @yunpu/web run typecheck",
+    "lint": "pnpm run lint:api && pnpm run lint:web",
+    "build:web": "pnpm --filter @yunpu/web run build",
+    "test:web": "pnpm --filter @yunpu/web run test:unit",
+    "test:web:browser": "pnpm --filter @yunpu/web run test:browser",
     "contract:export": "node --import ./scripts/ts-ext-register.mjs scripts/export-contract.ts",
     "contract:check": "pnpm contract:export && git diff --exit-code -- contracts/openapi.json",
     "test:all": "vitest run --config vitest.config.ts tests/env && vitest run --config vitest.config.ts --fileParallelism=false tests/auth tests/console tests/genealogy tests/security tests/runtime apps/api/test",
-    "start:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts"
+    "start:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts",
+    "dev:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts",
+    "dev:web": "VITE_API_PROXY_TARGET=${VITE_API_PROXY_TARGET:-http://127.0.0.1:3001} pnpm --filter @yunpu/web run dev",
+    "dev": "node scripts/dev.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",

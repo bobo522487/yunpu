@@ -66,3 +66,38 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 ### LineageProjection
 针对 `Project` 内人物的派生世系投影视图，记录基于 PostgreSQL `ltree` 的主脉路径（`primaryPath`）与世代号（`generation`），随人物及亲子关系变更在同一事务内维护，用于受控子图与世系树快速查询。
 - _Avoid_: Tree cache, Primary node
+
+---
+
+## 三、前端界面与工作台术语（UI 展示规范）
+
+代码标识符、API 载荷、数据库字段与规格文档统一遵守前两节的领域术语（如 `Organization`、`Project`、`Person`、`LineageProjection`）；**界面中文展示文案**统一采用下列规范，避免把内部英文名词直接暴露给修谱用户：
+
+### 组织空间（UI 对应 `Organization`）
+在账号下管理成员、家族项目与设置的顶层协作边界的中文界面称呼。
+- _Avoid (UI)_: 工作区、workspace
+
+### 家族项目（UI 对应 `Project`）
+组织空间中的一个家族谱牒项目，拥有独立的谱系、谱文与谱书；历史 URL 与 store 字段保留 `project` / `lineage` 以维持路由与本地兼容。
+- _Avoid (UI)_: 仅在明确指家族谱牒上下文时避免笼统称「项目」或英文 `project`
+
+### 谱系（UI 对应 `LineageProjection` / `PersonRelation`）
+家族项目中人物之间的关系与血缘结构。
+- _Avoid (UI)_: 世系（仅用于界面菜单/导航统一称呼时）、`lineage`
+
+### 谱文（UI 对应前端 Article 模块）
+一个家族项目中的一篇正文，带有自己的版本号。
+- _Avoid (UI)_: 文章、文档、`article`
+
+### 版本与修订（UI 文案区分）
+- **版本**：一篇谱文被写下或保存时的递增序号（对应并发控制版本号）；_Avoid (UI)_: 修订、`revision`
+- **修订**：一篇谱文在某个时刻留下的正文快照，供回看或恢复；_Avoid (UI)_: 版本、`version`
+- **谱文冲突**：同一篇谱文的本地正文与服务器正文版本不一致（HTTP `409`）；_Avoid (UI)_: 保存失败、CAS 失败
+
+### 谱书（UI 对应前端 Book 模块）
+按卷册编排的家族谱牒成书。
+- _Avoid (UI)_: 书籍、`book`
+
+### 工作台导航区域
+- **图标导航条**：进入家族项目后常驻的最左侧导航区域，以图标和文字呈现谱系、谱文、谱书与设置入口；_Avoid (UI)_: MiniRail、迷你侧栏、compact 侧栏
+- **业务侧栏**：在谱系、谱文或谱书页面中提供该部分目录与操作的常驻导航区域；_Avoid (UI)_: 二级侧栏、子侧栏

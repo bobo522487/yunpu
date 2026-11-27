@@ -1,0 +1,154 @@
+/* 云谱业务领域样式：排版阶梯、画布网格、React Flow 舞台与打印媒体规则 */
+.font-editorial {
+  font-family: var(--font-serif);
+  text-wrap: balance;
+}
+
+.yp-h1 {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.yp-h2 {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.yp-h3 {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+
+.yp-body {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
+.yp-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.yp-caption {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.nc-dot-grid {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--border-strong) 0.55%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* React Flow Theming & Dark Mode */
+.react-flow {
+  background-color: var(--background) !important;
+  color: var(--foreground);
+}
+.react-flow__pane {
+  background-color: var(--background) !important;
+}
+
+.fs-lineage-theme {
+  --background: hsl(180 6% 94.5%);
+  --fs-edge-stroke: var(--border-strong);
+}
+
+.dark .fs-lineage-theme {
+  --background: hsl(214 18% 10.5%);
+  --fs-edge-stroke: var(--border-strong);
+}
+
+.fs-card-tree-stage.react-flow,
+.fs-card-tree-stage .react-flow__pane {
+  background-color: var(--background) !important;
+}
+.dark .fs-card-tree-stage.react-flow,
+.dark .fs-card-tree-stage .react-flow__pane {
+  background-color: var(--background) !important;
+}
+
+.react-flow__controls {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.react-flow__controls button {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--muted-foreground) !important;
+}
+.react-flow__controls button:last-child {
+  border-bottom: none !important;
+}
+.react-flow__controls button:hover {
+  background-color: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+.react-flow__controls button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__minimap {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+.react-flow__minimap-mask {
+  fill: color-mix(in oklab, var(--background) 0.75%, transparent) !important;
+}
+
+@media print {
+  aside,
+  header,
+  [data-no-print='true'] {
+    display: none !important;
+  }
+
+  body,
+  html,
+  #root,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  [data-article-paper='true'] {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

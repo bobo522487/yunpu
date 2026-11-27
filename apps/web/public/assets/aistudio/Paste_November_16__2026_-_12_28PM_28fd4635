@@ -1,0 +1,576 @@
+<div class="flex-grow flex flex-col overflow-hidden" id="bookDetail">
+<!-- 引导区：谱书编撰三部曲 (针对每个谱书) -->
+<section class="bg-white border-b border-gray-200 py-6 px-10 shadow-sm relative">
+<div class="max-w-5xl mx-auto flex justify-between items-start gap-2">
+<!-- 原「第一步 设置封面 / 可跳过」暂时隐藏，后续若恢复封面流程可取消注释
+<div class="step-item step-dashed cursor-pointer group" id="stepItem1" data-book-step="cover" onclick="openSubPage('cover')">
+<span class="step-skip-label">可跳过</span>
+<div class="step-body">
+<div class="step-circle group-hover:border-trad group-hover:text-trad transition-all">
+<iconify-icon class="text-xl" icon="mingcute:settings-3-line"></iconify-icon>
+</div>
+<div class="text-xs font-bold mt-2 group-hover:text-trad text-center">第一步</div>
+<div class="text-sm text-gray-600 group-hover:text-trad font-medium text-center">设置封面</div>
+</div>
+</div>
+-->
+<div class="step-item cursor-pointer group active" id="stepItem2" data-book-step="catalog" onclick="openSubPage('catalog')">
+<div class="step-body">
+<div class="step-circle group-hover:border-trad group-hover:text-trad transition-all">
+<img class="step-icon" src="/assets/images/tubiao/makecatalog.svg" alt="">
+</div>
+<div class="text-xs font-bold mt-2 group-hover:text-trad text-center">第一步</div>
+<div class="text-sm text-gray-600 group-hover:text-trad font-medium text-center step-help-label">
+<span>目录编排</span>
+<button type="button" class="zy-help-btn" data-help="book-catalog" aria-label="目录编排说明" data-help-bound="1"></button>
+</div>
+</div>
+</div>
+<div class="step-item cursor-pointer group" id="stepItem3" data-book-step="layout" onclick="openSubPage('layout')">
+<div class="step-body">
+<div class="step-circle group-hover:border-trad group-hover:text-trad transition-all">
+<img class="step-icon" src="/assets/images/tubiao/setlayout.svg" alt="">
+</div>
+<div class="text-xs font-bold mt-2 group-hover:text-trad text-center">第二步</div>
+<div class="text-sm text-gray-600 group-hover:text-trad font-medium text-center step-help-label">
+<span>设置版式</span>
+<button type="button" class="zy-help-btn" data-help="book-layout" aria-label="设置版式说明" data-help-bound="1"></button>
+</div>
+</div>
+</div>
+<div class="step-item step-last cursor-pointer group" id="stepItem4" data-book-step="editions" onclick="onStepFourClick()">
+<div class="step-body">
+<div class="step-circle group-hover:border-trad group-hover:text-trad transition-all">
+<img class="step-icon" id="stepFourIcon" src="/assets/images/tubiao/readbook.svg" alt="">
+</div>
+<div class="text-xs font-bold mt-2 group-hover:text-trad text-center text-trad">第三步</div>
+<div class="text-sm text-gray-600 group-hover:text-trad font-medium text-center text-trad step-help-label">
+<span id="stepFourSubtitle">查看谱例</span>
+<button type="button" class="zy-help-btn" id="stepFourHelp" data-help="book-editions" aria-label="查看谱例说明" data-help-bound="1"></button>
+</div>
+
+</div>
+</div>
+<div class="flex items-end self-end gap-2 shrink-0 hidden" id="bookDevToolsBar" data-dev-only="true">
+<button type="button" class="mb-1 shrink-0 px-3 py-2 rounded-lg border border-trad/30 bg-white text-trad text-xs font-semibold hover:bg-red-50 hover:border-trad flex items-center gap-1.5 shadow-sm transition-colors" onclick="openBookHtmlPackDebugPreview()" title="在新标签打开谱书谱例 HTML，控制台可用 OupGenealogy.dumpPackDebugLog()">
+<iconify-icon icon="mingcute:bug-line" class="text-base"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M18.983 14a9.5 9.5 0 0 1-.738 3.336c1.15.666 1.656 2.079 1.744 3.347c.011.156.022.384-.014.54a1.01 1.01 0 0 1-1.198.752a1.01 1.01 0 0 1-.733-.681c-.067-.219-.043-.457-.073-.683c-.074-.55-.246-1.167-.695-1.525c-2.854 3.883-7.698 3.883-10.552 0c-.449.358-.621.975-.695 1.525c-.03.226-.006.464-.073.683a1.01 1.01 0 0 1-.733.681a1.01 1.01 0 0 1-1.198-.752c-.036-.156-.025-.384-.014-.54c.088-1.268.594-2.681 1.744-3.347A9.5 9.5 0 0 1 5.017 14H3c-.198-.013-.325-.033-.5-.134c-.755-.436-.601-1.606.241-1.832L3 12h2.11c.127-.79.327-1.529.615-2.275a6.7 6.7 0 0 1-1.15-.644c-.657-.475-1.971-1.645-1.445-2.574a1 1 0 0 1 .363-.369a1.01 1.01 0 0 1 1.208.149c.161.158.169.244.291.427l.315.374c.409.406.981.807 1.563.897L7.042 8h9.916c.648-.027 1.29-.47 1.735-.912c.434-.432.576-1.094 1.315-1.088l.259.036c.169.047.323.138.446.263c.911.926-.59 2.278-1.288 2.782a6.7 6.7 0 0 1-1.15.644c.288.746.488 1.485.615 2.275H21l.259.034c.842.226.996 1.396.241 1.832c-.175.101-.302.121-.5.134Zm-11.19-4c-.412.92-.692 1.85-.768 2.86c-.21 2.782 1.055 6.17 3.975 7.002V12.88c.036-.543.428-1 1-1s.964.457 1 1v6.982c2.92-.832 4.185-4.22 3.975-7.002c-.076-1.01-.356-1.94-.768-2.86ZM6.68 7l1.303-1.981l.367-.438c1.815-1.937 4.863-2.113 6.887-.394a5 5 0 0 1 .78.832L17.32 7Z"></path></svg></template></iconify-icon>
+HTML调试预览
+</button>
+<button type="button" class="mb-1 shrink-0 px-3 py-2 rounded-lg border border-trad/30 bg-white text-trad text-xs font-semibold hover:bg-red-50 hover:border-trad flex items-center gap-1.5 shadow-sm transition-colors" onclick="downloadBookTemplate()" title="下载仿古标准线装 185×290mm 空白版式 PDF">
+<iconify-icon icon="mingcute:download-2-line" class="text-base"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M5.006 19.994h13.988l.006-.051V16l.034-.259a1.01 1.01 0 0 1 1.466-.607c.322.186.476.506.5.866v4c-.027.721-.385 1.384-1.024 1.742A2.1 2.1 0 0 1 19 22H5a2.3 2.3 0 0 1-.566-.085C3.575 21.662 3.032 20.878 3 20v-4c.03-.451.288-.844.741-.966c.656-.176 1.217.327 1.259.966v3.943ZM11 13.243V3c.036-.543.428-1 1-1s.964.457 1 1v10.243l2.535-2.536l.208-.159a1.01 1.01 0 0 1 1.466.607c.096.36-.021.695-.259.966l-4.243 4.243c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L7.05 12.121c-.238-.271-.355-.606-.259-.966a1.01 1.01 0 0 1 1.466-.607l.207.159Z"></path></svg></template></iconify-icon>
+下载模板
+</button>
+</div>
+</div>
+
+</section>
+<div id="bookMainContent" class="flex-grow flex flex-col overflow-hidden min-h-0">
+<div id="bookEditionPanel" class="flex flex-col flex-grow overflow-hidden min-h-0 hidden">
+<div class="p-6 flex items-center justify-between shrink-0">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-4">
+<h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3" id="selectedBookTitle">清河张氏族谱</h2>
+<span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium border border-gray-200">
+                                谱例明细 <span class="text-trad font-bold" id="editionCountDisplay">1/9</span>
+</span>
+</div>
+<p class="text-sm text-gray-500">管理该谱书已生成的不同风格谱例</p>
+</div>
+<div class="flex gap-3">
+</div>
+</div>
+<div class="mx-6 mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2 shrink-0">
+<iconify-icon class="text-lg mt-0.5 shrink-0" icon="mingcute:alert-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11.741 16.966a1 1 0 0 1-.607-.466c-.439-.759.29-1.69 1.127-1.465c.254.068.475.237.607.466c.439.759-.29 1.69-1.127 1.465m-.707-8.224c.226-.843 1.396-.997 1.832-.242c.101.175.121.302.134.5v4.001c-.03.45-.288.844-.741.965c-.656.176-1.217-.326-1.259-.965V9ZM3.213 20.341c-1.104-.129-1.653-1.272-1.146-2.238l8.634-14.955c.414-.648 1.24-.953 1.951-.596c.274.138.482.338.647.596l8.634 14.955c.263.501.265 1.076-.04 1.56c-.276.437-.751.67-1.259.69H3.366Zm1.019-1.988h15.536L12 4.898Z"></path></svg></template></iconify-icon>
+<p>每份谱例都是生成那一刻的定稿，方便留存、对照。改了世系、文献或版式后，再生成一份就能看到最新内容。可生成多份，互不覆盖。</p>
+</div>
+<div class="flex-grow overflow-y-auto px-6 pb-6 min-h-0">
+<div class="flex flex-col gap-6" id="editionList">
+                <div class="edition-card border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all group bg-white flex flex-col md:flex-row" data-export-id="618" data-export-status="completed" data-print-status="none">
+                    <div class="w-full md:w-48 bg-gray-50 flex items-center justify-center p-4 border-r border-gray-100">
+                        <div class="w-32 h-40 bg-white shadow-sm border border-gray-200 flex flex-col items-center justify-center p-2 group-hover:border-trad transition-colors">
+                            <div class="w-full h-full border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 gap-1 relative">
+                                <iconify-icon icon="mingcute:book-2-line" class="text-2xl opacity-30"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M9.741 8.966C8.899 8.74 8.745 7.57 9.5 7.134c.175-.101.302-.121.5-.134h4c.451.03.844.288.966.741c.176.656-.327 1.217-.966 1.259h-4ZM6.92 21.997C5.253 21.885 4.051 20.684 4 19V5a3.16 3.16 0 0 1 .536-1.709C5.092 2.471 6.025 2.029 7 2h11c.343.013.675.089.976.258c.639.358.997 1.021 1.024 1.742v13c-.037.64-.55 1.124-.722 1.729c-.282.992 1.371 2.045.429 2.978c-.194.192-.439.276-.707.293H7ZM17.416 20a3 3 0 0 1 0-2H7.05c-.557.022-1.037.411-1.037 1s.48.978 1.037 1ZM6 16.177A3.5 3.5 0 0 1 7.01 16H18l-.006-11.994L17.943 4H7.04c-.622.025-1.015.418-1.04 1.04Z"></path></svg></template></iconify-icon><span class="text-[10px] scale-90 text-center px-1 text-gray-400">谱书谱例</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <div class="edition-card-header bg-gray-50/50 p-4 border-b border-gray-200">
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-4 flex-wrap">
+                                    <div class="flex items-center gap-1 font-bold text-gray-700 text-sm">
+                                        <iconify-icon icon="mingcute:book-2-line" class="text-trad text-lg"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M9.741 8.966C8.899 8.74 8.745 7.57 9.5 7.134c.175-.101.302-.121.5-.134h4c.451.03.844.288.966.741c.176.656-.327 1.217-.966 1.259h-4ZM6.92 21.997C5.253 21.885 4.051 20.684 4 19V5a3.16 3.16 0 0 1 .536-1.709C5.092 2.471 6.025 2.029 7 2h11c.343.013.675.089.976.258c.639.358.997 1.021 1.024 1.742v13c-.037.64-.55 1.124-.722 1.729c-.282.992 1.371 2.045.429 2.978c-.194.192-.439.276-.707.293H7ZM17.416 20a3 3 0 0 1 0-2H7.05c-.557.022-1.037.411-1.037 1s.48.978 1.037 1ZM6 16.177A3.5 3.5 0 0 1 7.01 16H18l-.006-11.994L17.943 4H7.04c-.622.025-1.015.418-1.04 1.04Z"></path></svg></template></iconify-icon>
+                                        <span>古籍线装</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-100">
+                                        <span>欧式</span>
+                                    </div>
+                                    
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-gray-400">谱例明细 1/9</span>
+                                    <button type="button" onclick="openDeleteExportConfirm(618)" class="text-gray-400 hover:text-red-600" title="删除谱例">
+                                        <iconify-icon icon="mingcute:delete-2-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13.034 10.741c.226-.842 1.396-.996 1.832-.241c.101.175.121.302.134.5v5c-.03.451-.288.844-.741.966c-.656.176-1.217-.327-1.259-.966v-5Zm-4 0c.226-.842 1.396-.996 1.832-.241c.101.175.121.302.134.5v5c-.03.451-.288.844-.741.966c-.656.176-1.217-.327-1.259-.966v-5ZM19.936 7l-.816 12.238c-.079.749-.384 1.435-.94 1.955s-1.259.778-2.013.807H7.833c-1.058-.041-2.027-.57-2.563-1.499a3.1 3.1 0 0 1-.39-1.263L4.064 7c-.209-.016-.376-.025-.564-.134c-.655-.378-.655-1.354 0-1.732c.175-.101.302-.121.5-.134h3.279l.561-1.683A2.025 2.025 0 0 1 9.668 2h4.664a2.03 2.03 0 0 1 1.828 1.317L16.721 5H20c.198.013.325.033.5.134c.655.378.655 1.354 0 1.732c-.188.109-.355.118-.564.134M6.069 7l.802 12.028c.013.13.025.218.072.337c.161.41.543.619.967.635h8.18c.322-.012.615-.121.82-.38c.139-.175.196-.373.219-.592L17.931 7Zm3.656-2.995L9.387 5h5.226l-.338-.995Z"></path></svg></template></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-5 flex-grow grid grid-cols-2 md:grid-cols-4 gap-6 items-center">
+                            <div class="text-xs"><span class="text-gray-400 block mb-1">尺寸规格</span><span class="text-gray-800 font-medium text-sm">标准线装 (18.5cm x 29.0cm)</span></div>
+                            <div class="text-xs"><span class="text-gray-400 block mb-1">页数</span><span class="text-gray-800 font-medium text-sm">2 P</span></div>
+                            <div class="text-xs"><span class="text-gray-400 mb-1 flex items-center gap-1">世系人数<button type="button" class="zy-help-btn" data-help="book-member-count" aria-label="世系人数统计口径说明" data-help-bound="1"></button></span><span class="text-gray-800 font-medium text-sm">0 人</span></div>
+                            <div class="text-xs"><span class="text-gray-400 block mb-1">总字数</span><span class="text-gray-800 font-medium text-sm">— 字</span></div>
+                        </div>
+                        <div class="bg-gray-50 p-3 flex gap-3 border-t border-gray-100 justify-end items-center flex-wrap">
+                            <div class="mr-auto text-[10px] text-gray-400 px-2">生成时间：2026-11-16 12:22</div>
+                            
+                            
+                            <span class="edition-btn-wrap"><span class="edition-btn-tag edition-btn-tag--recommend">推荐</span><button type="button" onclick="openBookPreview(618)" class="px-4 bg-white border border-trad text-trad py-1.5 rounded text-xs font-bold hover:bg-red-50 flex items-center justify-center gap-1 transition-colors"><iconify-icon icon="mingcute:eye-2-line" class="text-lg"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M12.485 9.036c.618.1 1.196.398 1.638.841c2.047 2.046.245 5.55-2.608 5.087a3 3 0 0 1-1.638-.841c-2.047-2.046-.245-5.55 2.608-5.087m-.649 1.98c-1.286.211-.967 2.18.328 1.968c1.286-.211.967-2.18-.328-1.968m.915-5.986c2.861.228 5.585 1.746 7.529 3.82c.739.788 1.726 2.006 1.726 3.15c0 1.266-1.269 2.724-2.121 3.551c-2.457 2.387-5.917 3.876-9.371 3.332a11 11 0 0 1-3.333-1.12c-1.778-.92-3.65-2.437-4.666-4.191c-.274-.472-.521-1.014-.521-1.572c0-1.144.987-2.362 1.726-3.15c2.286-2.439 5.641-4.091 9.031-3.82m-1.343 1.995c-1.157.092-2.28.457-3.307.989c-1.436.743-3.031 1.997-3.854 3.417c-.085.147-.241.385-.241.569s.156.422.241.569c.415.716 1.007 1.337 1.623 1.882c2.152 1.905 5.005 3.011 7.876 2.342c1.931-.449 3.725-1.572 5.074-3.011c.281-.3 1.174-1.346 1.174-1.782c0-.524-1.15-1.774-1.502-2.116c-1.86-1.805-4.447-3.07-7.084-2.859"></path></svg></template></iconify-icon> 在线预览</button></span>
+                            <span class="edition-btn-wrap"><span class="edition-btn-tag edition-btn-tag--free">免费</span><button type="button" onclick="downloadBookExport(618, 'proof')" class="px-4 bg-white border border-gray-200 text-gray-700 py-1.5 rounded text-xs font-bold hover:bg-gray-100 flex items-center justify-center gap-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"><iconify-icon icon="mingcute:download-2-line" class="text-lg"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M5.006 19.994h13.988l.006-.051V16l.034-.259a1.01 1.01 0 0 1 1.466-.607c.322.186.476.506.5.866v4c-.027.721-.385 1.384-1.024 1.742A2.1 2.1 0 0 1 19 22H5a2.3 2.3 0 0 1-.566-.085C3.575 21.662 3.032 20.878 3 20v-4c.03-.451.288-.844.741-.966c.656-.176 1.217.327 1.259.966v3.943ZM11 13.243V3c.036-.543.428-1 1-1s.964.457 1 1v10.243l2.535-2.536l.208-.159a1.01 1.01 0 0 1 1.466.607c.096.36-.021.695-.259.966l-4.243 4.243c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L7.05 12.121c-.238-.271-.355-.606-.259-.966a1.01 1.01 0 0 1 1.466-.607l.207.159Z"></path></svg></template></iconify-icon> 下载校对稿</button></span>
+                            <span class="edition-btn-wrap"><span class="edition-btn-tag edition-btn-tag--final">定稿</span><button type="button" onclick="onPrintEditionButtonClick(618)" class="px-6 bg-trad text-white py-1.5 rounded text-xs font-bold hover:bg-red-800 flex items-center justify-center gap-1 shadow-sm transition-all"><iconify-icon icon="mingcute:print-line" class="text-lg"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M14.741 11.966c-.842-.226-.996-1.396-.241-1.832c.175-.101.302-.121.5-.134h2c.36.024.68.178.866.5c.132.228.168.504.1.759c-.122.453-.515.711-.966.741h-2ZM18 19v2c-.037.571-.429.963-1 1H7c-.571-.037-.963-.429-1-1v-2H4c-.645-.024-1.244-.307-1.624-.838A2.1 2.1 0 0 1 2 17v-7c.044-1.459.992-2.65 2.436-2.945C4.927 6.955 5.531 7 6 7V4c.037-.571.429-.963 1-1h10c.571.037.963.429 1 1v3c.635 0 1.257-.047 1.871.131C21.149 7.5 21.961 8.703 22 10v7c-.018.494-.18.961-.513 1.333c-.384.428-.918.646-1.487.667ZM8 16v4h8v-4Zm-3.994.994L6 17v-2c.037-.571.429-.963 1-1h10c.571.037.963.429 1 1v2l1.994-.006l.006-.051V10.04c-.025-.622-.418-1.015-1.04-1.04H5.04c-.622.025-1.015.418-1.04 1.04v6.903ZM8 5v2h8V5Z"></path></svg></template></iconify-icon> 生成高清印刷版</button></span>
+                        </div>
+                    </div>
+                </div></div>
+</div>
+</div>
+<div id="bookStepWorkspace" class="flex-grow flex flex-col overflow-hidden min-h-0">
+<div id="bookStepToolbar" class="shrink-0 border-b border-gray-200 bg-white">
+<div id="bookStepToolbarRow" class="flex items-center gap-3 w-full min-w-0">
+<div id="bookStepToolbarMain" class="flex-grow min-w-0 flex items-center justify-between gap-3 py-3 pl-6 pr-2">
+<h3 class="font-bold text-gray-800 text-sm shrink-0" id="bookStepToolbarTitle">第一步：目录编排</h3>
+<div class="flex items-center gap-2 shrink-0">
+<button type="button" id="bookStepSaveBtn" class="px-4 py-1.5 bg-trad text-white rounded-lg text-xs font-bold hover:bg-red-800 shadow-sm transition-colors" onclick="saveCurrentBookStep()">保存</button>
+<button type="button" class="px-4 py-1.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors" onclick="returnToEditionList()">返回谱例列表</button>
+</div>
+</div>
+<div id="bookStepToolbarAside" class="w-1/3 min-w-0 shrink-0" aria-hidden="true"></div>
+</div>
+</div>
+<div class="flex-grow min-h-0 overflow-y-auto overflow-x-hidden bg-[#FDFCF8] flex flex-col" id="bookStepContent" data-catalog-delete-bound="1">
+<div class="w-full h-full mx-auto flex gap-3 text-sm items-stretch min-h-0">
+<div class="flex-grow min-w-0 h-full bg-white p-2 rounded-xl border border-gray-200 flex flex-col min-h-0 overflow-hidden catalog-tree-panel">
+
+<!--  <div class="flex justify-between items-center mb-1.5 px-1">
+<span class="font-bold text-[15px]">目录树结构</span>
+</div> -->
+<div class="flex-grow min-h-0 overflow-y-scroll flex flex-col content-start custom-scrollbar pr-1 catalog-tree-scroll">
+<div class="catalog-primary-node" data-section-code="preface">
+<div class="catalog-primary-head">
+<div class="catalog-primary-left">
+<div class="catalog-primary-title"><b><span>卷首</span></b><span class="catalog-primary-sub">(显示在目录之前的内容)</span></div>
+<div class="catalog-primary-actions">
+<button type="button" onclick="openAddChapterModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加章节</button>
+<button type="button" onclick="openAddTextModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加谱文</button>
+</div>
+</div>
+<button class="catalog-primary-toggle" onclick="togglePrimarySection(this)" type="button" aria-expanded="true" title="收起"><span class="catalog-primary-toggle-label">收起</span><iconify-icon icon="mingcute:down-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.586l4.95-4.95c.481-.422 1.233-.381 1.573.207c.235.407.139.868-.159 1.207l-5.657 5.657c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L5.636 10.05c-.179-.204-.293-.429-.293-.707c0-.927 1.053-1.281 1.707-.707Z"></path></svg></template></iconify-icon></button>
+</div>
+</div><div class="catalog-section-children"><div class="catalog-group-block catalog-group-chapter" data-catalog-node-id="479" data-node-type="chapter"><span class="catalog-tree-branch-h" aria-hidden="true"></span><div class="catalog-group-header catalog-secondary-node secondary-branch p-1.5 bg-red-50/40 rounded-t text-[13px] flex justify-between items-center group border-b border-dashed border-red-100"><span class="font-medium flex items-center gap-1.5"><iconify-icon icon="mingcute:folder-line" class="text-gray-400"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12.484 5.494l.053.006h7.52c.445.026.846.153 1.198.435c.47.377.711.915.745 1.508v11.614c-.034.593-.275 1.131-.745 1.508c-.352.282-.753.409-1.198.435H3.943c-.326-.019-.524-.051-.825-.198c-.683-.334-1.075-1-1.118-1.745V4.943c.063-1.1.843-1.88 1.943-1.943h5.633a2.04 2.04 0 0 1 1.47.707c.51.569.938 1.208 1.438 1.787m-2.968-.488h-5.51v13.988h15.988V7.506l-.051-.006h-7.519a2.04 2.04 0 0 1-1.47-.707c-.51-.569-.938-1.208-1.438-1.787"></path></svg></template></iconify-icon><span class="title-text">111</span></span><div class="flex items-center gap-1.5"><div class="hidden group-hover:flex items-center gap-2 border-r border-gray-200 pr-2 mr-1.5"><iconify-icon icon="mingcute:arrow-up-line" class="catalog-move-arrow text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="调整顺序"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m11 6.757l-3.95 3.95c-.481.423-1.233.381-1.573-.207c-.235-.407-.139-.867.159-1.207l5.657-5.657c.149-.131.254-.207.448-.259c.36-.096.695.021.966.259l5.657 5.657c.298.34.394.8.159 1.207c-.34.588-1.092.63-1.573.207L13 6.757V20c-.036.543-.428 1-1 1s-.964-.457-1-1Z"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:arrow-down-line" class="catalog-move-arrow text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="调整顺序"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11 17.242V4c.036-.543.428-1 1-1s.964.457 1 1v13.243l3.95-3.95c.481-.423 1.233-.381 1.573.207c.235.407.139.867-.159 1.207l-5.657 5.657c-.271.238-.606.355-.966.259c-.194-.053-.299-.128-.448-.259l-5.657-5.657c-.298-.34-.394-.8-.159-1.207c.34-.588 1.092-.63 1.573-.207Z"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:transfer-line" onclick="openMoveModal(this)" class="text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="迁出"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m6.414 16l2.293 2.293l.159.207a1.01 1.01 0 0 1-.607 1.466c-.359.096-.695-.021-.966-.259l-4-4c-.359-.409-.404-1.01 0-1.414c.196-.197.436-.275.707-.293h16c.543.036 1 .428 1 1s-.457.964-1 1Zm11.172-8l-2.293-2.293l-.159-.207a1.01 1.01 0 0 1 .607-1.466c.359-.096.695.021.966.259l4 4c.359.409.404 1.01 0 1.414c-.196.197-.436.275-.707.293H4c-.543-.036-1-.428-1-1s.457-.964 1-1Z"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:edit-line" onclick="editItemTitle(this)" class="text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="编辑"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M5.006 5.006v13.988h13.988l.006-.051V11c.042-.639.603-1.142 1.259-.966c.453.122.711.515.741.966v8.057c-.043.745-.435 1.411-1.118 1.745c-.301.147-.499.179-.825.198H4.943c-.593-.034-1.131-.275-1.508-.745c-.282-.352-.409-.753-.435-1.198V4.943c.019-.326.051-.524.198-.825c.334-.683 1-1.075 1.745-1.118H13c.451.03.844.288.966.741c.176.656-.327 1.217-.966 1.259H5.057Zm15.253-1.972c.778.209.947 1.104.448 1.673l-10 10c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414l10-10c.271-.238.607-.355.966-.259"></path></svg></template></iconify-icon><button type="button" data-catalog-delete="" class="inline-flex items-center p-0 border-0 bg-transparent cursor-pointer" title="删除目录"><iconify-icon icon="mingcute:delete-2-line" class="text-[16px] text-gray-400 pointer-events-none hover:text-red-500"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13.034 10.741c.226-.842 1.396-.996 1.832-.241c.101.175.121.302.134.5v5c-.03.451-.288.844-.741.966c-.656.176-1.217-.327-1.259-.966v-5Zm-4 0c.226-.842 1.396-.996 1.832-.241c.101.175.121.302.134.5v5c-.03.451-.288.844-.741.966c-.656.176-1.217-.327-1.259-.966v-5ZM19.936 7l-.816 12.238c-.079.749-.384 1.435-.94 1.955s-1.259.778-2.013.807H7.833c-1.058-.041-2.027-.57-2.563-1.499a3.1 3.1 0 0 1-.39-1.263L4.064 7c-.209-.016-.376-.025-.564-.134c-.655-.378-.655-1.354 0-1.732c.175-.101.302-.121.5-.134h3.279l.561-1.683A2.025 2.025 0 0 1 9.668 2h4.664a2.03 2.03 0 0 1 1.828 1.317L16.721 5H20c.198.013.325.033.5.134c.655.378.655 1.354 0 1.732c-.188.109-.355.118-.564.134M6.069 7l.802 12.028c.013.13.025.218.072.337c.161.41.543.619.967.635h8.18c.322-.012.615-.121.82-.38c.139-.175.196-.373.219-.592L17.931 7Zm3.656-2.995L9.387 5h5.226l-.338-.995Z"></path></svg></template></iconify-icon></button></div><button class="text-[11px] text-trad hover:underline flex items-center gap-1" onclick="openAddTextModal(this)"><iconify-icon class="text-sm" icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加谱文</button><button class="text-gray-400 hover:text-trad transition-colors" onclick="toggleSecondarySection(this)" type="button"><iconify-icon icon="mingcute:down-line" class="text-[12px]"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.586l4.95-4.95c.481-.422 1.233-.381 1.573.207c.235.407.139.868-.159 1.207l-5.657 5.657c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L5.636 10.05c-.179-.204-.293-.429-.293-.707c0-.927 1.053-1.281 1.707-.707Z"></path></svg></template></iconify-icon></button></div></div></div><div class="catalog-sibling-item" data-catalog-node-id="480"><span class="catalog-tree-branch-h" aria-hidden="true"></span><div class="catalog-doc-card group flex flex-col p-1.5 bg-white rounded transition-all border border-solid border-gray-200 cursor-pointer" data-catalog-node-id="480" data-source-id="278"><div class="flex justify-between items-center"><span class="text-[12px] text-gray-900 flex items-center gap-1"><iconify-icon icon="mingcute:file-line" class="text-gray-400 text-sm"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M20 20.057c-.063 1.1-.843 1.88-1.943 1.943H5.943c-.593-.034-1.131-.275-1.508-.745c-.282-.352-.409-.753-.435-1.198V3.943c.034-.593.275-1.131.745-1.508c.352-.282.753-.409 1.198-.435h7.692c.514.025.949.205 1.33.551l4.484 4.484c.346.381.526.816.551 1.33ZM12 4l-5.994.006v15.988h11.988L18 10h-4.58c-.808-.065-1.355-.612-1.42-1.42Zm2 4h3.586L14 4.414Z"></path></svg></template></iconify-icon><span class="title-text font-medium">谱文01</span></span><div class="hidden group-hover:flex items-center gap-2"><iconify-icon icon="mingcute:arrow-up-line" class="catalog-move-arrow text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="调整顺序"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m11 6.757l-3.95 3.95c-.481.423-1.233.381-1.573-.207c-.235-.407-.139-.867.159-1.207l5.657-5.657c.149-.131.254-.207.448-.259c.36-.096.695.021.966.259l5.657 5.657c.298.34.394.8.159 1.207c-.34.588-1.092.63-1.573.207L13 6.757V20c-.036.543-.428 1-1 1s-.964-.457-1-1Z"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:arrow-down-line" class="catalog-move-arrow text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="调整顺序"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11 17.242V4c.036-.543.428-1 1-1s.964.457 1 1v13.243l3.95-3.95c.481-.423 1.233-.381 1.573.207c.235.407.139.867-.159 1.207l-5.657 5.657c-.271.238-.606.355-.966.259c-.194-.053-.299-.128-.448-.259l-5.657-5.657c-.298-.34-.394-.8-.159-1.207c.34-.588 1.092-.63 1.573-.207Z"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:transfer-line" onclick="openMoveModal(this)" class="text-[16px] text-gray-400 cursor-pointer hover:text-trad" title="迁出"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m6.414 16l2.293 2.293l.159.207a1.01 1.01 0 0 1-.607 1.466c-.359.096-.695-.021-.966-.259l-4-4c-.359-.409-.404-1.01 0-1.414c.196-.197.436-.275.707-.293h16c.543.036 1 .428 1 1s-.457.964-1 1Zm11.172-8l-2.293-2.293l-.159-.207a1.01 1.01 0 0 1 .607-1.466c.359-.096.695.021.966.259l4 4c.359.409.404 1.01 0 1.414c-.196.197-.436.275-.707.293H4c-.543-.036-1-.428-1-1s.457-.964 1-1Z"></path></svg></template></iconify-icon><span class="w-px h-2 bg-gray-200 mx-0.5"></span><iconify-icon icon="mingcute:edit-line" onclick="editItemTitle(this)" class="text-[16px] text-gray-400 cursor-pointer hover:text-trad"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M5.006 5.006v13.988h13.988l.006-.051V11c.042-.639.603-1.142 1.259-.966c.453.122.711.515.741.966v8.057c-.043.745-.435 1.411-1.118 1.745c-.301.147-.499.179-.825.198H4.943c-.593-.034-1.131-.275-1.508-.745c-.282-.352-.409-.753-.435-1.198V4.943c.019-.326.051-.524.198-.825c.334-.683 1-1.075 1.745-1.118H13c.451.03.844.288.966.741c.176.656-.327 1.217-.966 1.259H5.057Zm15.253-1.972c.778.209.947 1.104.448 1.673l-10 10c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414l10-10c.271-.238.607-.355.966-.259"></path></svg></template></iconify-icon><iconify-icon icon="mingcute:close-line" class="text-[16px] text-gray-400 cursor-pointer hover:text-red-500" onclick="event.stopPropagation(); removeReferencedText(this)"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon></div></div><div class="text-[10px] text-gray-500 ml-4 leading-tight">引自：谱文01</div></div></div></div>
+<div class="catalog-primary-node" data-section-code="body">
+<div class="catalog-primary-head">
+<div class="catalog-primary-left">
+<div class="catalog-primary-title"><b><span>正文</span></b><span class="catalog-primary-sub">(建议放源流、字辈、碑文等)</span></div>
+<div class="catalog-primary-actions">
+<button type="button" onclick="openAddChapterModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加章节</button>
+<button type="button" onclick="openAddTextModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加谱文</button>
+</div>
+</div>
+<button class="catalog-primary-toggle" onclick="togglePrimarySection(this)" type="button" aria-expanded="true" title="收起"><span class="catalog-primary-toggle-label">收起</span><iconify-icon icon="mingcute:down-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.586l4.95-4.95c.481-.422 1.233-.381 1.573.207c.235.407.139.868-.159 1.207l-5.657 5.657c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L5.636 10.05c-.179-.204-.293-.429-.293-.707c0-.927 1.053-1.281 1.707-.707Z"></path></svg></template></iconify-icon></button>
+</div>
+</div>
+<div class="catalog-primary-node" data-section-code="lineage">
+<div class="catalog-primary-head">
+<div class="catalog-primary-left">
+<div class="catalog-primary-title"><b><span>世系</span></b><span class="catalog-primary-sub">(族丁检索表、吊线图、世系表)</span></div>
+<div class="catalog-primary-actions">
+<button type="button" onclick="openAddChapterModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加章节</button>
+<button type="button" onclick="openAddTextModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加谱文</button>
+<button type="button" onclick="openAddLineageModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加世系</button>
+</div>
+</div>
+<button class="catalog-primary-toggle" onclick="togglePrimarySection(this)" type="button" aria-expanded="true" title="收起"><span class="catalog-primary-toggle-label">收起</span><iconify-icon icon="mingcute:down-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.586l4.95-4.95c.481-.422 1.233-.381 1.573.207c.235.407.139.868-.159 1.207l-5.657 5.657c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L5.636 10.05c-.179-.204-.293-.429-.293-.707c0-.927 1.053-1.281 1.707-.707Z"></path></svg></template></iconify-icon></button>
+</div>
+</div>
+<div class="catalog-primary-node" data-section-code="appendix">
+<div class="catalog-primary-head">
+<div class="catalog-primary-left">
+<div class="catalog-primary-title"><b><span>附录</span></b></div>
+<div class="catalog-primary-actions">
+<button type="button" onclick="openAddChapterModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加章节</button>
+<button type="button" onclick="openAddTextModal(this)"><iconify-icon icon="mingcute:add-circle-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13 13v3c-.05.755-.802 1.269-1.5.866a1 1 0 0 1-.366-.366c-.101-.175-.121-.302-.134-.5v-3H8c-.755-.05-1.269-.802-.866-1.5c.088-.152.214-.278.366-.366c.175-.101.302-.121.5-.134h3V8c.05-.755.802-1.269 1.5-.866c.152.088.278.214.366.366c.101.175.121.302.134.5v3h3c.755.05 1.269.802.866 1.5a1 1 0 0 1-.366.366c-.175.101-.302.121-.5.134Zm5.809 6.325a10 10 0 0 1-3.791 2.212a10.1 10.1 0 0 1-4.563.345a10 10 0 0 1-3.503-1.247C1.179 17.254.289 9.233 5.192 4.675a10 10 0 0 1 3.79-2.212a10.1 10.1 0 0 1 4.563-.345a10 10 0 0 1 3.503 1.247c5.773 3.381 6.663 11.402 1.761 15.96m-7.435-15.3a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>添加谱文</button>
+</div>
+</div>
+<button class="catalog-primary-toggle" onclick="togglePrimarySection(this)" type="button" aria-expanded="true" title="收起"><span class="catalog-primary-toggle-label">收起</span><iconify-icon icon="mingcute:down-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m12 13.586l4.95-4.95c.481-.422 1.233-.381 1.573.207c.235.407.139.868-.159 1.207l-5.657 5.657c-.204.179-.429.293-.707.293s-.503-.114-.707-.293L5.636 10.05c-.179-.204-.293-.429-.293-.707c0-.927 1.053-1.281 1.707-.707Z"></path></svg></template></iconify-icon></button>
+</div>
+</div>
+</div>
+</div>
+<div class="w-1/3 min-w-0 h-full bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-0">
+<div class="border-b border-gray-100 pb-2 mb-2 flex justify-between items-center">
+<h3 class="font-bold text-sm">世系信息</h3>
+</div>
+<div class="flex-grow min-h-0 min-w-0 overflow-hidden custom-scrollbar flex flex-col pr-1">
+<div class="p-3 bg-gray-50 rounded-lg border border-gray-100 flex flex-col min-h-0 min-w-0 flex-1 overflow-hidden">
+<div class="flex-1 min-h-0 min-w-0 flex flex-col" id="lineageInfoPickerRoot" data-initialized="1"><div class="member-picker-root text-[10px]"><div class="member-picker-filters scrollbar-thin"><div class="member-picker-filter-cell flex flex-col gap-1"><label class="text-[10px] text-gray-500">家族</label><div class="text-xs border rounded p-1.5 bg-gray-100 text-gray-700" data-member-picker-family-label="">毛台陈氏</div></div><div class="member-picker-filter-cell flex flex-col gap-1"><label class="text-[10px] text-gray-500">世系选择</label><select class="text-xs border rounded p-1.5 bg-white outline-none focus:border-trad w-full" data-member-picker-lineage-select=""><option value="172">元英房</option><option value="173">第二房</option></select></div><div class="member-picker-filter-cell member-picker-filter-cell--gen flex flex-col gap-1"><label class="text-[10px] text-gray-500">世数</label><input class="text-xs border rounded p-1.5 bg-white outline-none focus:border-trad w-full" data-member-picker-gen-input="" placeholder="输入世数" type="number" min="1" step="1" inputmode="numeric"></div><div class="member-picker-filter-cell member-picker-filter-cell--name flex flex-col gap-1"><label class="text-[10px] text-gray-500">人名</label><div class="flex gap-2"><div class="relative flex-grow min-w-0"><input class="text-xs border rounded p-1.5 pl-7 bg-white w-full outline-none focus:border-trad" data-member-picker-name-input="" placeholder="搜索人名" type="text"><iconify-icon class="absolute left-2 top-2 text-gray-400" icon="mingcute:search-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m17.176 15.762l3.652 3.652c.359.41.405 1.01 0 1.414c-.404.405-1.004.359-1.414 0l-3.652-3.652c-1.145.85-2.399 1.459-3.814 1.702C5.871 19.921.72 14.327 2.272 8.355a8.5 8.5 0 0 1 1.979-3.618A8.55 8.55 0 0 1 7.68 2.478c6.112-2.146 12.292 3.095 11.198 9.47c-.243 1.415-.852 2.669-1.702 3.814M9.938 4.025a6.5 6.5 0 0 0-3.844 1.697a6.5 6.5 0 0 0-1.727 2.622c-1.558 4.436 2.021 9.03 6.695 8.631a6.5 6.5 0 0 0 3.844-1.697a6.5 6.5 0 0 0 1.727-2.622c1.558-4.436-2.021-9.03-6.695-8.631"></path></svg></template></iconify-icon></div><button type="button" class="bg-trad text-white px-3 py-1 rounded text-xs hover:bg-red-800 transition-colors shrink-0" data-member-picker-search-btn=""><iconify-icon icon="lucide:search"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m21 21l-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></g></svg></template></iconify-icon></button></div></div></div><div class="member-picker-body"><div class="member-picker-tree-section"><div class="member-picker-tree-wrap"><div class="member-picker-tree-panel overflow-auto scrollbar-thin"><div class="min-w-max flex justify-start items-start px-4 pt-4 pb-2" data-member-picker-tree-host=""><div class="mp-clan-tree tree-container min-w-max"><div class="tree-row has-children tree-row-progenitor" data-member-id="7716" data-generation-no="1"><div class="content-label"><div class="tree-toggle tree-toggle-progenitor" role="button" tabindex="0"></div><span class="gen-label">[一世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7716"><div class="tree-item-img" title="[一世] 陈元英">陈元英</div></div></div></div></div><div class="tree-children" data-member-children-of="7716"><div class="tree-row has-children" data-member-id="7717" data-generation-no="2"><div class="mp-tree-branch-h" style="left: -15.1146px; width: 15.1146px;"></div><div class="content-label"><span class="gen-label">[二世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7717"><div class="tree-item-img" title="[二世] 陈新树">陈新树</div></div></div></div><div class="tree-toggle tree-toggle-collapse" role="button" tabindex="0" style="left: -31.1146px;"></div></div><div class="tree-children children-hide" data-member-children-of="7717" data-lazy-load="1"></div><div class="tree-row" data-member-id="7718" data-generation-no="2"><div class="mp-tree-branch-h" style="left: -23.1146px; width: 23.1146px;"></div><div class="content-label"><span class="gen-label">[二世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7718"><div class="tree-item-img" title="[二世] 陈兴明">陈兴明</div></div></div></div></div><div class="tree-row" data-member-id="7719" data-generation-no="2"><div class="mp-tree-branch-h" style="left: -23.1146px; width: 23.1146px;"></div><div class="content-label"><span class="gen-label">[二世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7719"><div class="tree-item-img" title="[二世] 陈兴国">陈兴国</div></div></div></div></div><div class="tree-row" data-member-id="7720" data-generation-no="2"><div class="mp-tree-branch-h" style="left: -23.1146px; width: 23.1146px;"></div><div class="content-label"><span class="gen-label">[二世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7720"><div class="tree-item-img" title="[二世] 陈兴针">陈兴针</div></div></div></div></div><div class="tree-row" data-member-id="7721" data-generation-no="2"><div class="mp-tree-branch-h" style="left: -23.1146px; width: 23.1146px;"></div><div class="content-label"><span class="gen-label">[二世]</span><div class="node-group"><div class="person-node mp-clan-person" data-member-id="7721"><div class="tree-item-img" title="[二世] 陈兴条">陈兴条</div></div></div></div></div><div class="mp-tree-trunk-v" style="left: 8.88538px; top: -14px; height: 178px;"></div></div></div></div></div><div class="member-picker-tree-actions hidden"><button type="button" class="px-3 py-1 border border-gray-300 rounded text-xs hover:bg-gray-50 bg-white" data-member-picker-cancel-btn="">取消</button><button type="button" class="px-4 py-1 bg-trad text-white rounded text-xs hover:bg-red-800" data-member-picker-confirm-btn="">确定</button></div></div></div><div class="member-picker-search-section"><p class="text-[10px] text-gray-500 mb-1 font-bold shrink-0">搜索结果</p><div class="grid grid-cols-5 w-full text-[9px] text-gray-400 font-medium px-2 mb-1 shrink-0"><span>世数</span><span>名字</span><span>父亲</span><span>祖父</span><span class="text-right">操作</span></div><div class="member-picker-search-list space-y-1 custom-scrollbar" data-member-picker-search-list=""><div class="text-[10px] text-gray-400 py-3 text-center">输入条件后搜索</div></div></div></div></div></div>
+</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="bookDetailModals"><div class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm hidden" id="addTextModal">
+<div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col add-text-modal-panel" id="addTextModalPanel">
+<div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
+<h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+<iconify-icon class="text-trad text-xl" icon="mingcute:file-info-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11 16c-.2-.023-.256-.012-.44-.102c-.647-.316-.747-1.228-.185-1.678A1.04 1.04 0 0 1 11 14h1c.46.026.865.305.974.771L13 15v1.14c.656.431.689 1.392-.06 1.758c-.28.137-.645.119-.94.102c-.383-.022-.725-.206-.898-.56C10.916 17.059 11 16.289 11 16m.771-3.026c-1.28-.299-.816-2.245.46-1.948c1.28.299.816 2.245-.46 1.948m2.434-10.876c.307.1.56.27.795.488L19.414 7c.374.404.564.864.586 1.414V20c-.026.641-.293 1.229-.819 1.614c-.351.257-.751.369-1.181.386H6a2.1 2.1 0 0 1-.919-.223C4.403 21.426 4.03 20.748 4 20V4c.046-1.146.854-1.954 2-2h7.586c.239.009.39.024.619.098M14 8h3.586L14 4.414Zm-2-4H6v16h12V10h-4.5c-.864-.039-1.461-.636-1.5-1.5Z"></path></svg></template></iconify-icon>
+                选择谱文
+            </h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeAddTextModal()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="add-text-modal-body flex overflow-hidden">
+<!-- 左侧：待选列表 -->
+<div class="w-1/2 border-r border-gray-100 flex flex-col add-text-modal-column">
+<div class="p-3 bg-gray-50 border-b border-gray-100 shrink-0">
+<div class="relative">
+<input class="w-full pl-8 pr-3 py-1.5 text-xs border rounded-lg outline-none focus:border-trad" oninput="filterAvailableTexts(this.value)" placeholder="搜索谱文或目录名称..." type="text">
+<iconify-icon class="absolute left-2.5 top-2 text-gray-400" icon="mingcute:search-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m17.176 15.762l3.652 3.652c.359.41.405 1.01 0 1.414c-.404.405-1.004.359-1.414 0l-3.652-3.652c-1.145.85-2.399 1.459-3.814 1.702C5.871 19.921.72 14.327 2.272 8.355a8.5 8.5 0 0 1 1.979-3.618A8.55 8.55 0 0 1 7.68 2.478c6.112-2.146 12.292 3.095 11.198 9.47c-.243 1.415-.852 2.669-1.702 3.814M9.938 4.025a6.5 6.5 0 0 0-3.844 1.697a6.5 6.5 0 0 0-1.727 2.622c-1.558 4.436 2.021 9.03 6.695 8.631a6.5 6.5 0 0 0 3.844-1.697a6.5 6.5 0 0 0 1.727-2.622c1.558-4.436-2.021-9.03-6.695-8.631"></path></svg></template></iconify-icon>
+</div>
+</div>
+<div class="flex-grow overflow-auto p-2 space-y-1 min-h-0" id="availableTextList"></div>
+</div>
+<!-- 右侧：已选列表 & 排序 -->
+<div class="w-1/2 flex flex-col bg-gray-50/30 add-text-modal-column">
+<div class="p-3 border-b border-gray-100 font-bold text-xs flex justify-between shrink-0">
+<span>已选择 (拖拽或点击按钮调整顺序)</span>
+<span class="text-gray-400 font-normal" id="selectedCount">0</span>
+</div>
+<div class="flex-grow overflow-auto p-2 space-y-2 min-h-0" id="selectedTextList"><div class="add-text-empty-state text-gray-300 text-xs"><iconify-icon class="text-2xl mb-2" icon="mingcute:file-search-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m14.705 16.291l.709.709l.159.207c.436.756-.282 1.692-1.125 1.466c-.445-.119-.908-.719-1.157-.968a3.4 3.4 0 0 1-1.211.292c-2.056.083-3.508-1.936-2.949-3.868c.142-.49.431-.955.804-1.302a3.06 3.06 0 0 1 1.985-.824c1.649-.066 3.012 1.301 3.077 2.917c.019.483-.106.931-.292 1.371m-2.869-2.275c-1.286.211-.967 2.18.328 1.968c1.286-.211.967-2.18-.328-1.968m-5.95 7.977C4.798 21.894 4.04 21.092 4 20V4c.042-1.135.865-1.958 2-2h7.586c.296.01.584.067.853.194c.209.099.393.235.561.392L19.414 7c.37.396.568.872.586 1.414V20c-.024.645-.307 1.244-.838 1.624A2.1 2.1 0 0 1 18 22H6ZM12 4l-5.994.006v15.988h11.988L18 10h-4.5A1.534 1.534 0 0 1 12 8.5Zm2 4h3.586L14 4.414Z"></path></svg></template></iconify-icon>请从左侧选择谱文</div></div>
+</div>
+</div>
+<div class="p-4 border-t border-gray-100 flex justify-end gap-3 bg-white shrink-0">
+<button class="px-4 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" onclick="closeAddTextModal()">取消</button>
+<button class="px-6 py-1.5 bg-trad text-white rounded-lg text-sm hover:bg-red-800 shadow-md" onclick="confirmAddText()">确认添加</button>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/50 z-[115] flex items-center justify-center p-4 backdrop-blur-sm hidden" id="editCatalogDocModal">
+<div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col add-text-modal-panel" id="editCatalogDocModalPanel">
+<div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
+<h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+<iconify-icon class="text-trad text-xl" icon="mingcute:edit-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M5.006 5.006v13.988h13.988l.006-.051V11c.042-.639.603-1.142 1.259-.966c.453.122.711.515.741.966v8.057c-.043.745-.435 1.411-1.118 1.745c-.301.147-.499.179-.825.198H4.943c-.593-.034-1.131-.275-1.508-.745c-.282-.352-.409-.753-.435-1.198V4.943c.019-.326.051-.524.198-.825c.334-.683 1-1.075 1.745-1.118H13c.451.03.844.288.966.741c.176.656-.327 1.217-.966 1.259H5.057Zm15.253-1.972c.778.209.947 1.104.448 1.673l-10 10c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414l10-10c.271-.238.607-.355.966-.259"></path></svg></template></iconify-icon>
+                编辑谱文引用
+            </h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeEditCatalogDocModal()" type="button">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="p-5 space-y-4 overflow-hidden flex flex-col shrink-0">
+<div>
+<label class="block text-sm font-bold text-gray-700 mb-1.5" for="editCatalogDocDisplayTitle">目录显示标题</label>
+<input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-trad/20 focus:border-trad text-sm" id="editCatalogDocDisplayTitle" placeholder="请输入目录中显示的标题" type="text">
+</div>
+<div>
+<label class="block text-sm font-bold text-gray-700 mb-1.5">引用谱文</label>
+<p class="text-xs text-gray-500 mb-2">从下方列表选择要引用的谱文；更换后「引自」信息将同步更新。</p>
+<div class="relative mb-2">
+<input class="w-full pl-8 pr-3 py-1.5 text-xs border rounded-lg outline-none focus:border-trad" id="editCatalogDocSearchInput" oninput="filterEditCatalogDocPicker(this.value)" placeholder="搜索谱文或目录名称..." type="text">
+<iconify-icon class="absolute left-2.5 top-2 text-gray-400" icon="mingcute:search-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m17.176 15.762l3.652 3.652c.359.41.405 1.01 0 1.414c-.404.405-1.004.359-1.414 0l-3.652-3.652c-1.145.85-2.399 1.459-3.814 1.702C5.871 19.921.72 14.327 2.272 8.355a8.5 8.5 0 0 1 1.979-3.618A8.55 8.55 0 0 1 7.68 2.478c6.112-2.146 12.292 3.095 11.198 9.47c-.243 1.415-.852 2.669-1.702 3.814M9.938 4.025a6.5 6.5 0 0 0-3.844 1.697a6.5 6.5 0 0 0-1.727 2.622c-1.558 4.436 2.021 9.03 6.695 8.631a6.5 6.5 0 0 0 3.844-1.697a6.5 6.5 0 0 0 1.727-2.622c1.558-4.436-2.021-9.03-6.695-8.631"></path></svg></template></iconify-icon>
+</div>
+<div class="border border-gray-200 rounded-lg overflow-auto max-h-52 min-h-[8rem] p-2 bg-gray-50/40" id="editCatalogDocPickerList"></div>
+<p class="text-[11px] text-gray-500 mt-2">当前引用：<span class="text-gray-700 font-medium" id="editCatalogDocCurrentRef">—</span></p>
+</div>
+</div>
+<div class="p-4 border-t border-gray-100 flex justify-end gap-3 bg-white shrink-0">
+<button class="px-4 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" onclick="closeEditCatalogDocModal()" type="button">取消</button>
+<button class="px-6 py-1.5 bg-trad text-white rounded-lg text-sm hover:bg-red-800 shadow-md" onclick="confirmEditCatalogDoc()" type="button">确定</button>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4 backdrop-blur-sm hidden" id="moveNodeModal">
+<div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden">
+<div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+<h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm">
+<iconify-icon class="text-trad text-xl" icon="mingcute:transfer-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m6.414 16l2.293 2.293l.159.207a1.01 1.01 0 0 1-.607 1.466c-.359.096-.695-.021-.966-.259l-4-4c-.359-.409-.404-1.01 0-1.414c.196-.197.436-.275.707-.293h16c.543.036 1 .428 1 1s-.457.964-1 1Zm11.172-8l-2.293-2.293l-.159-.207a1.01 1.01 0 0 1 .607-1.466c.359-.096.695.021.966.259l4 4c.359.409.404 1.01 0 1.414c-.196.197-.436.275-.707.293H4c-.543-.036-1-.428-1-1s.457-.964 1-1Z"></path></svg></template></iconify-icon>
+                迁出内容
+            </h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeMoveModal()">
+<iconify-icon class="text-xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="p-4 space-y-4 flex-grow overflow-auto custom-scrollbar bg-[#FDFCF8]">
+<div>
+<p class="text-[10px] text-gray-400 mb-2 font-bold uppercase tracking-wider">选择目标目录</p>
+<div class="space-y-1.5" id="moveTargetList">
+<!-- 动态渲染目录树 -->
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+<button class="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs hover:bg-gray-100 transition-colors" onclick="closeMoveModal()">取消</button>
+<button class="px-6 py-2 bg-trad text-white rounded-lg text-xs font-bold hover:bg-red-800 shadow-md transition-all" onclick="confirmMove()">确认迁入</button>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity hidden" id="addChapterModal">
+<div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+<div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+<h3 class="text-lg font-bold text-gray-800">添加章节</h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeAddChapterModal()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="p-6">
+<label class="mb-2 flex items-center gap-1 text-sm font-bold text-gray-700">章节名称<button type="button" class="zy-help-btn" data-help="chapter-name" aria-label="章节名称说明" data-help-bound="1"></button></label>
+<input class="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-trad/20 focus:border-trad outline-none transition-all" id="newChapterNameInput" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); confirmAddChapter(); }" placeholder="请输入章节名称" type="text" value="因受">
+</div>
+<div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
+<button class="flex-1 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-100" onclick="closeAddChapterModal()">取消</button>
+<button class="flex-1 py-2 rounded-lg bg-trad text-white text-sm font-bold hover:bg-red-800 shadow-md" onclick="confirmAddChapter()">确定</button>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity hidden" id="addLineageModal">
+<div class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-[600px] relative">
+<!-- 左侧表单 -->
+<div class="flex-1 flex flex-col border-r border-gray-100 bg-white z-10">
+<div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+<h3 class="text-lg font-bold text-gray-800">添加世系</h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors md:hidden" onclick="closeAddLineageModal()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="p-6 flex-1 overflow-y-auto space-y-4">
+<div>
+<label class="mb-1 flex items-center gap-1 text-sm font-bold text-gray-700">总谱||分谱标题<span class="text-gray-400 font-normal">（选填）</span><button type="button" class="zy-help-btn" data-help="lineage-total-title" aria-label="总谱分谱标题说明" data-help-bound="1"></button></label>
+<input class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-trad/20 focus:border-trad outline-none text-sm" id="lineageTotalTitle" oninput="updateLineagePreview()" placeholder="如：清河张氏总谱" type="text">
+</div>
+<div>
+<label class="mb-1 flex items-center gap-1 text-sm font-bold text-gray-700">世系谱眉名<span class="text-trad font-normal">*</span><button type="button" class="zy-help-btn" data-help="lineage-eyebrow" aria-label="世系谱眉名说明" data-help-bound="1"></button></label>
+<input class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-trad/20 focus:border-trad outline-none text-sm" id="lineageEyebrowTitle" oninput="updateLineagePreview()" placeholder="如：世系卷一" type="text">
+</div>
+<div>
+<label class="block text-sm font-bold text-gray-700 mb-1">起始族丁</label>
+<div class="relative">
+<input class="w-full px-3 py-2 pr-10 rounded-lg border border-gray-200 focus:ring-2 focus:ring-trad/20 focus:border-trad outline-none text-sm cursor-pointer" id="lineageStartMember" onclick="openMemberSearch('start')" placeholder="点击选择起始族丁" readonly="" type="text">
+<input id="lineageStartMemberId" type="hidden" value="">
+<iconify-icon class="absolute right-3 top-2.5 text-gray-400" icon="mingcute:search-2-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="m15.605 14.191l5.102 5.102c.359.409.404 1.01 0 1.414s-1.005.359-1.414 0l-5.102-5.102c-.696.482-1.408.878-2.226 1.116a7.03 7.03 0 0 1-8.213-3.56a7.03 7.03 0 0 1-.721-3.834a7.02 7.02 0 0 1 1.8-4.049a7.03 7.03 0 0 1 3.84-2.153a7.05 7.05 0 0 1 4.49.627a7.03 7.03 0 0 1 3.56 8.213c-.238.818-.634 1.53-1.116 2.226M9.517 5.024a5 5 0 0 0-2.888 1.285c-3.532 3.228-.904 9.121 3.854 8.667a5 5 0 0 0 2.888-1.285c3.532-3.228.904-9.121-3.854-8.667"></path></svg></template></iconify-icon>
+</div>
+</div>
+<div>
+<label class="block text-sm font-bold text-gray-700 mb-2">支派后裔范围</label>
+<div class="grid grid-cols-1 gap-2">
+<label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer">
+<input checked="" class="text-trad focus:ring-trad" name="descendantScope" onclick="toggleScopeInput('all')" type="radio" value="all">
+<span class="text-sm">全部后代</span>
+</label>
+<label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer">
+<input class="text-trad focus:ring-trad" name="descendantScope" onclick="toggleScopeInput('member')" type="radio" value="member">
+<span class="text-sm">指定结束族丁(不含)</span>
+</label>
+<label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer">
+<input class="text-trad focus:ring-trad" name="descendantScope" onclick="toggleScopeInput('member_inclusive')" type="radio" value="member_inclusive">
+<span class="text-sm">指定结束族丁(含)</span>
+</label>
+<div class="hidden pl-7" id="scopeMemberRow">
+<input class="w-full px-2 py-1 text-xs border rounded cursor-pointer" id="scopeMemberInput" onclick="openMemberSearch('end')" placeholder="点击选择结束族丁" readonly="" type="text">
+<input id="scopeMemberId" type="hidden" value="">
+</div>
+<label class="flex items-center gap-2 p-2 rounded border border-gray-100 hover:bg-gray-50 cursor-pointer">
+<input class="text-trad focus:ring-trad" name="descendantScope" onclick="toggleScopeInput('generations')" type="radio" value="generations">
+<span class="text-sm">指定结束世数</span>
+<input class="ml-auto w-24 px-2 py-1 text-xs border rounded hidden" id="scopeGenInput" type="number" value="5">
+</label>
+</div>
+</div>
+</div>
+<div class="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+<button class="flex-1 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-100" onclick="closeAddLineageModal()">取消</button>
+<button class="flex-1 py-2 rounded-lg bg-trad text-white text-sm font-bold hover:bg-red-800 shadow-md" onclick="confirmAddLineage()">添加至谱书</button>
+</div>
+</div>
+<!-- 右侧演示预览 -->
+<div class="w-full md:w-1/2 bg-gray-100 p-6 flex flex-col relative">
+<div class="flex justify-between items-center mb-4">
+<h4 class="text-sm font-bold text-gray-500">排版位置演示</h4>
+<button class="text-gray-400 hover:text-gray-600 transition-colors hidden md:block" onclick="closeAddLineageModal()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="flex-1 bg-white shadow-lg rounded-sm p-4 flex flex-col relative overflow-hidden border border-gray-300">
+<div class="absolute inset-3 border border-gray-200 pointer-events-none"></div>
+<div class="relative z-0 h-full flex">
+<div class="flex-1 pr-2">
+<div class="h-full grid grid-rows-5 border border-gray-200">
+<div class="grid grid-cols-1 text-[8px] text-gray-400">
+<div class="border-b border-gray-200 flex items-center justify-center">内容示意</div>
+</div>
+<div class="grid grid-cols-1 text-[8px] text-gray-400">
+<div class="border-b border-gray-200 flex items-center justify-center">内容示意</div>
+</div>
+<div class="grid grid-cols-1 text-[8px] text-gray-400">
+<div class="border-b border-gray-200 flex items-center justify-center">内容示意</div>
+</div>
+<div class="grid grid-cols-1 text-[8px] text-gray-400">
+<div class="border-b border-gray-200 flex items-center justify-center">内容示意</div>
+</div>
+<div class="grid grid-cols-1 text-[8px] text-gray-400">
+<div class="flex items-center justify-center">内容示意</div>
+</div>
+</div>
+</div>
+<div class="w-24 border-l border-gray-300 grid grid-cols-2">
+<div class="border-r border-gray-300 flex flex-col items-center py-3">
+<div></div>
+<div class="writing-vertical text-2xl font-serif font-bold text-gray-800" id="previewTotalTitle">总谱分谱标题</div>
+<div class="mt-auto text-[10px] text-gray-400 writing-vertical">页码</div>
+<div class="mt-2 text-[10px] text-gray-400 writing-vertical">堂号</div>
+</div>
+<div class="flex flex-col items-center py-3">
+<div class="writing-vertical text-3xl font-bold text-gray-700" id="previewBookEyebrowTitle">谱眉名称</div>
+<img alt="列装饰图案" class="w-full object-contain mt-1 mb-2" src="assets/images/fishtail-default.svg">
+<div class="writing-vertical text-xl font-bold text-gray-700 mt-2" id="previewEyebrowTitle">世系谱眉名</div>
+<div class="mt-auto"></div>
+</div>
+</div>
+</div>
+</div>
+<p class="mt-3 text-[10px] text-gray-400 text-center">※ 按欧式版式示意：右侧第一列显示总谱分谱标题，最右列显示谱书谱眉/世系谱眉名</p>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/60 z-[150] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity hidden" id="memberSearchModal">
+<div class="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col h-[80vh] relative animate-in fade-in zoom-in duration-300">
+<div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50" style="padding: 0px 15px;">
+<h3 class="text-lg font-bold text-gray-800" id="memberSearchTitle" style="font-size: 12px;">选择起始族丁</h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeMemberSearch()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="flex-grow flex flex-col min-h-0 min-w-0 p-6 bg-gray-50/50 overflow-hidden">
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
+<div class="flex-1 min-h-0 min-w-0 flex flex-col" id="memberSearchPickerRoot"></div>
+</div>
+</div>
+</div>
+</div><div class="fixed inset-0 bg-black/50 z-[130] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity hidden" id="lineageSettingsModal">
+<div class="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
+<div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+<h3 class="text-lg font-bold text-gray-800">世系详细设置 - <span id="settingsLineageName">南迁主要分支</span></h3>
+<button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeLineageSettings()">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="p-6 overflow-y-auto space-y-6">
+<!-- 检索表设置 -->
+<div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<iconify-icon class="text-xl" icon="mingcute:search-3-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M13.865 7.51q.357.4.609.873c.334.627.527 1.343.524 2.055c-.001.452-.235.861-.68 1.01c-.25.084-.527.065-.763-.053c-.543-.27-.512-.695-.576-1.21a2.51 2.51 0 0 0-1.863-2.107c-.587-.148-1.182.029-1.511-.633a1.005 1.005 0 0 1 .233-1.195c.64-.565 2.138-.065 2.779.276c.47.251.894.586 1.248.984m3.311 8.252l3.652 3.652c.359.41.405 1.01 0 1.414c-.404.405-1.004.359-1.414 0l-3.652-3.652c-1.145.85-2.399 1.459-3.814 1.702C5.871 19.921.72 14.327 2.272 8.355a8.5 8.5 0 0 1 1.979-3.618A8.55 8.55 0 0 1 7.68 2.478c6.112-2.146 12.292 3.095 11.198 9.47c-.243 1.415-.852 2.669-1.702 3.814M9.938 4.025a6.5 6.5 0 0 0-3.844 1.697a6.5 6.5 0 0 0-1.727 2.622c-1.558 4.436 2.021 9.03 6.695 8.631a6.5 6.5 0 0 0 3.844-1.697a6.5 6.5 0 0 0 1.727-2.622c1.558-4.436-2.021-9.03-6.695-8.631"></path></svg></template></iconify-icon>
+</div>
+<span class="font-bold text-gray-800">族丁检索表</span>
+</div>
+<label class="flex items-center gap-2 cursor-pointer group">
+<span class="text-xs text-gray-400 group-hover:text-trad transition-colors">是否在谱书上生成</span>
+<input checked="" class="w-4 h-4 rounded text-trad focus:ring-trad cursor-pointer" id="genIdx" onchange="onLegacyGenIdxChange()" type="checkbox">
+</label>
+</div>
+<div class="grid grid-cols-2 gap-4 pl-10" id="idxTOCSection">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded text-trad focus:ring-trad" id="idxInTOC" onchange="toggleTOCSettings('idxInTOC', 'idxTitleContainer', 'block')" type="checkbox">
+<label class="text-sm text-gray-600" for="idxInTOC">在目录中显示</label>
+</div>
+<div id="idxTitleContainer">
+<input class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-trad" placeholder="目录显示标题" type="text" value="族丁检索表">
+</div>
+</div>
+</div>
+<!-- 吊线图设置 -->
+<div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+<iconify-icon class="text-xl" icon="mingcute:node-tree-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style></template></iconify-icon>
+</div>
+<span class="font-bold text-gray-800">吊线图</span>
+</div>
+<label class="flex items-center gap-2 cursor-pointer group">
+<span class="text-xs text-gray-400 group-hover:text-trad transition-colors">是否在谱书上生成</span>
+<input checked="" class="w-4 h-4 rounded text-trad focus:ring-trad cursor-pointer" id="genDiaoxian" onchange="toggleTOCSettings('genDiaoxian', 'diaoxianTOCSection')" type="checkbox">
+</label>
+</div>
+<div class="grid grid-cols-2 gap-4 pl-10" id="diaoxianTOCSection">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded text-trad focus:ring-trad" id="diaoxianInTOC" onchange="toggleTOCSettings('diaoxianInTOC', 'diaoxianTitleContainer', 'block')" type="checkbox">
+<label class="text-sm text-gray-600" for="diaoxianInTOC">在目录中显示</label>
+</div>
+<div id="diaoxianTitleContainer">
+<input class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-trad" placeholder="目录显示标题" type="text" value="吊线图">
+</div>
+</div>
+</div>
+<!-- 世系表设置 -->
+<div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+<iconify-icon class="text-xl" icon="mingcute:table-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M21 19.057c-.063 1.1-.843 1.88-1.943 1.943H4.943c-.445-.026-.846-.153-1.198-.435c-.47-.377-.711-.915-.745-1.508V4.943c.026-.445.153-.846.435-1.198c.377-.47.915-.711 1.508-.745h14.114c.593.034 1.131.275 1.508.745c.282.352.409.753.435 1.198ZM5 15l.006 3.994L11 19v-4Zm8 0v4l5.994-.006L19 15Zm-8-5v3h6v-3Zm8 0v3h6v-3ZM5.006 5.006L5 8h6V5ZM13 5v3h6l-.006-2.994Z"></path></svg></template></iconify-icon>
+</div>
+<span class="font-bold text-gray-800">世系表</span>
+</div>
+<label class="flex items-center gap-2 cursor-pointer group">
+<span class="text-xs text-gray-400 group-hover:text-trad transition-colors">是否在谱书上生成</span>
+<input checked="" class="w-4 h-4 rounded text-trad focus:ring-trad cursor-pointer" id="genShixi" onchange="onLegacyGenShixiChange()" type="checkbox">
+</label>
+</div>
+<div class="grid grid-cols-2 gap-4 pl-10" id="shixiTOCSection">
+<div class="flex items-center gap-2">
+<input checked="" class="rounded text-trad focus:ring-trad" id="shixiInTOC" onchange="toggleTOCSettings('shixiInTOC', 'shixiTitleContainer', 'block')" type="checkbox">
+<label class="text-sm text-gray-600" for="shixiInTOC">在目录中显示</label>
+</div>
+<div id="shixiTitleContainer">
+<input class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-trad" placeholder="目录显示标题" type="text" value="世系表">
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+<button class="px-6 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-100" onclick="closeLineageSettings()">取消</button>
+<button class="px-8 py-2 rounded-lg bg-trad text-white text-sm font-bold hover:bg-red-800 shadow-md" onclick="saveLineageSettings()">保存设置</button>
+</div>
+</div>
+</div><div class="fixed inset-0 z-[125] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity hidden" id="deleteCatalogConfirmModal">
+<div class="w-full max-w-md scale-95 transform overflow-hidden rounded-2xl bg-white opacity-0 shadow-2xl transition-all" id="deleteCatalogConfirmModalContent">
+<div class="flex items-center justify-between border-b border-gray-100 p-6">
+<h3 class="flex items-center gap-2 text-xl font-bold text-gray-800">
+<iconify-icon class="text-trad text-2xl" icon="mingcute:alert-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11.741 16.966a1 1 0 0 1-.607-.466c-.439-.759.29-1.69 1.127-1.465c.254.068.475.237.607.466c.439.759-.29 1.69-1.127 1.465m-.707-8.224c.226-.843 1.396-.997 1.832-.242c.101.175.121.302.134.5v4.001c-.03.45-.288.844-.741.965c-.656.176-1.217-.326-1.259-.965V9ZM3.213 20.341c-1.104-.129-1.653-1.272-1.146-2.238l8.634-14.955c.414-.648 1.24-.953 1.951-.596c.274.138.482.338.647.596l8.634 14.955c.263.501.265 1.076-.04 1.56c-.276.437-.751.67-1.259.69H3.366Zm1.019-1.988h15.536L12 4.898Z"></path></svg></template></iconify-icon>
+                    删除确认
+                </h3>
+<button class="text-gray-400 transition-colors hover:text-gray-600" onclick="toggleDeleteCatalogConfirmModal(false)" type="button">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="space-y-4 p-6">
+<p class="text-sm text-gray-600" id="deleteCatalogConfirmMessage">确认删除该目录吗？</p>
+<div class="flex gap-3 pt-2">
+<button class="flex-1 rounded-xl border border-gray-200 px-6 py-2.5 font-bold text-gray-600 transition-colors hover:bg-gray-50" onclick="toggleDeleteCatalogConfirmModal(false)" type="button">取消</button>
+<button class="flex-1 rounded-xl bg-trad px-6 py-2.5 font-bold text-white shadow-lg shadow-red-900/20 transition-colors hover:bg-red-800" onclick="confirmDeleteCatalogNode()" type="button">确认删除</button>
+</div>
+</div>
+</div>
+</div><div class="fixed inset-0 z-[125] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity hidden" id="catalogBlockedModal">
+<div class="w-full max-w-md scale-95 transform overflow-hidden rounded-2xl bg-white opacity-0 shadow-2xl transition-all" id="catalogBlockedModalContent">
+<div class="flex items-center justify-between border-b border-gray-100 p-6">
+<h3 class="flex items-center gap-2 text-xl font-bold text-gray-800">
+<iconify-icon class="text-trad text-2xl" icon="mingcute:information-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M11 12c-.466-.061-.834-.25-.966-.741a1 1 0 0 1 .1-.759c.186-.322.506-.476.866-.5h1c.571.037.963.429 1 1v5.134c.182.14.248.162.366.366A1.01 1.01 0 0 1 13 17.866c-.292.169-.679.155-1 .134c-.271-.018-.511-.096-.707-.293c-.197-.196-.275-.436-.293-.707Zm.741-3.034a1 1 0 0 1-.607-.466c-.439-.76.29-1.69 1.127-1.466c.254.068.475.238.607.466c.439.76-.29 1.69-1.127 1.466m-.483 13.006c-1.75-.119-3.446-.731-4.895-1.712C1.054 16.668.538 9.075 5.166 4.701a9.8 9.8 0 0 1 3.148-1.999a10.2 10.2 0 0 1 4.428-.674c1.75.119 3.446.731 4.895 1.712c5.309 3.592 5.825 11.185 1.197 15.559a9.8 9.8 0 0 1-3.148 1.999a10.2 10.2 0 0 1-4.428.674m.116-17.947a8 8 0 0 0-4.377 1.733C2.03 9.744 3.51 17.709 9.585 19.629a8 8 0 0 0 7.418-1.387c4.967-3.985 3.487-11.951-2.588-13.871a8.1 8.1 0 0 0-3.041-.346"></path></svg></template></iconify-icon>
+                    操作提示
+                </h3>
+<button class="text-gray-400 transition-colors hover:text-gray-600" onclick="toggleCatalogBlockedModal(false)" type="button">
+<iconify-icon class="text-2xl" icon="mingcute:close-line"><template shadowrootmode="open"><style data-style="data-style">:host{display:inline-block;vertical-align:0}span,svg{display:block}</style><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10.586 12.001L4.929 6.344c-.359-.41-.404-1.01 0-1.414c.404-.405 1.005-.359 1.414 0L12 10.586l5.657-5.656c.409-.359 1.01-.404 1.414 0s.359 1.005 0 1.414l-5.657 5.657l5.657 5.656c.359.41.404 1.011 0 1.415s-1.005.359-1.414 0L12 13.415l-5.657 5.657c-.409.359-1.01.404-1.414 0s-.359-1.005 0-1.414Z"></path></svg></template></iconify-icon>
+</button>
+</div>
+<div class="space-y-4 p-6">
+<p class="text-sm text-gray-600" id="catalogBlockedMessage">该目录下已有内容，请先迁出或删除内容后再删除目录。</p>
+<div class="flex pt-2">
+<button class="w-full rounded-xl bg-trad px-6 py-2.5 font-bold text-white shadow-lg shadow-red-900/20 transition-colors hover:bg-red-800" onclick="toggleCatalogBlockedModal(false)" type="button">我知道了</button>
+</div>
+</div>
+</div>
+</div></div>
+</div>

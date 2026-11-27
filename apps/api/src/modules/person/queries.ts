@@ -16,7 +16,7 @@ import type {
   PersonNameKind,
   PersonSex,
 } from "@yunpu/shared";
-import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { parseUuidCursor, sliceCursorPage } from "../../lib/pagination";
 import { isoTimestamp as timestamp } from "../../lib/sql";
@@ -672,6 +672,61 @@ export async function deletePerson(
     .where(and(eq(person.projectId, projectId), eq(person.id, personId)))
     .returning({ id: person.id });
   return rows.length > 0;
+}
+
+export async function getPersonAnchorInfo(
+  db: TxDatabase,
+  projectId: string,
+  personId: string,
+): Promise<{ id: string; lineageId: string } | null> {
+  const rows = await db
+    .select({ id: person.id, lineageId: person.lineageId })
+    .from(person)
+    .where(and(eq(person.projectId, projectId), eq(person.id, personId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listRelationsForPerson(
+  db: TxDatabase,
+  projectId: string,
+  personId: string,
+): Promise<RelationView[]> {
+  return db
+    .select(relationColumns)
+    .from(personRelation)
+    .where(
+      and(
+        eq(personRelation.projectId, projectId),
+        or(
+          eq(personRelation.fromPersonId, personId),
+          eq(personRelation.toPersonId, personId),
+        ),
+      ),
+    )
+    .orderBy(asc(personRelation.sortOrder), asc(personRelation.createdAt));
+}
+
+export async function getProjectionForPerson(
+  db: TxDatabase,
+  projectId: string,
+  personId: string,
+): Promise<ProjectionView | null> {
+  const rows = await db
+    .select({
+      personId: lineageProjection.personId,
+      primaryPath: sql<string>`${lineageProjection.primaryPath}::text`,
+      generation: lineageProjection.generation,
+    })
+    .from(lineageProjection)
+    .where(
+      and(
+        eq(lineageProjection.projectId, projectId),
+        eq(lineageProjection.personId, personId),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function personExistsInProject(

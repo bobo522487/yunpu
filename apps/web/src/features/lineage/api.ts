@@ -2,19 +2,14 @@ import type {
   ApiRelationKind,
   CreateFolderInput,
   CreateLineageInput,
-  CreatePersonEventInput,
   CreatePersonInput,
-  CreatePersonNameInput,
-  CreateRelationInput,
+  CreateRelativeInput,
   PersonEventType,
   PersonNameKind,
   PersonSex,
   UpdateFolderInput,
   UpdateLineageInput,
-  UpdatePersonEventInput,
-  UpdatePersonInput,
-  UpdatePersonNameInput,
-  UpdateRelationInput,
+  UpdatePersonAggregateInput,
 } from '@yunpu/shared';
 import type { GenealogyDate } from '../date-input/date.types';
 import type { GenealogyPlace } from '../place-input/place.types';
@@ -134,6 +129,19 @@ export interface LineageGraphPayload {
   projections: ProjectionDto[];
 }
 
+export interface PersonAggregatePayload {
+  person: PersonDto;
+  relations: RelationDto[];
+  projection: ProjectionDto | null;
+}
+
+export interface CreateRelativePayload {
+  person: PersonDto;
+  companionPerson: PersonDto | null;
+  relations: RelationDto[];
+  anchorEvents: PersonEventDto[];
+}
+
 export interface ProjectMediaUploadPayload {
   key: string;
   url: string;
@@ -203,7 +211,7 @@ export const fetchLineageGraph = (projectId: string, lineageId: string) =>
     `/api/v1/projects/${projectId}/lineages/${lineageId}/graph`,
   );
 
-// ---- 人物 ----
+// ---- 人物（聚合与创建/删除） ----
 
 export const createPersonRequest = (
   projectId: string,
@@ -214,112 +222,29 @@ export const createPersonRequest = (
     body: payload,
   });
 
-export const updatePersonRequest = (
+export const updatePersonAggregateRequest = (
   projectId: string,
   personId: string,
-  payload: UpdatePersonInput,
+  payload: UpdatePersonAggregateInput,
 ) =>
-  apiRequest<{ person: PersonDto }>(
-    `/api/v1/projects/${projectId}/persons/${personId}`,
-    { method: 'PATCH', body: payload },
+  apiRequest<PersonAggregatePayload>(
+    `/api/v1/projects/${projectId}/persons/${personId}/aggregate`,
+    { method: 'PUT', body: payload },
+  );
+
+export const createRelativeRequest = (
+  projectId: string,
+  payload: CreateRelativeInput,
+) =>
+  apiRequest<CreateRelativePayload>(
+    `/api/v1/projects/${projectId}/relatives`,
+    { method: 'POST', body: payload },
   );
 
 export const deletePersonRequest = (projectId: string, personId: string) =>
   apiRequest<unknown>(`/api/v1/projects/${projectId}/persons/${personId}`, {
     method: 'DELETE',
   });
-
-// ---- 人物名号 ----
-
-export const createPersonNameRequest = (
-  projectId: string,
-  personId: string,
-  payload: CreatePersonNameInput,
-) =>
-  apiRequest<{ name: PersonNameDto }>(
-    `/api/v1/projects/${projectId}/persons/${personId}/names`,
-    { method: 'POST', body: payload },
-  );
-
-export const updatePersonNameRequest = (
-  projectId: string,
-  personId: string,
-  nameId: string,
-  payload: UpdatePersonNameInput,
-) =>
-  apiRequest<{ name: PersonNameDto }>(
-    `/api/v1/projects/${projectId}/persons/${personId}/names/${nameId}`,
-    { method: 'PATCH', body: payload },
-  );
-
-export const deletePersonNameRequest = (
-  projectId: string,
-  personId: string,
-  nameId: string,
-) =>
-  apiRequest<unknown>(
-    `/api/v1/projects/${projectId}/persons/${personId}/names/${nameId}`,
-    { method: 'DELETE' },
-  );
-
-// ---- 人物关系 ----
-
-export const createRelationRequest = (
-  projectId: string,
-  payload: CreateRelationInput,
-) =>
-  apiRequest<{ relation: RelationDto }>(
-    `/api/v1/projects/${projectId}/relations`,
-    { method: 'POST', body: payload },
-  );
-
-export const updateRelationRequest = (
-  projectId: string,
-  relationId: string,
-  payload: UpdateRelationInput,
-) =>
-  apiRequest<{ relation: RelationDto }>(
-    `/api/v1/projects/${projectId}/relations/${relationId}`,
-    { method: 'PATCH', body: payload },
-  );
-
-export const deleteRelationRequest = (projectId: string, relationId: string) =>
-  apiRequest<unknown>(`/api/v1/projects/${projectId}/relations/${relationId}`, {
-    method: 'DELETE',
-  });
-
-// ---- 生平事件 ----
-
-export const createPersonEventRequest = (
-  projectId: string,
-  personId: string,
-  payload: CreatePersonEventInput,
-) =>
-  apiRequest<{ event: PersonEventDto }>(
-    `/api/v1/projects/${projectId}/persons/${personId}/events`,
-    { method: 'POST', body: payload },
-  );
-
-export const updatePersonEventRequest = (
-  projectId: string,
-  personId: string,
-  eventId: string,
-  payload: UpdatePersonEventInput,
-) =>
-  apiRequest<{ event: PersonEventDto }>(
-    `/api/v1/projects/${projectId}/persons/${personId}/events/${eventId}`,
-    { method: 'PATCH', body: payload },
-  );
-
-export const deletePersonEventRequest = (
-  projectId: string,
-  personId: string,
-  eventId: string,
-) =>
-  apiRequest<unknown>(
-    `/api/v1/projects/${projectId}/persons/${personId}/events/${eventId}`,
-    { method: 'DELETE' },
-  );
 
 // ---- 项目媒体 ----
 

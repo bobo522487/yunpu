@@ -3,6 +3,7 @@ import {
   CreatePersonNameSchema,
   CreatePersonSchema,
   CreateRelationSchema,
+  CreateRelativeSchema,
   ListPersonsQuerySchema,
   PersonEventIdParamsSchema,
   PersonIdParamsSchema,
@@ -10,6 +11,7 @@ import {
   ProjectIdParamsSchema,
   RelationIdParamsSchema,
   SubgraphQuerySchema,
+  UpdatePersonAggregateSchema,
   UpdatePersonEventSchema,
   UpdatePersonNameSchema,
   UpdatePersonSchema,
@@ -28,6 +30,7 @@ import {
   createPersonForProject,
   createPersonNameForProject,
   createRelationForProject,
+  createRelativeForProject,
   deletePersonEventForProject,
   deletePersonForProject,
   deletePersonNameForProject,
@@ -35,6 +38,7 @@ import {
   getPersonForProject,
   getSubgraphForProject,
   listPersonsForProject,
+  updatePersonAggregateForProject,
   updatePersonEventForProject,
   updatePersonForProject,
   updatePersonNameForProject,
@@ -81,6 +85,30 @@ personRouter.patch("/projects/:projectId/persons/:personId", async (c) => {
     input,
   );
   return c.json({ ok: true, data: { person } });
+});
+
+personRouter.put(
+  "/projects/:projectId/persons/:personId/aggregate",
+  async (c) => {
+    const user = requireUser(c);
+    const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
+    const input = await parseJson(c, UpdatePersonAggregateSchema);
+    const data = await updatePersonAggregateForProject(
+      user.id,
+      projectId,
+      personId,
+      input,
+    );
+    return c.json({ ok: true, data });
+  },
+);
+
+personRouter.post("/projects/:projectId/relatives", async (c) => {
+  const user = requireUser(c);
+  const { projectId } = parseParams(c, ProjectIdParamsSchema);
+  const input = await parseJson(c, CreateRelativeSchema);
+  const data = await createRelativeForProject(user.id, projectId, input);
+  return c.json({ ok: true, data }, 201);
 });
 
 personRouter.delete("/projects/:projectId/persons/:personId", async (c) => {

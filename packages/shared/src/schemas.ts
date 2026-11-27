@@ -338,44 +338,43 @@ export const CreatePersonSchema = z.object({
 });
 export type CreatePersonInput = z.infer<typeof CreatePersonSchema>;
 
+const personScalarUpdateShape = {
+  displayName: z.string().trim().min(1, "显示名不能为空").max(120).optional(),
+  sex: z.enum(PERSON_SEXES).optional(),
+  surname: optionalNonBlank(50).nullable().optional(),
+  givenName: optionalNonBlank(120).nullable().optional(),
+  romanizedSurname: optionalNonBlank(120).nullable().optional(),
+  romanizedName: optionalNonBlank(120).nullable().optional(),
+  romanizedSuffix: optionalNonBlank(120).nullable().optional(),
+  birthYear: z.coerce.number().int().min(-5000).max(9999).nullable().optional(),
+  deathYear: z.coerce.number().int().min(-5000).max(9999).nullable().optional(),
+  isLiving: z.boolean().optional(),
+  birthInfo: PersonBirthInfoSchema.nullable().optional(),
+  deathInfo: PersonDeathInfoSchema.nullable().optional(),
+  generationWord: optionalNonBlank(20).nullable().optional(),
+  relationTitle: optionalNonBlank(50).nullable().optional(),
+  siblingOrder: z.coerce.number().int().min(0).nullable().optional(),
+  biography: z.string().trim().max(20000).nullable().optional(),
+  notes: z.string().trim().max(10000).nullable().optional(),
+  avatarKey: optionalNonBlank(255).nullable().optional(),
+};
+
 export const UpdatePersonSchema = z
   .object({
-    displayName: z.string().trim().min(1, "显示名不能为空").max(120).optional(),
-    sex: z.enum(PERSON_SEXES).optional(),
-    surname: optionalNonBlank(50).nullable().optional(),
-    givenName: optionalNonBlank(120).nullable().optional(),
-    romanizedSurname: optionalNonBlank(120).nullable().optional(),
-    romanizedName: optionalNonBlank(120).nullable().optional(),
-    romanizedSuffix: optionalNonBlank(120).nullable().optional(),
-    birthYear: z.coerce
-      .number()
-      .int()
-      .min(-5000)
-      .max(9999)
-      .nullable()
-      .optional(),
-    deathYear: z.coerce
-      .number()
-      .int()
-      .min(-5000)
-      .max(9999)
-      .nullable()
-      .optional(),
-    isLiving: z.boolean().optional(),
-    birthInfo: PersonBirthInfoSchema.nullable().optional(),
-    deathInfo: PersonDeathInfoSchema.nullable().optional(),
-    generationWord: optionalNonBlank(20).nullable().optional(),
-    relationTitle: optionalNonBlank(50).nullable().optional(),
-    siblingOrder: z.coerce.number().int().min(0).nullable().optional(),
-    biography: z.string().trim().max(20000).nullable().optional(),
-    notes: z.string().trim().max(10000).nullable().optional(),
-    avatarKey: optionalNonBlank(255).nullable().optional(),
+    ...personScalarUpdateShape,
     version: z.coerce.number().int().positive(),
   })
   .refine((value) => Object.keys(value).some((key) => key !== "version"), {
     message: "至少提供一个要修改的字段",
   });
 export type UpdatePersonInput = z.infer<typeof UpdatePersonSchema>;
+
+export const PersonScalarPatchSchema = z
+  .object(personScalarUpdateShape)
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "至少提供一个要修改的字段",
+  });
+export type PersonScalarPatchInput = z.infer<typeof PersonScalarPatchSchema>;
 
 export const CreatePersonNameSchema = z.object({
   kind: z.enum(PERSON_NAME_KINDS),
@@ -388,20 +387,34 @@ export const CreatePersonNameSchema = z.object({
 });
 export type CreatePersonNameInput = z.infer<typeof CreatePersonNameSchema>;
 
+const personNameUpdateShape = {
+  kind: z.enum(PERSON_NAME_KINDS).optional(),
+  value: z.string().trim().min(1, "名号不能为空").max(120).optional(),
+  surname: optionalNonBlank(50).nullable().optional(),
+  romanizedSurname: optionalNonBlank(120).nullable().optional(),
+  romanizedName: optionalNonBlank(120).nullable().optional(),
+  label: optionalNonBlank(50).nullable().optional(),
+  isPrimary: z.boolean().optional(),
+};
+
 export const UpdatePersonNameSchema = z
-  .object({
-    kind: z.enum(PERSON_NAME_KINDS).optional(),
-    value: z.string().trim().min(1, "名号不能为空").max(120).optional(),
-    surname: optionalNonBlank(50).nullable().optional(),
-    romanizedSurname: optionalNonBlank(120).nullable().optional(),
-    romanizedName: optionalNonBlank(120).nullable().optional(),
-    label: optionalNonBlank(50).nullable().optional(),
-    isPrimary: z.boolean().optional(),
-  })
+  .object(personNameUpdateShape)
   .refine((value) => Object.keys(value).length > 0, {
     message: "至少提供一个要修改的字段",
   });
 export type UpdatePersonNameInput = z.infer<typeof UpdatePersonNameSchema>;
+
+export const PersonAggregateNameUpdateSchema = z
+  .object({
+    id: z.uuid(),
+    ...personNameUpdateShape,
+  })
+  .refine((value) => Object.keys(value).some((key) => key !== "id"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type PersonAggregateNameUpdateInput = z.infer<
+  typeof PersonAggregateNameUpdateSchema
+>;
 
 export const CreateRelationSchema = z
   .object({
@@ -420,19 +433,34 @@ export const CreateRelationSchema = z
   });
 export type CreateRelationInput = z.infer<typeof CreateRelationSchema>;
 
+const relationUpdateShape = {
+  kind: z.enum(API_RELATION_KINDS).optional(),
+  fromRoleLabel: optionalNonBlank(50).nullable().optional(),
+  toRoleLabel: optionalNonBlank(50).nullable().optional(),
+  sortOrder: z.coerce.number().int().min(0).nullable().optional(),
+  note: z.string().trim().max(1000).nullable().optional(),
+};
+
 export const UpdateRelationSchema = z
-  .object({
-    kind: z.enum(API_RELATION_KINDS).optional(),
-    fromRoleLabel: optionalNonBlank(50).nullable().optional(),
-    toRoleLabel: optionalNonBlank(50).nullable().optional(),
-    sortOrder: z.coerce.number().int().min(0).nullable().optional(),
-    note: z.string().trim().max(1000).nullable().optional(),
-  })
+  .object(relationUpdateShape)
   .strict()
   .refine((value) => Object.keys(value).length > 0, {
     message: "至少提供一个要修改的字段",
   });
 export type UpdateRelationInput = z.infer<typeof UpdateRelationSchema>;
+
+export const PersonAggregateRelationUpdateSchema = z
+  .object({
+    id: z.uuid(),
+    ...relationUpdateShape,
+  })
+  .strict()
+  .refine((value) => Object.keys(value).some((key) => key !== "id"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type PersonAggregateRelationUpdateInput = z.infer<
+  typeof PersonAggregateRelationUpdateSchema
+>;
 
 export const CreatePersonEventSchema = z.object({
   type: z.enum(PERSON_EVENT_TYPES),
@@ -443,18 +471,125 @@ export const CreatePersonEventSchema = z.object({
 });
 export type CreatePersonEventInput = z.infer<typeof CreatePersonEventSchema>;
 
+const personEventUpdateShape = {
+  type: z.enum(PERSON_EVENT_TYPES).optional(),
+  structuredDate: GenealogyDateSchema.nullable().optional(),
+  structuredPlace: GenealogyPlaceSchema.nullable().optional(),
+  description: z.string().trim().max(5000).nullable().optional(),
+  sortOrder: z.coerce.number().int().min(0).optional(),
+};
+
 export const UpdatePersonEventSchema = z
-  .object({
-    type: z.enum(PERSON_EVENT_TYPES).optional(),
-    structuredDate: GenealogyDateSchema.nullable().optional(),
-    structuredPlace: GenealogyPlaceSchema.nullable().optional(),
-    description: z.string().trim().max(5000).nullable().optional(),
-    sortOrder: z.coerce.number().int().min(0).optional(),
-  })
+  .object(personEventUpdateShape)
   .refine((value) => Object.keys(value).length > 0, {
     message: "至少提供一个要修改的字段",
   });
 export type UpdatePersonEventInput = z.infer<typeof UpdatePersonEventSchema>;
+
+export const PersonAggregateEventUpdateSchema = z
+  .object({
+    id: z.uuid(),
+    ...personEventUpdateShape,
+  })
+  .refine((value) => Object.keys(value).some((key) => key !== "id"), {
+    message: "至少提供一个要修改的字段",
+  });
+export type PersonAggregateEventUpdateInput = z.infer<
+  typeof PersonAggregateEventUpdateSchema
+>;
+
+const hasAggregateOps = (group?: {
+  create?: unknown[];
+  update?: unknown[];
+  deleteIds?: unknown[];
+}) =>
+  Boolean(
+    group &&
+      ((group.create?.length ?? 0) > 0 ||
+        (group.update?.length ?? 0) > 0 ||
+        (group.deleteIds?.length ?? 0) > 0),
+  );
+
+export const UpdatePersonAggregateSchema = z
+  .object({
+    version: z.coerce.number().int().positive(),
+    person: PersonScalarPatchSchema.optional(),
+    names: z
+      .object({
+        create: z.array(CreatePersonNameSchema).optional(),
+        update: z.array(PersonAggregateNameUpdateSchema).optional(),
+        deleteIds: z.array(z.uuid()).optional(),
+      })
+      .optional(),
+    relations: z
+      .object({
+        create: z.array(CreateRelationSchema).optional(),
+        update: z.array(PersonAggregateRelationUpdateSchema).optional(),
+        deleteIds: z.array(z.uuid()).optional(),
+      })
+      .optional(),
+    events: z
+      .object({
+        create: z.array(CreatePersonEventSchema).optional(),
+        update: z.array(PersonAggregateEventUpdateSchema).optional(),
+        deleteIds: z.array(z.uuid()).optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (value) =>
+      value.person !== undefined ||
+      hasAggregateOps(value.names) ||
+      hasAggregateOps(value.relations) ||
+      hasAggregateOps(value.events),
+    {
+      message: "至少提供一个要修改的字段或子项操作",
+    },
+  );
+export type UpdatePersonAggregateInput = z.infer<
+  typeof UpdatePersonAggregateSchema
+>;
+
+export const CreateRelativeRelationSchema = z.object({
+  otherPersonId: z.uuid().optional(),
+  direction: z.enum(["new_to_other", "other_to_new"]),
+  kind: z.enum(API_RELATION_KINDS),
+  fromRoleLabel: optionalNonBlank(50),
+  toRoleLabel: optionalNonBlank(50),
+  sortOrder: z.coerce.number().int().min(0).optional(),
+  note: z.string().trim().max(1000).optional(),
+});
+export type CreateRelativeRelationInput = z.infer<
+  typeof CreateRelativeRelationSchema
+>;
+
+export const CreateRelativeSchema = z.object({
+  anchorPersonId: z.uuid(),
+  person: CreatePersonSchema,
+  names: z.array(CreatePersonNameSchema).optional(),
+  events: z.array(CreatePersonEventSchema).optional(),
+  relations: z
+    .array(CreateRelativeRelationSchema)
+    .min(1, "至少提供一条关联关系"),
+  anchorEvents: z.array(CreatePersonEventSchema).optional(),
+  companion: z
+    .object({
+      person: CreatePersonSchema,
+      spouseRelation: z
+        .object({
+          fromRoleLabel: optionalNonBlank(50),
+          toRoleLabel: optionalNonBlank(50),
+          sortOrder: z.coerce.number().int().min(0).optional(),
+        })
+        .optional(),
+      childRelation: z.object({
+        kind: z.enum(API_RELATION_KINDS),
+        toRoleLabel: optionalNonBlank(50),
+      }),
+    })
+    .optional(),
+});
+export type CreateRelativeInput = z.infer<typeof CreateRelativeSchema>;
 
 export const SubgraphQuerySchema = z.object({
   rootPersonId: z.uuid(),

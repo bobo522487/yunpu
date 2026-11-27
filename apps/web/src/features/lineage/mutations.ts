@@ -1,546 +1,208 @@
-import type { ApiRelationKind } from '@yunpu/shared';
+import type {
+  CreatePersonInput, CreateRelationInput, CreateRelativeInput, CreateRelativeRelationInput,
+  PersonAggregateRelationUpdateInput, UpdatePersonAggregateInput,
+} from '@yunpu/shared';
 import {
-  aliasTypeToPersonNameKind,
-  buildUpdatePersonInput,
-  chineseRelationToApiKind,
-  cleanBirthInfo,
-  cleanDeathInfo,
-  composeDisplayName,
-  nonEmptyOrNull,
-  nonEmptyOrUndefined,
-  PARENT_API_RELATION_KINDS,
+  aliasTypeToPersonNameKind, buildUpdatePersonInput, chineseRelationToApiKind,
+  cleanBirthInfo, cleanDeathInfo, composeDisplayName, nonEmptyOrNull,
+  nonEmptyOrUndefined, PARENT_API_RELATION_KINDS,
 } from './adapter';
 import {
-  createPersonEventRequest,
-  createPersonNameRequest,
-  createPersonRequest,
-  createRelationRequest,
-  deletePersonEventRequest,
-  deletePersonNameRequest,
-  deleteRelationRequest,
-  type LineageGraphPayload,
-  type PersonDto,
-  type RelationDto,
-  updatePersonEventRequest,
-  updatePersonNameRequest,
-  updatePersonRequest,
-  updateRelationRequest,
+  createPersonRequest, createRelativeRequest, type LineageGraphPayload,
+  type PersonDto, type RelationDto, updatePersonAggregateRequest,
 } from './api';
-import type {
-  AddRelativeContext,
-  AddRelativeSubmitPayload,
-} from './domain/addRelativeTypes';
+import type { AddRelativeContext, AddRelativeSubmitPayload } from './domain/addRelativeTypes';
 import type { PersonRecord } from './types';
 import { normalizeAliasItems } from './utils/personAliases';
 
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
+const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+const nonEmptyOps = <C, U>(create: C[], update: U[], deleteIds: string[]) =>
+  create.length || update.length || deleteIds.length
+    ? { ...(create.length ? { create } : {}), ...(update.length ? { update } : {}), ...(deleteIds.length ? { deleteIds } : {}) }
+    : undefined;
+
+function diffCollection<E extends { id: string }, N extends { id: string }, C, U>(
+  existing: E[], nextItems: N[],
+  buildUpdate: (oldItem: E, nextItem: N, index: number) => U | null,
+  buildCreate: (nextItem: N, index: number) => C,
+) {
+  const nextById = new Map(nextItems.map((item, index) => [item.id, { item, index }]));
+  const existingIds = new Set(existing.map((item) => item.id));
+  const deleteIds: string[] = [];
+  const update: U[] = [];
+  for (const oldItem of existing) {
+    const matched = nextById.get(oldItem.id);
+    if (!matched) { deleteIds.push(oldItem.id); continue; }
+    const patch = buildUpdate(oldItem, matched.item, matched.index);
+    if (patch) update.push(patch);
+  }
+  const create = nextItems.map((item, index) => ({ item, index }))
+    .filter(({ item }) => !(isUuid(item.id) && existingIds.has(item.id)))
+    .map(({ item, index }) => buildCreate(item, index));
+  return nonEmptyOps(create, update, deleteIds);
 }
 
-async function syncParentEdge(
-  projectId: string,
-  childId: string,
-  sexFilter: 'female' | 'male_or_other',
-  targetParentId: string | null | undefined,
-  roleLabel: string | undefined,
-  relations: RelationDto[],
-  personById: Map<string, PersonDto>,
-) {
-  const existing = relations.filter((r) => {
-    if (r.toPersonId !== childId || !PARENT_API_RELATION_KINDS.has(r.kind)) {
-      return false;
-    }
-    const p = personById.get(r.fromPersonId);
-    const isMother = p?.sex === 'female';
-    return sexFilter === 'female' ? isMother : !isMother;
-  });
-
-  if (!targetParentId) {
-    for (const rel of existing) {
-      await deleteRelationRequest(projectId, rel.id);
-    }
-    return;
-  }
-
-  const desiredKind = chineseRelationToApiKind(roleLabel);
-  const matching = existing.find((r) => r.fromPersonId === targetParentId);
-  for (const rel of existing) {
-    if (rel.id !== matching?.id) {
-      await deleteRelationRequest(projectId, rel.id);
-    }
-  }
-
-  if (matching) {
-    const cleanRole = nonEmptyOrNull(roleLabel);
-    if (matching.kind !== desiredKind || matching.toRoleLabel !== cleanRole) {
-      await updateRelationRequest(projectId, matching.id, {
-        kind: desiredKind,
-        toRoleLabel: cleanRole,
-      });
-    }
-    return;
-  }
-
-  await createRelationRequest(projectId, {
-    fromPersonId: targetParentId,
-    toPersonId: childId,
-    kind: desiredKind,
-    ...(nonEmptyOrUndefined(roleLabel)
-      ? { toRoleLabel: nonEmptyOrUndefined(roleLabel) }
-      : {}),
-  });
-}
-
-async function syncAliasesDiff(
-  projectId: string,
-  dto: PersonDto,
-  nextRecord: PersonRecord,
-) {
-  const existingSecondary = (dto.names ?? []).filter((n) => !n.isPrimary);
-  const nextItems = normalizeAliasItems(nextRecord.aliasItems);
-  const nextById = new Map(nextItems.map((item) => [item.id, item]));
-
-  for (const oldName of existingSecondary) {
-    const updated = nextById.get(oldName.id);
-    if (!updated) {
-      await deletePersonNameRequest(projectId, dto.id, oldName.id);
-      continue;
-    }
-    const nextKind = aliasTypeToPersonNameKind(updated.type);
-    const nextLabel = nonEmptyOrNull(updated.type);
-    const nextSurname = nonEmptyOrNull(updated.surname);
-    const nextRSurname = nonEmptyOrNull(updated.romanizedName?.surname);
-    const nextRName = nonEmptyOrNull(updated.romanizedName?.name);
-    if (
-      oldName.kind !== nextKind ||
-      oldName.value !== updated.name ||
-      oldName.label !== nextLabel ||
-      oldName.surname !== nextSurname ||
-      oldName.romanizedSurname !== nextRSurname ||
-      oldName.romanizedName !== nextRName
-    ) {
-      await updatePersonNameRequest(projectId, dto.id, oldName.id, {
-        kind: nextKind,
-        value: updated.name,
-        label: nextLabel,
-        surname: nextSurname,
-        romanizedSurname: nextRSurname,
-        romanizedName: nextRName,
-      });
-    }
-  }
-
-  const existingIds = new Set(existingSecondary.map((n) => n.id));
-  for (const item of nextItems) {
-    if (isUuid(item.id) && existingIds.has(item.id)) continue;
-    await createPersonNameRequest(projectId, dto.id, {
-      kind: aliasTypeToPersonNameKind(item.type),
-      value: item.name,
+const diffNames = (dto: PersonDto, nextRecord: PersonRecord): UpdatePersonAggregateInput['names'] =>
+  diffCollection(
+    (dto.names ?? []).filter((n) => !n.isPrimary), normalizeAliasItems(nextRecord.aliasItems),
+    (old, next) => {
+      const [kind, label, surname, romanizedSurname, romanizedName] = [
+        aliasTypeToPersonNameKind(next.type), nonEmptyOrNull(next.type), nonEmptyOrNull(next.surname),
+        nonEmptyOrNull(next.romanizedName?.surname), nonEmptyOrNull(next.romanizedName?.name),
+      ];
+      return old.kind !== kind || old.value !== next.name || old.label !== label ||
+        old.surname !== surname || old.romanizedSurname !== romanizedSurname || old.romanizedName !== romanizedName
+        ? { id: old.id, kind, value: next.name, label, surname, romanizedSurname, romanizedName } : null;
+    },
+    (item) => ({
+      kind: aliasTypeToPersonNameKind(item.type), value: item.name,
       ...(nonEmptyOrUndefined(item.type) ? { label: item.type!.trim() } : {}),
-      ...(nonEmptyOrUndefined(item.surname)
-        ? { surname: item.surname!.trim() }
-        : {}),
-      ...(nonEmptyOrUndefined(item.romanizedName?.surname)
-        ? { romanizedSurname: item.romanizedName!.surname!.trim() }
-        : {}),
-      ...(nonEmptyOrUndefined(item.romanizedName?.name)
-        ? { romanizedName: item.romanizedName!.name!.trim() }
-        : {}),
-    });
+      ...(nonEmptyOrUndefined(item.surname) ? { surname: item.surname!.trim() } : {}),
+      ...(nonEmptyOrUndefined(item.romanizedName?.surname) ? { romanizedSurname: item.romanizedName!.surname!.trim() } : {}),
+      ...(nonEmptyOrUndefined(item.romanizedName?.name) ? { romanizedName: item.romanizedName!.name!.trim() } : {}),
+    }),
+  );
+
+const diffEvents = (dto: PersonDto, nextEventsInput: PersonRecord['events']): UpdatePersonAggregateInput['events'] =>
+  diffCollection(
+    dto.events ?? [], nextEventsInput ?? [],
+    (old, next, idx) => {
+      const description = nonEmptyOrNull(next.description);
+      return old.type !== next.type || old.description !== description || old.sortOrder !== idx ||
+        JSON.stringify(old.structuredDate) !== JSON.stringify(next.structuredDate ?? null) ||
+        JSON.stringify(old.structuredPlace) !== JSON.stringify(next.structuredPlace ?? null)
+        ? { id: old.id, type: next.type, structuredDate: next.structuredDate ?? null, structuredPlace: next.structuredPlace ?? null, description, sortOrder: idx } : null;
+    },
+    (item, idx) => ({
+      type: item.type, structuredDate: item.structuredDate ?? null, structuredPlace: item.structuredPlace ?? null,
+      ...(nonEmptyOrUndefined(item.description) ? { description: item.description!.trim() } : {}), sortOrder: idx,
+    }),
+  );
+
+function collectParentEdgeDiff(
+  personId: string, prevParentId: string | null, nextParentId: string | null, roleLabel: string | undefined,
+  relations: RelationDto[], create: CreateRelationInput[], update: PersonAggregateRelationUpdateInput[], deleteIds: string[],
+) {
+  const findEdge = (parentId: string | null) =>
+    parentId ? relations.find((r) => r.toPersonId === personId && r.fromPersonId === parentId && PARENT_API_RELATION_KINDS.has(r.kind)) : undefined;
+  const prevEdge = findEdge(prevParentId);
+  if (!nextParentId) { if (prevEdge) deleteIds.push(prevEdge.id); return; }
+  if (prevEdge && prevEdge.fromPersonId !== nextParentId) deleteIds.push(prevEdge.id);
+  const kind = chineseRelationToApiKind(roleLabel);
+  const toRoleLabel = nonEmptyOrNull(roleLabel);
+  const targetEdge = findEdge(nextParentId);
+  if (targetEdge) {
+    if (targetEdge.kind !== kind || targetEdge.toRoleLabel !== toRoleLabel) update.push({ id: targetEdge.id, kind, toRoleLabel });
+    return;
   }
+  create.push({ fromPersonId: nextParentId, toPersonId: personId, kind, ...(toRoleLabel ? { toRoleLabel } : {}) });
 }
 
-async function syncEventsDiff(
-  projectId: string,
-  dto: PersonDto,
-  nextEventsInput: PersonRecord['events'],
-) {
-  const existingEvents = dto.events ?? [];
-  const nextEvents = nextEventsInput ?? [];
-  const nextById = new Map(nextEvents.map((e) => [e.id, e]));
-
-  for (const oldEv of existingEvents) {
-    const matched = nextById.get(oldEv.id);
-    if (!matched) {
-      await deletePersonEventRequest(projectId, dto.id, oldEv.id);
-      continue;
-    }
-    const idx = nextEvents.findIndex((e) => e.id === matched.id);
-    const nextDesc = nonEmptyOrNull(matched.description);
-    if (
-      oldEv.type !== matched.type ||
-      oldEv.description !== nextDesc ||
-      oldEv.sortOrder !== idx ||
-      JSON.stringify(oldEv.structuredDate) !==
-        JSON.stringify(matched.structuredDate ?? null) ||
-      JSON.stringify(oldEv.structuredPlace) !==
-        JSON.stringify(matched.structuredPlace ?? null)
-    ) {
-      await updatePersonEventRequest(projectId, dto.id, oldEv.id, {
-        type: matched.type,
-        structuredDate: matched.structuredDate ?? null,
-        structuredPlace: matched.structuredPlace ?? null,
-        description: nextDesc,
-        sortOrder: idx >= 0 ? idx : 0,
-      });
-    }
+function diffRelations(graph: LineageGraphPayload, current: PersonRecord, nextRecord: PersonRecord, updates: Partial<PersonRecord>): UpdatePersonAggregateInput['relations'] {
+  const [create, update, deleteIds]: [CreateRelationInput[], PersonAggregateRelationUpdateInput[], string[]] = [[], [], []];
+  if (current.spouseOfId && updates.siblingOrder !== undefined) {
+    const spouseEdge = graph.relations.find((r) => (r.kind === 'spouse' || r.kind === 'partner') &&
+      ((r.fromPersonId === current.spouseOfId && r.toPersonId === current.id) || (r.toPersonId === current.spouseOfId && r.fromPersonId === current.id)));
+    if (spouseEdge) update.push({ id: spouseEdge.id, sortOrder: Math.max(0, Number(updates.siblingOrder) - 1) });
   }
-
-  const existingIds = new Set(existingEvents.map((e) => e.id));
-  for (const [idx, item] of nextEvents.entries()) {
-    if (isUuid(item.id) && existingIds.has(item.id)) continue;
-    await createPersonEventRequest(projectId, dto.id, {
-      type: item.type,
-      structuredDate: item.structuredDate ?? null,
-      structuredPlace: item.structuredPlace ?? null,
-      ...(nonEmptyOrUndefined(item.description)
-        ? { description: item.description!.trim() }
-        : {}),
-      sortOrder: idx,
-    });
-  }
+  if ('fatherId' in updates || updates.fatherRelationType !== undefined)
+    collectParentEdgeDiff(current.id, current.fatherId ?? null, nextRecord.fatherId ?? null, nextRecord.fatherRelationType ?? nextRecord.relationType, graph.relations, create, update, deleteIds);
+  if ('motherId' in updates || updates.motherRelationType !== undefined)
+    collectParentEdgeDiff(current.id, current.motherId ?? null, nextRecord.motherId ?? null, nextRecord.motherRelationType ?? nextRecord.relationType, graph.relations, create, update, deleteIds);
+  return nonEmptyOps(create, update, Array.from(new Set(deleteIds)));
 }
 
 export async function syncPersonUpdatesToApi(
-  projectId: string,
-  graph: LineageGraphPayload,
-  currentPersons: PersonRecord[],
-  personId: string,
-  updates: Partial<PersonRecord>,
+  projectId: string, graph: LineageGraphPayload, currentPersons: PersonRecord[], personId: string, updates: Partial<PersonRecord>,
 ): Promise<void> {
   const current = currentPersons.find((p) => p.id === personId);
   const dto = graph.persons.find((p) => p.id === personId);
   if (!current || !dto) return;
-
-  const personById = new Map(graph.persons.map((p) => [p.id, p]));
   const nextRecord: PersonRecord = { ...current, ...updates };
-
-  // 1. Update scalar/vital/bio fields
-  const scalarPayload = buildUpdatePersonInput(current, updates);
-  if (scalarPayload) {
-    await updatePersonRequest(projectId, personId, scalarPayload);
-  }
-
-  // 2. Sync spouse siblingOrder onto spouse relation
-  if (current.spouseOfId && updates.siblingOrder !== undefined) {
-    const spouseEdge = graph.relations.find(
-      (r) =>
-        (r.kind === 'spouse' || r.kind === 'partner') &&
-        ((r.fromPersonId === current.spouseOfId && r.toPersonId === personId) ||
-          (r.toPersonId === current.spouseOfId && r.fromPersonId === personId)),
-    );
-    if (spouseEdge) {
-      await updateRelationRequest(projectId, spouseEdge.id, {
-        sortOrder: Math.max(0, Number(updates.siblingOrder) - 1),
-      });
-    }
-  }
-
-  // 3. Sync aliases
-  if (updates.aliasItems !== undefined || updates.aliases !== undefined) {
-    await syncAliasesDiff(projectId, dto, nextRecord);
-  }
-
-  // 4. Sync custom events
-  if (updates.events !== undefined) {
-    await syncEventsDiff(projectId, dto, updates.events);
-  }
-
-  // 5. Sync parent-child relations
-  if (
-    updates.fatherId !== undefined ||
-    updates.fatherRelationType !== undefined
-  ) {
-    await syncParentEdge(
-      projectId,
-      personId,
-      'male_or_other',
-      nextRecord.fatherId,
-      nextRecord.fatherRelationType ?? nextRecord.relationType,
-      graph.relations,
-      personById,
-    );
-  }
-
-  if (
-    updates.motherId !== undefined ||
-    updates.motherRelationType !== undefined
-  ) {
-    await syncParentEdge(
-      projectId,
-      personId,
-      'female',
-      nextRecord.motherId,
-      nextRecord.motherRelationType ?? nextRecord.relationType,
-      graph.relations,
-      personById,
-    );
-  }
+  const scalarWithVersion = buildUpdatePersonInput(current, updates);
+  const person = scalarWithVersion ? (({ version: _, ...fields }) => fields)(scalarWithVersion) : undefined;
+  const names = updates.aliasItems !== undefined || updates.aliases !== undefined ? diffNames(dto, nextRecord) : undefined;
+  const events = updates.events !== undefined ? diffEvents(dto, updates.events) : undefined;
+  const relations = diffRelations(graph, current, nextRecord, updates);
+  if (!person && !names && !events && !relations) return;
+  await updatePersonAggregateRequest(projectId, personId, { version: dto.version, ...(person ? { person } : {}), ...(names ? { names } : {}), ...(events ? { events } : {}), ...(relations ? { relations } : {}) });
 }
 
-export async function syncCoupleMarriageEventToApi(
-  projectId: string,
-  graph: LineageGraphPayload,
-  prevPersons: PersonRecord[],
-  nextPersons: PersonRecord[],
-): Promise<void> {
+export async function syncCoupleMarriageEventToApi(projectId: string, graph: LineageGraphPayload, prevPersons: PersonRecord[], nextPersons: PersonRecord[]): Promise<void> {
   for (const next of nextPersons) {
     const prev = prevPersons.find((p) => p.id === next.id);
     const dto = graph.persons.find((p) => p.id === next.id);
     if (!prev || !dto || prev.events === next.events) continue;
-    await syncEventsDiff(projectId, dto, next.events);
+    const events = diffEvents(dto, next.events);
+    if (events) await updatePersonAggregateRequest(projectId, dto.id, { version: dto.version, events });
   }
 }
 
-export async function createDirectPersonViaApi(
-  projectId: string,
-  lineageId: string,
-  effectiveSurname: string,
-  existingCount: number,
-  initialData: Partial<PersonRecord>,
-): Promise<PersonDto> {
+export async function createDirectPersonViaApi(projectId: string, lineageId: string, effectiveSurname: string, existingCount: number, initialData: Partial<PersonRecord>): Promise<PersonDto> {
   const surname = nonEmptyOrUndefined(initialData.surname ?? effectiveSurname);
-  const name = nonEmptyOrUndefined(initialData.name) ?? '新录族人';
+  const givenName = nonEmptyOrUndefined(initialData.name) ?? '新录族人';
   const { person } = await createPersonRequest(projectId, {
-    lineageId,
-    displayName: composeDisplayName(surname, name),
-    ...(surname ? { surname } : {}),
-    givenName: name,
-    sex: initialData.gender ?? 'male',
-    isLiving: (initialData.status ?? 'living') === 'living',
-    siblingOrder: Math.max(0, existingCount),
+    lineageId, displayName: composeDisplayName(surname, givenName), ...(surname ? { surname } : {}),
+    givenName, sex: initialData.gender ?? 'male', isLiving: (initialData.status ?? 'living') === 'living', siblingOrder: Math.max(0, existingCount),
   });
   return person;
 }
 
-function buildVitalFieldsFromRelativePayload(
-  payload: AddRelativeSubmitPayload,
-) {
-  const birthInfo = cleanBirthInfo(
-    payload.birthDate || payload.birthPlace
-      ? {
-          structuredDate: payload.birthDate ?? undefined,
-          structuredPlace: payload.birthPlace ?? undefined,
-        }
-      : undefined,
-  );
-
-  const deathInfo =
-    payload.status === 'deceased'
-      ? cleanDeathInfo(
-          payload.deathDate ||
-            payload.deathPlace ||
-            payload.deathCause ||
-            payload.burialPlace
-            ? {
-                structuredDate: payload.deathDate ?? undefined,
-                structuredPlace: payload.deathPlace ?? undefined,
-                cause: payload.deathCause,
-                structuredBurialPlace: payload.burialPlace ?? undefined,
-              }
-            : undefined,
-        )
-      : null;
-
-  return { birthInfo, deathInfo };
-}
+const spouseEdge = (direction: 'new_to_other' | 'other_to_new', toRoleLabel: string, sortOrder = 0, otherPersonId?: string, fromRoleLabel = '夫'): CreateRelativeRelationInput =>
+  ({ ...(otherPersonId ? { otherPersonId } : {}), direction, kind: 'spouse', fromRoleLabel, toRoleLabel, sortOrder });
 
 export async function createRelativeViaApi(
-  projectId: string,
-  lineageId: string,
-  graph: LineageGraphPayload,
-  currentPersons: PersonRecord[],
-  effectiveSurname: string,
-  context: AddRelativeContext,
-  payload: AddRelativeSubmitPayload,
+  projectId: string, lineageId: string, _graph: LineageGraphPayload, currentPersons: PersonRecord[],
+  effectiveSurname: string, context: AddRelativeContext, payload: AddRelativeSubmitPayload,
 ): Promise<{ selectId: string }> {
-  const { birthInfo, deathInfo } = buildVitalFieldsFromRelativePayload(payload);
-  const cleanSurname = nonEmptyOrUndefined(payload.surname);
-  const cleanName = nonEmptyOrUndefined(payload.name) ?? '未命名';
-  const displayName = composeDisplayName(cleanSurname, cleanName);
-
-  const created = await createPersonRequest(projectId, {
-    lineageId,
-    displayName,
-    ...(cleanSurname ? { surname: cleanSurname } : {}),
-    givenName: cleanName,
-    ...(nonEmptyOrUndefined(payload.romanizedName?.surname)
-      ? { romanizedSurname: payload.romanizedName!.surname!.trim() }
-      : {}),
-    ...(nonEmptyOrUndefined(payload.romanizedName?.name)
-      ? { romanizedName: payload.romanizedName!.name!.trim() }
-      : {}),
-    ...(nonEmptyOrUndefined(payload.romanizedName?.suffix)
-      ? { romanizedSuffix: payload.romanizedName!.suffix!.trim() }
-      : {}),
-    sex: payload.gender,
-    isLiving: payload.status === 'living',
-    ...(birthInfo ? { birthInfo } : {}),
-    ...(deathInfo ? { deathInfo } : {}),
-    siblingOrder: currentPersons.length,
-  });
-  const newPerson = created.person;
+  const birthInfo = cleanBirthInfo(payload.birthDate || payload.birthPlace ? { structuredDate: payload.birthDate ?? undefined, structuredPlace: payload.birthPlace ?? undefined } : undefined);
+  const deathInfo = payload.status === 'deceased' ? cleanDeathInfo(payload.deathDate || payload.deathPlace || payload.deathCause || payload.burialPlace ? { structuredDate: payload.deathDate ?? undefined, structuredPlace: payload.deathPlace ?? undefined, cause: payload.deathCause, structuredBurialPlace: payload.burialPlace ?? undefined } : undefined) : null;
+  const surname = nonEmptyOrUndefined(payload.surname);
+  const givenName = nonEmptyOrUndefined(payload.name) ?? '未命名';
+  const displayName = composeDisplayName(surname, givenName);
+  const person: CreatePersonInput = {
+    lineageId, displayName, ...(surname ? { surname } : {}), givenName, sex: payload.gender, isLiving: payload.status === 'living', siblingOrder: currentPersons.length,
+    ...(nonEmptyOrUndefined(payload.romanizedName?.surname) ? { romanizedSurname: payload.romanizedName!.surname!.trim() } : {}),
+    ...(nonEmptyOrUndefined(payload.romanizedName?.name) ? { romanizedName: payload.romanizedName!.name!.trim() } : {}),
+    ...(nonEmptyOrUndefined(payload.romanizedName?.suffix) ? { romanizedSuffix: payload.romanizedName!.suffix!.trim() } : {}),
+    ...(birthInfo ? { birthInfo } : {}), ...(deathInfo ? { deathInfo } : {}),
+  };
   const anchor = context.targetPerson;
+  const relations: CreateRelativeRelationInput[] = [];
+  let [companion, events, anchorEvents]: [CreateRelativeInput['companion'], CreateRelativeInput['events'], CreateRelativeInput['anchorEvents']] = [undefined, undefined, undefined];
+  const defaultRel = payload.gender === 'female' ? '生女' : '生子';
 
   if (context.relation === 'child') {
-    const isAnchorMother = Boolean(
-      anchor.gender === 'female' && !anchor.spouseOfId,
-    );
-    const defaultRel = payload.gender === 'female' ? '生女' : '生子';
-    const fatherRelLabel =
-      payload.fatherRelationType || payload.relationType || defaultRel;
-    const motherRelLabel =
-      payload.motherRelationType || payload.relationType || defaultRel;
-
-    if (isAnchorMother) {
-      await createRelationRequest(projectId, {
-        fromPersonId: anchor.id,
-        toPersonId: newPerson.id,
-        kind: chineseRelationToApiKind(motherRelLabel),
-        toRoleLabel: motherRelLabel,
-      });
-    } else {
-      await createRelationRequest(projectId, {
-        fromPersonId: anchor.id,
-        toPersonId: newPerson.id,
-        kind: chineseRelationToApiKind(fatherRelLabel),
-        toRoleLabel: fatherRelLabel,
-      });
-
-      let motherId = payload.motherId ?? context.motherInfo?.motherId;
-      if (payload.shouldAutoCreateMother && !motherId) {
-        const motherName = nonEmptyOrUndefined(payload.motherName) ?? '不详';
-        const autoMother = await createPersonRequest(projectId, {
-          lineageId,
-          displayName: motherName,
-          givenName: motherName,
-          sex: 'female',
-          isLiving: anchor.status === 'living',
-        });
-        motherId = autoMother.person.id;
-        await createRelationRequest(projectId, {
-          fromPersonId: anchor.id,
-          toPersonId: motherId,
-          kind: 'spouse',
-          fromRoleLabel: '夫',
-          toRoleLabel: '妻子',
-        });
-      }
-
-      if (motherId) {
-        await createRelationRequest(projectId, {
-          fromPersonId: motherId,
-          toPersonId: newPerson.id,
-          kind: chineseRelationToApiKind(motherRelLabel),
-          toRoleLabel: motherRelLabel,
-        });
-      }
+    const isAnchorMother = Boolean(anchor.gender === 'female' && !anchor.spouseOfId);
+    const fatherRel = payload.fatherRelationType || payload.relationType || defaultRel;
+    const motherRel = payload.motherRelationType || payload.relationType || defaultRel;
+    relations.push({ direction: 'other_to_new', kind: chineseRelationToApiKind(isAnchorMother ? motherRel : fatherRel), toRoleLabel: isAnchorMother ? motherRel : fatherRel });
+    const motherId = payload.motherId ?? context.motherInfo?.motherId;
+    if (!isAnchorMother && payload.shouldAutoCreateMother && !motherId) {
+      const motherName = nonEmptyOrUndefined(payload.motherName) ?? '不详';
+      companion = { person: { lineageId, displayName: motherName, givenName: motherName, sex: 'female', isLiving: anchor.status === 'living' }, spouseRelation: { fromRoleLabel: '夫', toRoleLabel: '妻子' }, childRelation: { kind: chineseRelationToApiKind(motherRel), toRoleLabel: motherRel } };
+    } else if (!isAnchorMother && motherId) {
+      relations.push({ otherPersonId: motherId, direction: 'other_to_new', kind: chineseRelationToApiKind(motherRel), toRoleLabel: motherRel });
     }
-    return { selectId: newPerson.id };
-  }
-
-  if (context.relation === 'sibling') {
-    const defaultRel = payload.gender === 'female' ? '生女' : '生子';
-    if (anchor.fatherId) {
-      await createRelationRequest(projectId, {
-        fromPersonId: anchor.fatherId,
-        toPersonId: newPerson.id,
-        kind: 'biological_parent',
-        toRoleLabel: defaultRel,
-      });
-    }
-    if (anchor.motherId) {
-      await createRelationRequest(projectId, {
-        fromPersonId: anchor.motherId,
-        toPersonId: newPerson.id,
-        kind: 'biological_parent',
-        toRoleLabel: defaultRel,
-      });
-    }
-    return { selectId: newPerson.id };
-  }
-
-  if (context.relation === 'spouse') {
-    const existingSpouses = currentPersons.filter(
-      (p) => p.spouseOfId === anchor.id,
-    ).length;
-    const spouseRoleLabel =
-      payload.gender === 'male'
-        ? '丈夫'
-        : payload.gender === 'female'
-          ? '妻子'
-          : '配偶';
-    const anchorRoleLabel = anchor.gender === 'female' ? '妻' : '夫';
-    await createRelationRequest(projectId, {
-      fromPersonId: anchor.id,
-      toPersonId: newPerson.id,
-      kind: 'spouse',
-      fromRoleLabel: anchorRoleLabel,
-      toRoleLabel: spouseRoleLabel,
-      sortOrder: existingSpouses,
-    });
-
+  } else if (context.relation === 'sibling') {
+    if (anchor.fatherId) relations.push({ otherPersonId: anchor.fatherId, direction: 'other_to_new', kind: 'biological_parent', toRoleLabel: defaultRel });
+    if (anchor.motherId) relations.push({ otherPersonId: anchor.motherId, direction: 'other_to_new', kind: 'biological_parent', toRoleLabel: defaultRel });
+  } else if (context.relation === 'spouse') {
+    relations.push(spouseEdge('other_to_new', payload.gender === 'male' ? '丈夫' : payload.gender === 'female' ? '妻子' : '配偶', currentPersons.filter((p) => p.spouseOfId === anchor.id).length, undefined, anchor.gender === 'female' ? '妻' : '夫'));
     if (payload.marriageDate || payload.marriagePlace) {
-      const anchorName = composeDisplayName(
-        anchor.surname || effectiveSurname,
-        anchor.name,
-      );
-      await createPersonEventRequest(projectId, newPerson.id, {
-        type: 'marriage',
-        structuredDate: payload.marriageDate ?? null,
-        structuredPlace: payload.marriagePlace ?? null,
-        description: `与${anchorName}结缡`,
-      });
-      await createPersonEventRequest(projectId, anchor.id, {
-        type: 'marriage',
-        structuredDate: payload.marriageDate ?? null,
-        structuredPlace: payload.marriagePlace ?? null,
-        description: `与${displayName}结缡`,
-      });
+      const anchorName = composeDisplayName(anchor.surname || effectiveSurname, anchor.name);
+      events = [{ type: 'marriage', structuredDate: payload.marriageDate ?? null, structuredPlace: payload.marriagePlace ?? null, description: `与${anchorName}结缡` }];
+      anchorEvents = [{ type: 'marriage', structuredDate: payload.marriageDate ?? null, structuredPlace: payload.marriagePlace ?? null, description: `与${displayName}结缡` }];
     }
-    return { selectId: newPerson.id };
+  } else {
+    relations.push({ direction: 'new_to_other', kind: 'biological_parent', toRoleLabel: anchor.gender === 'female' ? '生女' : '生子' });
+    if (payload.gender === 'female' && anchor.fatherId) relations.push(spouseEdge('other_to_new', '妻子', currentPersons.filter((p) => p.spouseOfId === anchor.fatherId).length, anchor.fatherId));
+    else if (payload.gender === 'male' && anchor.motherId) relations.push(spouseEdge('new_to_other', '妻子', 0, anchor.motherId));
   }
 
-  // parent
-  const parentKind: ApiRelationKind = 'biological_parent';
-  await createRelationRequest(projectId, {
-    fromPersonId: newPerson.id,
-    toPersonId: anchor.id,
-    kind: parentKind,
-    toRoleLabel: anchor.gender === 'female' ? '生女' : '生子',
+  if (relations.length === 0 && !companion) return { selectId: (await createPersonRequest(projectId, person)).person.id };
+  const created = await createRelativeRequest(projectId, {
+    anchorPersonId: anchor.id, person, relations, ...(companion ? { companion } : {}), ...(events ? { events } : {}), ...(anchorEvents ? { anchorEvents } : {}),
   });
-  if (payload.gender === 'female' && anchor.fatherId) {
-    const existingPartnerSpouses = currentPersons.filter(
-      (p) => p.spouseOfId === anchor.fatherId,
-    ).length;
-    await createRelationRequest(projectId, {
-      fromPersonId: anchor.fatherId,
-      toPersonId: newPerson.id,
-      kind: 'spouse',
-      fromRoleLabel: '夫',
-      toRoleLabel: '妻子',
-      sortOrder: existingPartnerSpouses,
-    });
-  } else if (
-    payload.gender === 'male' &&
-    anchor.motherId &&
-    !graph.relations.some(
-      (r) =>
-        (r.kind === 'spouse' || r.kind === 'partner') &&
-        ((r.fromPersonId === anchor.motherId && r.toPersonId === newPerson.id) ||
-          (r.toPersonId === anchor.motherId && r.fromPersonId === newPerson.id)),
-    )
-  ) {
-    await createRelationRequest(projectId, {
-      fromPersonId: newPerson.id,
-      toPersonId: anchor.motherId,
-      kind: 'spouse',
-      fromRoleLabel: '夫',
-      toRoleLabel: '妻子',
-      sortOrder: 0,
-    });
-  }
-  return { selectId: newPerson.id };
+  return { selectId: created.person.id };
 }

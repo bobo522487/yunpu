@@ -1645,6 +1645,96 @@
         "x-source": "apps/api/src/modules/person/router.ts"
       }
     },
+    "/api/v1/projects/{projectId}/persons/{personId}/aggregate": {
+      "put": {
+        "operationId": "put_api_v1_projects_projectId_persons_personId_aggregate",
+        "summary": "按版本号事务级聚合更新人物、名号、关系与事件",
+        "parameters": [
+          {"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}},
+          {"name":"personId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "按版本号事务级聚合更新人物、名号、关系与事件",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "person": {"$ref":"#/components/schemas/Person"},
+                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
+                        "projection": {"anyOf":[{"$ref":"#/components/schemas/Projection"},{"type":"null"}]}
+                      },
+                      "required": ["person","relations","projection"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/person/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/UpdatePersonAggregateSchema"}}}
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/relatives": {
+      "post": {
+        "operationId": "post_api_v1_projects_projectId_relatives",
+        "summary": "原子创建亲属人物及与锚点人物的关系",
+        "parameters": [{"name":"projectId","in":"path","required":true,"schema":{"$ref":"#/components/schemas/Uuid"}}],
+        "responses": {
+          "201": {
+            "description": "原子创建亲属人物及与锚点人物的关系",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {"type":"boolean","const":true},
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "person": {"$ref":"#/components/schemas/Person"},
+                        "companionPerson": {"anyOf":[{"$ref":"#/components/schemas/Person"},{"type":"null"}]},
+                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
+                        "anchorEvents": {"type":"array","items":{"$ref":"#/components/schemas/PersonEvent"}}
+                      },
+                      "required": ["person","companionPerson","relations","anchorEvents"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["ok","data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "校验或业务错误",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+          }
+        },
+        "x-source": "apps/api/src/modules/person/router.ts",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/CreateRelativeSchema"}}}
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/persons/{personId}/names": {
       "post": {
         "operationId": "post_api_v1_projects_projectId_persons_personId_names",
@@ -2244,6 +2334,59 @@
         "required": ["fromPersonId","toPersonId","kind"],
         "additionalProperties": false
       },
+      "CreateRelativeRelationSchema": {
+        "type": "object",
+        "properties": {
+          "otherPersonId": {"$ref":"#/components/schemas/Uuid"},
+          "direction": {"type":"string","enum":["new_to_other","other_to_new"]},
+          "kind": {"type":"string","enum":["biological_parent","adoptive_parent","ritual_heir","step_parent","foster_parent","spouse","partner"]},
+          "fromRoleLabel": {"type":"string","maxLength":50},
+          "toRoleLabel": {"type":"string","maxLength":50},
+          "sortOrder": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "note": {"type":"string","maxLength":1000}
+        },
+        "required": ["direction","kind"],
+        "additionalProperties": false
+      },
+      "CreateRelativeSchema": {
+        "type": "object",
+        "properties": {
+          "anchorPersonId": {"$ref":"#/components/schemas/Uuid"},
+          "person": {"$ref":"#/components/schemas/CreatePersonSchema"},
+          "names": {"type":"array","items":{"$ref":"#/components/schemas/CreatePersonNameSchema"}},
+          "events": {"type":"array","items":{"$ref":"#/components/schemas/CreatePersonEventSchema"}},
+          "relations": {"minItems":1,"type":"array","items":{"$ref":"#/components/schemas/CreateRelativeRelationSchema"}},
+          "anchorEvents": {"type":"array","items":{"$ref":"#/components/schemas/CreatePersonEventSchema"}},
+          "companion": {
+            "type": "object",
+            "properties": {
+              "person": {"$ref":"#/components/schemas/CreatePersonSchema"},
+              "spouseRelation": {
+                "type": "object",
+                "properties": {
+                  "fromRoleLabel": {"type":"string","maxLength":50},
+                  "toRoleLabel": {"type":"string","maxLength":50},
+                  "sortOrder": {"type":"integer","minimum":0,"maximum":9007199254740991}
+                },
+                "additionalProperties": false
+              },
+              "childRelation": {
+                "type": "object",
+                "properties": {
+                  "kind": {"type":"string","enum":["biological_parent","adoptive_parent","ritual_heir","step_parent","foster_parent","spouse","partner"]},
+                  "toRoleLabel": {"type":"string","maxLength":50}
+                },
+                "required": ["kind"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["person","childRelation"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["anchorPersonId","person","relations"],
+        "additionalProperties": false
+      },
       "FolderIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"folderId":{"$ref":"#/components/schemas/Uuid"}},
@@ -2585,6 +2728,47 @@
         "properties": {"cursor":{"type":"string","minLength":1},"limit":{"type":"integer","minimum":1,"maximum":200}},
         "additionalProperties": false
       },
+      "PersonAggregateEventUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "type": {"type":"string","enum":["birth","education","career","marriage","residence","death","other"]},
+          "structuredDate": {"anyOf":[{"$ref":"#/components/schemas/GenealogyDateSchema"},{"type":"null"}]},
+          "structuredPlace": {"anyOf":[{"$ref":"#/components/schemas/GenealogyPlaceSchema"},{"type":"null"}]},
+          "description": {"anyOf":[{"type":"string","maxLength":5000},{"type":"null"}]},
+          "sortOrder": {"type":"integer","minimum":0,"maximum":9007199254740991}
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "PersonAggregateNameUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["formal","courtesy","art","milk","genealogy","posthumous","other"]},
+          "value": {"type":"string","minLength":1,"maxLength":120},
+          "surname": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "romanizedSurname": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "romanizedName": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "label": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "isPrimary": {"type":"boolean"}
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "PersonAggregateRelationUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["biological_parent","adoptive_parent","ritual_heir","step_parent","foster_parent","spouse","partner"]},
+          "fromRoleLabel": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "toRoleLabel": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "sortOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
+          "note": {"anyOf":[{"type":"string","maxLength":1000},{"type":"null"}]}
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
       "PersonBirthInfoSchema": {
         "type": "object",
         "properties": {
@@ -2631,6 +2815,30 @@
           "nameId": {"$ref":"#/components/schemas/Uuid"}
         },
         "required": ["projectId","personId","nameId"],
+        "additionalProperties": false
+      },
+      "PersonScalarPatchSchema": {
+        "type": "object",
+        "properties": {
+          "displayName": {"type":"string","minLength":1,"maxLength":120},
+          "sex": {"type":"string","enum":["male","female","unknown","other"]},
+          "surname": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "givenName": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "romanizedSurname": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "romanizedName": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "romanizedSuffix": {"anyOf":[{"type":"string","maxLength":120},{"type":"null"}]},
+          "birthYear": {"anyOf":[{"type":"integer","minimum":-5000,"maximum":9999},{"type":"null"}]},
+          "deathYear": {"anyOf":[{"type":"integer","minimum":-5000,"maximum":9999},{"type":"null"}]},
+          "isLiving": {"type":"boolean"},
+          "birthInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonBirthInfoSchema"},{"type":"null"}]},
+          "deathInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonDeathInfoSchema"},{"type":"null"}]},
+          "generationWord": {"anyOf":[{"type":"string","maxLength":20},{"type":"null"}]},
+          "relationTitle": {"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},
+          "siblingOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
+          "biography": {"anyOf":[{"type":"string","maxLength":20000},{"type":"null"}]},
+          "notes": {"anyOf":[{"type":"string","maxLength":10000},{"type":"null"}]},
+          "avatarKey": {"anyOf":[{"type":"string","maxLength":255},{"type":"null"}]}
+        },
         "additionalProperties": false
       },
       "ProjectIdParamsSchema": {
@@ -2732,6 +2940,42 @@
           "name": {"type":"string","minLength":1,"maxLength":120},
           "status": {"type":"string","enum":["active","archived"]}
         },
+        "additionalProperties": false
+      },
+      "UpdatePersonAggregateSchema": {
+        "type": "object",
+        "properties": {
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "person": {"$ref":"#/components/schemas/PersonScalarPatchSchema"},
+          "names": {
+            "type": "object",
+            "properties": {
+              "create": {"type":"array","items":{"$ref":"#/components/schemas/CreatePersonNameSchema"}},
+              "update": {"type":"array","items":{"$ref":"#/components/schemas/PersonAggregateNameUpdateSchema"}},
+              "deleteIds": {"type":"array","items":{"$ref":"#/components/schemas/Uuid"}}
+            },
+            "additionalProperties": false
+          },
+          "relations": {
+            "type": "object",
+            "properties": {
+              "create": {"type":"array","items":{"$ref":"#/components/schemas/CreateRelationSchema"}},
+              "update": {"type":"array","items":{"$ref":"#/components/schemas/PersonAggregateRelationUpdateSchema"}},
+              "deleteIds": {"type":"array","items":{"$ref":"#/components/schemas/Uuid"}}
+            },
+            "additionalProperties": false
+          },
+          "events": {
+            "type": "object",
+            "properties": {
+              "create": {"type":"array","items":{"$ref":"#/components/schemas/CreatePersonEventSchema"}},
+              "update": {"type":"array","items":{"$ref":"#/components/schemas/PersonAggregateEventUpdateSchema"}},
+              "deleteIds": {"type":"array","items":{"$ref":"#/components/schemas/Uuid"}}
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["version"],
         "additionalProperties": false
       },
       "UpdatePersonEventSchema": {

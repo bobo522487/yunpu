@@ -23,7 +23,7 @@ import { createEntityId } from '../lib/id';
 import { saveArticleRemote } from '../features/articles/api';
 import { commitArticleContent } from '../features/articles/domain/articleCommit';
 import { createArticleWrite } from '../features/articles/domain/articleWrite';
-import { resolveApiMode } from '../lib/apiMode';
+import { resolveProxyTarget } from '../lib/apiMode';
 import {
   contentJsonToHtml,
   htmlToContentJson,
@@ -107,7 +107,7 @@ const articleWrite = createArticleWrite((request) =>
 );
 
 function articleWriteMode(): 'local' | 'network' {
-  return resolveApiMode(import.meta.env) === 'network' ? 'network' : 'local';
+  return resolveProxyTarget(import.meta.env) ? 'network' : 'local';
 }
 
 function applyArticleRowToState(

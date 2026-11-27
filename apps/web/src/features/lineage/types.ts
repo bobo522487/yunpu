@@ -104,8 +104,10 @@ export interface PersonLifeEvent {
 export interface PersonRecord {
   id: string;
   branchId: string;
+  version?: number;
 
   // 1. Core Identity & Names
+  avatarKey?: string | null;
   avatarUrl?: string;
   avatarOriginalUrl?: string;
   avatarPhotos?: string[];

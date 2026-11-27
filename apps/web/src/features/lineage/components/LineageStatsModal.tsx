@@ -9,6 +9,7 @@ import {
   useLineageStore,
 } from '../../../store/useLineageStore';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
+import { useProjectLineageSnapshot } from '../queries';
 import {
   computeLineageStats,
   flattenChartsInTree,
@@ -33,21 +34,15 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
 
   const projects = useWorkspaceStore((s) => s.projects);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const treesByProject = useLineageStore((s) => s.treesByProject);
+  const { lineageTree, personsByChart } = useProjectLineageSnapshot(projectId);
   const selectedNodeIdByProject = useLineageStore(
     (s) => s.selectedNodeIdByProject
   );
-  const personsByChart = useLineageStore((s) => s.personsByChart);
 
   const activeProject =
     projects.find((p) => p.id === projectId) ||
     projects.find((p) => p.organizationId === activeWorkspaceId) ||
     projects[0];
-
-  const lineageTree = useMemo(
-    () => treesByProject[projectId] ?? [],
-    [treesByProject, projectId]
-  );
 
   const allCharts = useMemo(
     () => flattenChartsInTree(lineageTree),

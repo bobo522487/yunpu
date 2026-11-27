@@ -16,7 +16,7 @@ import { createArticleExtensions } from '../extensions/createArticleExtensions';
 import { createPersonMentionView } from './PersonMentionView';
 import type { MentionCandidate } from '../domain/personMention';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { useLineageStore } from '../../../store/useLineageStore';
+import { useProjectLineageSnapshot } from '../../lineage/queries';
 import { contentJsonToHtml, htmlToContentJson } from '../domain/htmlProjection';
 import { createArticleSaveQueue } from '../domain/articleSaveQueue';
 import { useArticleStore } from '../../../store/useArticleStore';
@@ -93,7 +93,7 @@ export const WordArticleEditor: React.FC<WordArticleEditorProps> = ({
   const activeArticleIdRef = useRef(article.id);
   const isSyncingContentRef = useRef(false);
 
-  const personsByChart = useLineageStore((s) => s.personsByChart);
+  const { personsByChart } = useProjectLineageSnapshot(activeProjectId ?? '');
   const updateArticleContent = useArticleStore((s) => s.updateArticleContent);
   const activeProjectIdRef = useRef(activeProjectId);
   activeProjectIdRef.current = activeProjectId;

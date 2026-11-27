@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { maybeEnableMock } from '@/features/auth/enableMock'
 import { useAuthStore } from '@/features/auth/useAuthStore'
 import { FontProvider } from './context/font-provider'
 import { ThemeProvider } from './context/theme-provider'
@@ -35,7 +34,6 @@ declare module '@tanstack/react-router' {
 }
 
 async function bootstrapApp() {
-  await maybeEnableMock()
   await useAuthStore.getState().bootstrap()
 }
 

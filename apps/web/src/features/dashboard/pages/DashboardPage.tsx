@@ -1,19 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { FolderPlus, X } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import { collectTreeNodesByType } from '../../../lib/treeOps';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
-import {
-  makeChartStorageKey,
-  useLineageStore,
-} from '../../../store/useLineageStore';
 import { useArticleStore } from '../../../store/useArticleStore';
 import { useBookStore } from '../../../store/useBookStore';
 import { useCurrentUserProfile } from '../../../hooks/useCurrentUserProfile';
 import { countArticlesInTree } from '../../articles/articleData';
 import { errorMessage } from '../../../lib/api';
+import { directoryToTreeItems, graphToPersonRecords } from '../../lineage/adapter';
+import { fetchLineageDirectory, fetchLineageGraph } from '../../lineage/api';
+import { lineageKeys } from '../../lineage/queries';
 import {
   createProjectRequest,
   deleteProjectRequest,
@@ -35,7 +33,6 @@ import {
 } from '../components/AssetEditorModal';
 import { FamilyCard, type FamilyCardMetrics } from '../components/FamilyCard';
 import { ZibeiSettingsModal } from '../components/ZibeiSettingsModal';
-import { parsePlaceText } from '../../place-input';
 
 const EMPTY_ZIBEI_BY_PROJECT: Record<string, string[]> = {};
 
@@ -56,8 +53,6 @@ const DashboardPage: React.FC = () => {
   const dropProject = useWorkspaceStore((s) => s.dropProject);
   const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
 
-  const treesByProject = useLineageStore((s) => s.treesByProject);
-  const personsByChart = useLineageStore((s) => s.personsByChart);
   const articleTreesByProject = useArticleStore((s) => s.treesByProject);
   const articlesByKey = useArticleStore((s) => s.articlesByKey);
   const booksByProject = useBookStore((s) => s.booksByProject);
@@ -82,6 +77,20 @@ const DashboardPage: React.FC = () => {
   const projects = useMemo(
     () => projectsQuery.data?.pages.flatMap((page) => page.items) ?? [],
     [projectsQuery.data],
+  );
+
+  const directoryQueries = useQueries({
+    queries: projects.map((proj) => ({
+      queryKey: lineageKeys.directory(proj.id),
+      queryFn: () => fetchLineageDirectory(proj.id),
+      enabled: Boolean(proj.id),
+    })),
+  });
+  const directorySignature = directoryQueries
+    .map((q) => `${q.dataUpdatedAt}:${q.data?.lineages.length ?? 0}`)
+    .join('|');
+  const directoryCounts = directoryQueries.map(
+    (q) => q.data?.lineages.length ?? 0,
   );
 
   useEffect(() => {
@@ -110,33 +119,24 @@ const DashboardPage: React.FC = () => {
 
   const metricsByProject = useMemo(() => {
     const map: Record<string, FamilyCardMetrics> = {};
-    for (const project of projects) {
-      const lineageTree = treesByProject[project.id] ?? [];
-      const chartNodes = collectTreeNodesByType(lineageTree, 'chart');
-      let personCount = 0;
-      for (const chart of chartNodes) {
-        const cId = String(chart.id);
-        const key = makeChartStorageKey(project.id, cId);
-        const persons = personsByChart[key] ?? [];
-        personCount += persons.length;
-      }
-
+    projects.forEach((project, idx) => {
+      const lineageCount = directoryCounts[idx] ?? 0;
       const articleTree = articleTreesByProject[project.id];
       const articleCount = articleTree ? countArticlesInTree(articleTree) : 0;
       const bookCount = booksByProject[project.id]?.length ?? 0;
 
       map[project.id] = {
-        lineageCount: chartNodes.length,
-        personCount,
+        lineageCount,
+        personCount: 0,
         articleCount,
         bookCount,
       };
-    }
+    });
     return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     projects,
-    treesByProject,
-    personsByChart,
+    directorySignature,
     articleTreesByProject,
     booksByProject,
   ]);
@@ -159,19 +159,24 @@ const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleExportFamily = (project: ProjectRecord) => {
+  const handleExportFamily = async (project: ProjectRecord) => {
     try {
-      const lineageTree = treesByProject[project.id] ?? [];
-      const chartNodes = collectTreeNodesByType(lineageTree, 'chart');
+      const directory = await fetchLineageDirectory(project.id);
+      const lineageTree = directoryToTreeItems(
+        directory.folders,
+        directory.lineages,
+      );
+      const graphs = await Promise.all(
+        directory.lineages.map((lin) => fetchLineageGraph(project.id, lin.id)),
+      );
       const lineageCharts: Record<string, unknown> = {};
-      for (const chart of chartNodes) {
-        const cId = String(chart.id);
-        const key = makeChartStorageKey(project.id, cId);
-        lineageCharts[cId] = {
-          name: chart.data?.name || cId,
-          persons: personsByChart[key] ?? [],
+      directory.lineages.forEach((lin, idx) => {
+        const payload = graphs[idx];
+        lineageCharts[lin.id] = {
+          name: lin.name,
+          persons: payload ? graphToPersonRecords(project.id, payload) : [],
         };
-      }
+      });
 
       const projectArticles = Object.entries(articlesByKey)
         .filter(([k]) => k.startsWith(`${project.id}::`))
@@ -208,7 +213,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // 家族建档弹窗提交：映射到项目 API 载荷，并在新建时初始化始迁祖世系节点。
+  // 家族建档弹窗提交：由服务端按 ancestor 原子初始化始迁祖世系节点。
   const handleEditorSubmit = async (values: AssetEditorSubmitValues) => {
     if (!formDialog) return;
     setFormError(null);
@@ -217,15 +222,10 @@ const DashboardPage: React.FC = () => {
       const payload = toCreateProjectPayload(values);
       if (formDialog.mode === 'create') {
         const created = await createProjectRequest(activeWorkspaceId, payload);
-        if (values.ancestor?.trim()) {
-          useLineageStore.getState().initializeProjectLineage(created.project.id, {
-            familyName: values.name,
-            ancestor: values.ancestor,
-            surname: values.surname,
-            region: parsePlaceText(values.originText),
-          });
-        }
         syncProject(created.project);
+        await queryClient.invalidateQueries({
+          queryKey: lineageKeys.directory(created.project.id),
+        });
       } else if (formDialog.project) {
         const original = formDialog.project;
         const updated = await updateProjectRequest(original.id, {

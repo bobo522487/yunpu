@@ -111,27 +111,27 @@ test('resolveChartSurname reads explicit chart surname before project fallback w
   assert.equal(resolveChartSurname(undefined, '林'), '林');
 });
 
-test('useLineageStore.ensureProjectInitialized respects hydration gate and importDemoLineage loads demo lazily', async () => {
-  const projectId = 'test-lineage-gate-proj';
+test('useLineageStore holds only pure UI selection, viewMode, and collapsed folder state', () => {
+  const projectId = 'test-lineage-ui-proj';
   useLineageStore.setState({
-    _hasHydrated: false,
-    treesByProject: {},
     selectedNodeIdByProject: {},
-    personsByChart: {},
+    selectedPersonIdByChart: {},
+    viewModeByProject: {},
+    collapsedFoldersByProject: {},
   });
 
-  useLineageStore.getState().ensureProjectInitialized(projectId);
-  assert.equal(useLineageStore.getState().treesByProject[projectId], undefined);
+  useLineageStore.getState().selectNode(projectId, 'chart-1');
+  useLineageStore.getState().selectPerson(projectId, 'chart-1', 'person-1');
+  useLineageStore.getState().setViewMode(projectId, 'grid');
+  useLineageStore.getState().setFolderCollapsed(projectId, 'folder-1', true);
 
-  useLineageStore.getState()._setHasHydrated(true);
-  useLineageStore.getState().ensureProjectInitialized(projectId);
-  assert.deepEqual(useLineageStore.getState().treesByProject[projectId], []);
-
-  await useLineageStore.getState().importDemoLineage(projectId);
-  assert.ok((useLineageStore.getState().treesByProject[projectId]?.length ?? 0) > 0);
-  assert.ok(
-    (useLineageStore.getState().personsByChart[`${projectId}::lineage-royal-1`]?.length ?? 0) > 0,
-  );
+  const state = useLineageStore.getState();
+  assert.equal(state.selectedNodeIdByProject[projectId], 'chart-1');
+  assert.equal(state.selectedPersonIdByChart[`${projectId}::chart-1`], 'person-1');
+  assert.equal(state.viewModeByProject[projectId], 'grid');
+  assert.equal(state.collapsedFoldersByProject[projectId]?.['folder-1'], true);
+  assert.equal('treesByProject' in state, false);
+  assert.equal('personsByChart' in state, false);
 });
 
 test('useArticleStore unifies rename/meta updates and isolates revisions by projectId::articleId', () => {

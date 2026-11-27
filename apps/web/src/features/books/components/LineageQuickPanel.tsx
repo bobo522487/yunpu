@@ -9,8 +9,8 @@ import {
 import { collectTreeNodesByType } from '../../../lib/treeOps';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useLineageStore } from '../../../store/useLineageStore';
 import { useActiveProject } from '../../../hooks/useActiveProject';
+import { useProjectLineageSnapshot } from '../../lineage/queries';
 import type { PersonRecord } from '../../lineage/types';
 import { getLineageGraph } from '../../lineage/domain/lineageGraph';
 import {
@@ -46,13 +46,7 @@ export const LineageQuickPanel: React.FC<LineageQuickPanelProps> = ({
     surname: projectSurname,
   } = useActiveProject();
 
-  const treesByProject = useLineageStore((s) => s.treesByProject);
-  const personsByChart = useLineageStore((s) => s.personsByChart);
-
-  const lineageTree = useMemo(
-    () => treesByProject[activeProjectId] ?? [],
-    [treesByProject, activeProjectId]
-  );
+  const { lineageTree, personsByChart } = useProjectLineageSnapshot(activeProjectId);
 
   const chartOptions = useMemo(
     () =>

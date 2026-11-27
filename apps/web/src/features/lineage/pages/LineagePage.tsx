@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   ArrowRight,
   FolderOpen,
   GitFork,
   Plus,
+  RefreshCw,
   Settings,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -12,17 +14,33 @@ import { Button } from '@/components/ui/button';
 import { findItemDeep } from '../../../components/common/Tree/utilities';
 import { useActiveProject } from '../../../hooks/useActiveProject';
 import { useResizable } from '../../../hooks/useResizable';
+import { ApiError, errorMessage } from '../../../lib/api';
 import {
   findFirstChartId,
+  type LineageChartMeta,
   makeChartStorageKey,
   resolveChartSurname,
   useLineageStore,
 } from '../../../store/useLineageStore';
-import type { PersonRecord } from '../types';
+import { directoryToTreeItems, graphToPersonRecords } from '../adapter';
 import {
-  applyAddRelative,
-  createDirectPersonRecord,
-} from '../domain/relativeMutations';
+  createLineageRequest,
+  deletePersonRequest,
+  uploadProjectMediaRequest,
+} from '../api';
+import {
+  createDirectPersonViaApi,
+  createRelativeViaApi,
+  syncCoupleMarriageEventToApi,
+  syncPersonUpdatesToApi,
+} from '../mutations';
+import {
+  invalidateLineageDirectory,
+  invalidateLineageGraph,
+  useLineageDirectoryQuery,
+  useLineageGraphQuery,
+} from '../queries';
+import type { PersonRecord } from '../types';
 import { LineageTreeView } from '../components/LineageTreeView';
 import { PersonDetailPanel } from '../components/PersonDetailPanel';
 import { AddRelativeModal } from '../components/AddRelativeModal';
@@ -32,35 +50,34 @@ import type {
 } from '../domain/addRelativeTypes';
 import { LineageEditorModal } from '../../project/components/LineageEditorModal';
 
+const EMPTY_COLLAPSED: Record<string, boolean> = {};
+
 const LineagePage: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     projectId: activeProjectId,
     project: activeProject,
     surname: projectSurname,
   } = useActiveProject();
 
-  const hasHydrated = useLineageStore((s) => s._hasHydrated);
-  const ensureProjectInitialized = useLineageStore(
-    (s) => s.ensureProjectInitialized
-  );
-  const treesByProject = useLineageStore((s) => s.treesByProject);
   const selectedNodeIdByProject = useLineageStore(
-    (s) => s.selectedNodeIdByProject
+    (s) => s.selectedNodeIdByProject,
   );
-  const personsByChart = useLineageStore((s) => s.personsByChart);
   const selectedPersonIdByChart = useLineageStore(
-    (s) => s.selectedPersonIdByChart
+    (s) => s.selectedPersonIdByChart,
+  );
+  const collapsedFolders = useLineageStore(
+    (s) => s.collapsedFoldersByProject[activeProjectId] ?? EMPTY_COLLAPSED,
   );
   const selectNode = useLineageStore((s) => s.selectNode);
-  const addChart = useLineageStore((s) => s.addChart);
-  const importDemoLineage = useLineageStore((s) => s.importDemoLineage);
   const selectPersonStore = useLineageStore((s) => s.selectPerson);
-  const commitChartPersons = useLineageStore((s) => s.commitChartPersons);
-  const updatePersonStore = useLineageStore((s) => s.updatePerson);
-  const deletePersonStore = useLineageStore((s) => s.deletePerson);
 
   const [isCreateLineageOpen, setIsCreateLineageOpen] = useState(false);
+  const [createSaving, setCreateSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [isVersionConflict, setIsVersionConflict] = useState(false);
 
   const { width: inspectorWidth, startResizing } = useResizable({
     initialWidth: 440,
@@ -69,21 +86,22 @@ const LineagePage: React.FC = () => {
     edge: 'right',
   });
 
-  useEffect(() => {
-    if (!hasHydrated) return;
-    ensureProjectInitialized(activeProjectId);
-  }, [hasHydrated, activeProjectId, ensureProjectInitialized]);
+  const directoryQuery = useLineageDirectoryQuery(activeProjectId);
 
   const lineageTree = useMemo(
-    () => treesByProject[activeProjectId] ?? [],
-    [treesByProject, activeProjectId]
+    () =>
+      directoryToTreeItems(
+        directoryQuery.data?.folders ?? [],
+        directoryQuery.data?.lineages ?? [],
+        collapsedFolders,
+      ),
+    [directoryQuery.data, collapsedFolders],
   );
 
   const defaultChartId = useMemo(
     () =>
-      findFirstChartId(lineageTree) ||
-      String(lineageTree[0]?.id || ''),
-    [lineageTree]
+      findFirstChartId(lineageTree) || String(lineageTree[0]?.id || ''),
+    [lineageTree],
   );
 
   const selectedLineageId =
@@ -94,27 +112,28 @@ const LineagePage: React.FC = () => {
       findItemDeep(lineageTree, selectedLineageId) ||
       findItemDeep(lineageTree, defaultChartId) ||
       lineageTree[0],
-    [lineageTree, selectedLineageId, defaultChartId]
+    [lineageTree, selectedLineageId, defaultChartId],
   );
 
-  const chartId = String(selectedLineageNode?.id || '');
+  const isFolderSelected = selectedLineageNode?.type === 'folder';
+  const chartId =
+    selectedLineageNode && !isFolderSelected
+      ? String(selectedLineageNode.id)
+      : '';
   const chartName = selectedLineageNode?.data?.name || '世系图谱';
   const chartStorageKey = makeChartStorageKey(activeProjectId, chartId);
 
+  const graphQuery = useLineageGraphQuery(activeProjectId, chartId);
+
   const effectiveSurname = useMemo(
     () => resolveChartSurname(selectedLineageNode, projectSurname),
-    [selectedLineageNode, projectSurname]
+    [selectedLineageNode, projectSurname],
   );
 
   const chartPersons = useMemo(() => {
-    if (!chartId || selectedLineageNode?.type === 'folder') return [];
-    return personsByChart[chartStorageKey] ?? [];
-  }, [
-    chartId,
-    chartStorageKey,
-    personsByChart,
-    selectedLineageNode?.type,
-  ]);
+    if (!chartId || isFolderSelected || !graphQuery.data) return [];
+    return graphToPersonRecords(activeProjectId, graphQuery.data);
+  }, [activeProjectId, chartId, isFolderSelected, graphQuery.data]);
 
   const selectedPersonId =
     selectedPersonIdByChart[chartStorageKey] ?? null;
@@ -124,7 +143,7 @@ const LineagePage: React.FC = () => {
       selectedPersonId
         ? chartPersons.find((p) => p.id === selectedPersonId) ?? null
         : null,
-    [chartPersons, selectedPersonId]
+    [chartPersons, selectedPersonId],
   );
 
   const [addRelativeContext, setAddRelativeContext] =
@@ -132,43 +151,62 @@ const LineagePage: React.FC = () => {
 
   useEffect(() => {
     setAddRelativeContext(null);
+    setMutationError(null);
+    setIsVersionConflict(false);
   }, [activeProjectId, chartId]);
+
+  const handleMutationError = (err: unknown) => {
+    setMutationError(errorMessage(err));
+    setIsVersionConflict(
+      err instanceof ApiError && err.code === 'VERSION_CONFLICT',
+    );
+  };
 
   const handleSelectPerson = (personId: string | null) => {
     if (!chartId) return;
     selectPersonStore(activeProjectId, chartId, personId);
   };
 
-  const handleUpdatePerson = (
+  const handleUpdatePerson = async (
     personId: string,
-    updates: Partial<PersonRecord>
+    updates: Partial<PersonRecord>,
   ) => {
-    if (!chartId) return;
-    updatePersonStore(
-      activeProjectId,
-      chartId,
-      personId,
-      updates,
-      chartName,
-      effectiveSurname
-    );
+    if (!chartId || !graphQuery.data) return;
+    setMutationError(null);
+    setIsVersionConflict(false);
+    try {
+      await syncPersonUpdatesToApi(
+        activeProjectId,
+        graphQuery.data,
+        chartPersons,
+        personId,
+        updates,
+      );
+      await invalidateLineageGraph(queryClient, activeProjectId, chartId);
+    } catch (err) {
+      handleMutationError(err);
+    }
   };
 
-  const handleDeletePerson = (personId: string) => {
+  const handleDeletePerson = async (personId: string) => {
     if (!chartId) return;
-    deletePersonStore(
-      activeProjectId,
-      chartId,
-      personId,
-      chartName,
-      effectiveSurname
-    );
+    setMutationError(null);
+    setIsVersionConflict(false);
+    try {
+      await deletePersonRequest(activeProjectId, personId);
+      if (selectedPersonId === personId) {
+        selectPersonStore(activeProjectId, chartId, null);
+      }
+      await invalidateLineageGraph(queryClient, activeProjectId, chartId);
+    } catch (err) {
+      handleMutationError(err);
+    }
   };
 
   const handleOpenAddChild = (
     parentId: string,
     gender: 'male' | 'female' = 'male',
-    motherInfo?: { motherId?: string; motherName?: string }
+    motherInfo?: { motherId?: string; motherName?: string },
   ) => {
     if (!chartId) return;
     const rawParent = chartPersons.find((p) => p.id === parentId);
@@ -201,7 +239,7 @@ const LineagePage: React.FC = () => {
 
   const handleOpenAddSibling = (
     refPersonId: string,
-    gender: 'male' | 'female' = 'male'
+    gender: 'male' | 'female' = 'male',
   ) => {
     if (!chartId) return;
     const rawTarget = chartPersons.find((p) => p.id === refPersonId);
@@ -254,50 +292,110 @@ const LineagePage: React.FC = () => {
     });
   };
 
-  const handleConfirmAddRelative = (
+  const handleConfirmAddRelative = async (
     context: AddRelativeContext,
-    payload: AddRelativeSubmitPayload
+    payload: AddRelativeSubmitPayload,
   ) => {
-    if (!chartId) return;
+    if (!chartId || !graphQuery.data) return;
     const keepSelection = Boolean(selectedPersonId);
-    const { persons: nextPersons, selectId } = applyAddRelative(
-      chartPersons,
-      chartId,
-      effectiveSurname,
-      context,
-      payload,
-      keepSelection
-    );
-    commitChartPersons(activeProjectId, chartId, nextPersons, selectId);
-    setAddRelativeContext(null);
+    setMutationError(null);
+    setIsVersionConflict(false);
+    try {
+      const { selectId } = await createRelativeViaApi(
+        activeProjectId,
+        chartId,
+        graphQuery.data,
+        chartPersons,
+        effectiveSurname,
+        context,
+        payload,
+      );
+      if (keepSelection) {
+        selectPersonStore(activeProjectId, chartId, selectId);
+      }
+      setAddRelativeContext(null);
+      await invalidateLineageGraph(queryClient, activeProjectId, chartId);
+    } catch (err) {
+      handleMutationError(err);
+    }
   };
 
-  const handleAddPersonDirectly = (initialData: Partial<PersonRecord>) => {
+  const handleAddPersonDirectly = async (initialData: Partial<PersonRecord>) => {
     if (!chartId) return;
-    const newPerson = createDirectPersonRecord(
-      chartId,
-      effectiveSurname,
-      chartPersons.length,
-      initialData
-    );
-    commitChartPersons(
-      activeProjectId,
-      chartId,
-      [...chartPersons, newPerson],
-      newPerson.id
-    );
+    setMutationError(null);
+    setIsVersionConflict(false);
+    try {
+      const created = await createDirectPersonViaApi(
+        activeProjectId,
+        chartId,
+        effectiveSurname,
+        chartPersons.length,
+        initialData,
+      );
+      selectPersonStore(activeProjectId, chartId, created.id);
+      await invalidateLineageGraph(queryClient, activeProjectId, chartId);
+    } catch (err) {
+      handleMutationError(err);
+    }
   };
 
   const handleUpdatePersonFather = (
     childId: string,
-    fatherId: string | null
+    fatherId: string | null,
   ) => {
-    const father = chartPersons.find((p) => p.id === fatherId);
-    handleUpdatePerson(childId, {
-      fatherId,
-      generation: father ? father.generation + 1 : 1,
-    });
+    void handleUpdatePerson(childId, { fatherId });
   };
+
+  const handleCommitPersons = async (nextPersons: PersonRecord[]) => {
+    if (!chartId || !graphQuery.data) return;
+    setMutationError(null);
+    setIsVersionConflict(false);
+    try {
+      await syncCoupleMarriageEventToApi(
+        activeProjectId,
+        graphQuery.data,
+        chartPersons,
+        nextPersons,
+      );
+      await invalidateLineageGraph(queryClient, activeProjectId, chartId);
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const handleCreateLineageSubmit = async (
+    values: LineageChartMeta,
+    folderId?: string | null,
+  ) => {
+    setCreateSaving(true);
+    setCreateError(null);
+    try {
+      const created = await createLineageRequest(activeProjectId, {
+        name: values.name,
+        folderId: folderId ?? null,
+        surname: values.surname?.trim() || undefined,
+        hallName: values.hallName?.trim() || undefined,
+        progenitor: values.progenitor?.trim() || undefined,
+        region: values.region ?? null,
+        seq: directoryQuery.data?.lineages.length ?? 0,
+      });
+      await invalidateLineageDirectory(queryClient, activeProjectId);
+      selectNode(activeProjectId, created.lineage.id);
+      setIsCreateLineageOpen(false);
+    } catch (err) {
+      setCreateError(errorMessage(err));
+    } finally {
+      setCreateSaving(false);
+    }
+  };
+
+  if (directoryQuery.isPending) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6 bg-background text-[13px] text-muted-foreground">
+        正在加载世系工作区...
+      </div>
+    );
+  }
 
   if (lineageTree.length === 0) {
     return (
@@ -309,19 +407,18 @@ const LineagePage: React.FC = () => {
           <div className="space-y-1.5">
             <h2 className="yp-h2 text-foreground">暂无世系图谱</h2>
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              为当前家族新建一份世系图以录入始迁祖及后裔脉络，或先导入范例世系参考模板。
+              为当前家族新建一份世系图以录入始迁祖及后裔脉络。
             </p>
           </div>
           <div className="flex items-center justify-center gap-2.5 pt-1">
-            <Button size="sm" onClick={() => setIsCreateLineageOpen(true)}>
-              <Plus size={14} /> 新建世系图
-            </Button>
             <Button
               size="sm"
-              variant="outline"
-              onClick={() => void importDemoLineage(activeProjectId)}
+              onClick={() => {
+                setCreateError(null);
+                setIsCreateLineageOpen(true);
+              }}
             >
-              导入皇族范例世系
+              <Plus size={14} /> 新建世系图
             </Button>
           </div>
         </div>
@@ -329,42 +426,85 @@ const LineagePage: React.FC = () => {
         <LineageEditorModal
           open={isCreateLineageOpen}
           mode="create"
+          saving={createSaving}
+          submitError={createError}
           initialValue={{
             name: '',
             surname: projectSurname,
             hallName: activeProject?.hallName || '',
-            progenitor: '',
+            progenitor: activeProject?.ancestor || '',
             region: null,
           }}
           onClose={() => setIsCreateLineageOpen(false)}
-          onSubmit={(values) => {
-            addChart(activeProjectId, undefined, values);
-            setIsCreateLineageOpen(false);
-          }}
+          onSubmit={(values) => handleCreateLineageSubmit(values, null)}
         />
       </div>
     );
   }
 
-  if (selectedLineageNode?.type !== 'folder') {
+  if (!isFolderSelected) {
     return (
       <div className="fs-lineage-theme flex-1 flex flex-col min-h-0 h-full min-w-0 overflow-hidden bg-background">
+        {mutationError && (
+          <div
+            role="alert"
+            className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-[12px] text-destructive flex items-center justify-between gap-3"
+          >
+            <span>{mutationError}</span>
+            <div className="flex items-center gap-2 shrink-0">
+              {isVersionConflict && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMutationError(null);
+                    setIsVersionConflict(false);
+                    void invalidateLineageGraph(
+                      queryClient,
+                      activeProjectId,
+                      chartId,
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 rounded px-2 py-0.5 bg-destructive text-destructive-foreground text-[11px] cursor-pointer"
+                >
+                  <RefreshCw size={11} /> 刷新最新数据
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setMutationError(null);
+                  setIsVersionConflict(false);
+                }}
+                className="text-[11px] underline cursor-pointer"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 flex min-h-0 overflow-hidden relative">
           <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative bg-muted/10">
-            <LineageTreeView
-              persons={chartPersons}
-              selectedPersonId={selectedPerson?.id ?? null}
-              branchTitle={chartName}
-              clanSurname={effectiveSurname}
-              onSelectPerson={handleSelectPerson}
-              onAddChild={handleOpenAddChild}
-              onAddSibling={handleOpenAddSibling}
-              onAddSpouse={handleOpenAddSpouse}
-              onAddParent={handleOpenAddParent}
-              onDeletePerson={handleDeletePerson}
-              onAddPersonDirectly={handleAddPersonDirectly}
-              onUpdatePersonFather={handleUpdatePersonFather}
-            />
+            {graphQuery.isPending && !graphQuery.data ? (
+              <div className="flex-1 flex items-center justify-center text-[13px] text-muted-foreground">
+                正在加载世系图谱数据...
+              </div>
+            ) : (
+              <LineageTreeView
+                persons={chartPersons}
+                selectedPersonId={selectedPerson?.id ?? null}
+                branchTitle={chartName}
+                clanSurname={effectiveSurname}
+                onSelectPerson={handleSelectPerson}
+                onAddChild={handleOpenAddChild}
+                onAddSibling={handleOpenAddSibling}
+                onAddSpouse={handleOpenAddSpouse}
+                onAddParent={handleOpenAddParent}
+                onDeletePerson={(pid) => void handleDeletePerson(pid)}
+                onAddPersonDirectly={(data) => void handleAddPersonDirectly(data)}
+                onUpdatePersonFather={handleUpdatePersonFather}
+              />
+            )}
           </div>
 
           {selectedPerson && (
@@ -381,15 +521,16 @@ const LineagePage: React.FC = () => {
                 allPersons={chartPersons}
                 clanSurname={effectiveSurname}
                 onSelectPerson={handleSelectPerson}
-                onUpdatePerson={handleUpdatePerson}
-                onCommitPersons={(nextPersons) =>
-                  commitChartPersons(activeProjectId, chartId, nextPersons)
-                }
-                onDeletePerson={handleDeletePerson}
+                onUpdatePerson={(id, updates) => void handleUpdatePerson(id, updates)}
+                onCommitPersons={(nextPersons) => void handleCommitPersons(nextPersons)}
+                onDeletePerson={(id) => void handleDeletePerson(id)}
                 onAddChild={handleOpenAddChild}
                 onAddSpouse={handleOpenAddSpouse}
                 onAddSibling={handleOpenAddSibling}
                 onAddParent={handleOpenAddParent}
+                onUploadPortrait={(blob, contentType) =>
+                  uploadProjectMediaRequest(activeProjectId, blob, contentType)
+                }
                 width={inspectorWidth}
                 onClose={() => handleSelectPerson(null)}
               />
@@ -402,7 +543,7 @@ const LineagePage: React.FC = () => {
           allPersons={chartPersons}
           clanSurname={effectiveSurname}
           onClose={() => setAddRelativeContext(null)}
-          onSubmit={handleConfirmAddRelative}
+          onSubmit={(ctx, payload) => void handleConfirmAddRelative(ctx, payload)}
         />
       </div>
     );
@@ -473,7 +614,10 @@ const LineagePage: React.FC = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setIsCreateLineageOpen(true)}
+              onClick={() => {
+                setCreateError(null);
+                setIsCreateLineageOpen(true);
+              }}
               className="h-8 gap-1.5 text-[13px]"
             >
               <Plus size={14} /> 新增世系图
@@ -517,6 +661,8 @@ const LineagePage: React.FC = () => {
       <LineageEditorModal
         open={isCreateLineageOpen}
         mode="create"
+        saving={createSaving}
+        submitError={createError}
         initialValue={{
           name: '',
           surname: projectSurname,
@@ -525,12 +671,12 @@ const LineagePage: React.FC = () => {
           region: null,
         }}
         onClose={() => setIsCreateLineageOpen(false)}
-        onSubmit={(values) => {
-          if (selectedLineageNode) {
-            addChart(activeProjectId, String(selectedLineageNode.id), values);
-          }
-          setIsCreateLineageOpen(false);
-        }}
+        onSubmit={(values) =>
+          handleCreateLineageSubmit(
+            values,
+            selectedLineageNode ? String(selectedLineageNode.id) : null,
+          )
+        }
       />
     </div>
   );

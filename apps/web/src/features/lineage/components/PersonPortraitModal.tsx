@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ModalBody, ModalFooter, ModalShell } from '@/components/ui/modal';
+import { errorMessage } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { type PersonRecord } from '../types';
 
 export interface PersonPortraitUpdate {
+  avatarKey?: string | null;
   avatarUrl?: string;
   avatarOriginalUrl?: string;
   avatarPhotos?: string[];
@@ -29,6 +31,10 @@ interface PersonPortraitModalProps {
   displayName: string;
   onClose: () => void;
   onUpdateAvatar: (updates: PersonPortraitUpdate) => void;
+  onUploadPortrait?: (
+    blob: Blob,
+    contentType: string,
+  ) => Promise<{ key: string; url: string }>;
 }
 
 const STAGE_SIZE = 280;
@@ -77,6 +83,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
   displayName,
   onClose,
   onUpdateAvatar,
+  onUploadPortrait,
 }) => {
   const titleId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -99,6 +106,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isLoadingImage, setIsLoadingImage] = useState(false);
+  const [isSavingPortrait, setIsSavingPortrait] = useState(false);
   const [cropError, setCropError] = useState<string | null>(null);
   const [overviewImgError, setOverviewImgError] = useState(false);
 
@@ -284,13 +292,15 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
     handleZoomChange(zoom + delta);
   };
 
-  const handleSaveCroppedPortrait = () => {
+  const handleSaveCroppedPortrait = async () => {
     const imgEl = loadedImageRef.current;
     if (!imgEl || !naturalSize) {
       setCropError('请先选择有效的肖像照片。');
       return;
     }
 
+    setIsSavingPortrait(true);
+    setCropError(null);
     try {
       const effectiveScale = computeCoverScale(naturalSize) * zoom;
       const dispW = naturalSize.width * effectiveScale;
@@ -323,35 +333,60 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
         0,
         0,
         EXPORT_SIZE,
-        EXPORT_SIZE
+        EXPORT_SIZE,
       );
 
-      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      const nextOriginal = sourceUrl || croppedDataUrl;
-      const nextGallery = Array.from(
-        new Set([nextOriginal, ...galleryPhotos])
-      ).slice(0, MAX_GALLERY_ITEMS);
+      if (onUploadPortrait) {
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error('图片编码失败'))),
+            'image/jpeg',
+            0.9,
+          );
+        });
+        const uploaded = await onUploadPortrait(blob, 'image/jpeg');
+        const nextGallery = Array.from(
+          new Set([uploaded.url, ...galleryPhotos]),
+        ).slice(0, MAX_GALLERY_ITEMS);
+        onUpdateAvatar({
+          avatarKey: uploaded.key,
+          avatarUrl: uploaded.url,
+          avatarOriginalUrl: uploaded.url,
+          avatarPhotos: nextGallery,
+        });
+      } else {
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const nextOriginal = sourceUrl || croppedDataUrl;
+        const nextGallery = Array.from(
+          new Set([nextOriginal, ...galleryPhotos]),
+        ).slice(0, MAX_GALLERY_ITEMS);
 
-      onUpdateAvatar({
-        avatarUrl: croppedDataUrl,
-        avatarOriginalUrl: nextOriginal,
-        avatarPhotos: nextGallery,
-      });
+        onUpdateAvatar({
+          avatarUrl: croppedDataUrl,
+          avatarOriginalUrl: nextOriginal,
+          avatarPhotos: nextGallery,
+        });
+      }
       setView('overview');
       setCropError(null);
-    } catch {
+    } catch (err) {
       setCropError(
-        '该外部链接图片受浏览器跨域限制无法裁剪，请点击「更换照片」上传本地图片。'
+        err instanceof Error && !/tainted|cross-origin/i.test(err.message)
+          ? errorMessage(err)
+          : '该外部链接图片受浏览器跨域限制无法裁剪，请点击「更换照片」上传本地图片。',
       );
+    } finally {
+      setIsSavingPortrait(false);
     }
   };
 
   const handleRemoveActiveAvatar = () => {
     onUpdateAvatar({
+      avatarKey: null,
       avatarUrl: undefined,
       avatarOriginalUrl: undefined,
       avatarPhotos: galleryPhotos.filter(
-        (u) => u !== person.avatarUrl && u !== person.avatarOriginalUrl
+        (u) => u !== person.avatarUrl && u !== person.avatarOriginalUrl,
       ),
     });
   };
@@ -362,6 +397,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
       photoUrl === person.avatarUrl || photoUrl === person.avatarOriginalUrl;
 
     onUpdateAvatar({
+      ...(removingActive ? { avatarKey: null } : {}),
       avatarUrl: removingActive ? undefined : person.avatarUrl,
       avatarOriginalUrl: removingActive
         ? undefined
@@ -756,6 +792,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
               <Button
                 type="button"
                 variant="outline"
+                disabled={isSavingPortrait}
                 onClick={() => {
                   setView('overview');
                   setCropError(null);
@@ -765,10 +802,10 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
               </Button>
               <Button
                 type="button"
-                disabled={!naturalSize || isLoadingImage}
-                onClick={handleSaveCroppedPortrait}
+                disabled={!naturalSize || isLoadingImage || isSavingPortrait}
+                onClick={() => void handleSaveCroppedPortrait()}
               >
-                保存肖像
+                {isSavingPortrait ? '保存中...' : '保存肖像'}
               </Button>
             </div>
           </ModalFooter>

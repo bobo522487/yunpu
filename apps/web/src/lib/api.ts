@@ -31,35 +31,9 @@ export type RequestOptions = {
   headers?: Record<string, string>;
 };
 
-export type MockHandler = (path: string, options: RequestOptions) => unknown;
-
-let mockMode = false;
-let directMock = false;
-let mockHandler: MockHandler | null = null;
 let authEpoch = 0;
-const listeners = new Set<() => void>();
-
-export function isMockMode(): boolean {
-  return mockMode;
-}
-
-export function subscribeMockMode(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-export function registerMockHandler(
-  handler: MockHandler,
-  options?: { direct?: boolean },
-): void {
-  mockHandler = handler;
-  directMock = Boolean(options?.direct);
-}
 
 export function resetApiTransportForTests(): void {
-  mockMode = false;
-  directMock = false;
-  mockHandler = null;
   authEpoch = 0;
 }
 
@@ -68,12 +42,6 @@ function isAuthEstablishPath(path: string): boolean {
     path.startsWith('/api/v1/auth/sign-in') ||
     path.startsWith('/api/v1/auth/sign-up')
   );
-}
-
-function setMockMode(next: boolean): void {
-  if (mockMode === next) return;
-  mockMode = next;
-  listeners.forEach((listener) => listener());
 }
 
 /** 会话失效（401）时广播，由应用层清会话并跳转登录（SC-009）。 */
@@ -97,53 +65,15 @@ function toApiError(payload: ApiEnvelope<unknown>, status: number): ApiError {
   return new ApiError(`请求失败（HTTP ${status}）`, 'INTERNAL', status);
 }
 
-export async function apiRequest<T>(
+async function performEnvelopeFetch<T>(
   path: string,
-  options: RequestOptions = {},
+  init: RequestInit,
 ): Promise<T> {
   const requestEpoch = authEpoch;
-
-  if (directMock && mockHandler) {
-    setMockMode(true);
-    try {
-      const result = mockHandler(path, options) as T;
-      if (isAuthEstablishPath(path)) {
-        authEpoch += 1;
-      }
-      return result;
-    } catch (error) {
-      if (
-        error instanceof ApiError &&
-        error.status === 401 &&
-        !path.startsWith('/api/v1/auth/sign-in') &&
-        requestEpoch === authEpoch
-      ) {
-        notifyUnauthorized();
-      }
-      throw error;
-    }
-  }
-
-  const headers: Record<string, string> = { ...options.headers };
-  let body: BodyInit | undefined;
-
-  if (options.body !== undefined) {
-    headers['content-type'] = 'application/json';
-    body = JSON.stringify(options.body);
-  }
-
   let payload: ApiEnvelope<T> | null;
 
   try {
-    const response = await fetch(path, {
-      method: options.method ?? 'GET',
-      headers,
-      body,
-      credentials: 'include',
-      // 连接挂起（后端半死、代理无响应）时也要 reject，
-      // 超时必须 reject，调用方才能进入错误态。
-      signal: AbortSignal.timeout(10_000),
-    });
+    const response = await fetch(path, init);
 
     try {
       payload = (await response.json()) as ApiEnvelope<T>;
@@ -151,9 +81,7 @@ export async function apiRequest<T>(
       payload = null;
     }
 
-    // 只有真正的 JSON 信封才说明后端可达；HTML/代理错误等一律视为不可达。
     if (isEnvelope(payload)) {
-      setMockMode(false);
       if (!response.ok || payload.ok === false) {
         throw toApiError(payload, response.status);
       }
@@ -177,6 +105,41 @@ export async function apiRequest<T>(
     }
     throw new ApiError('API 不可达', 'UNREACHABLE', 0);
   }
+}
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const headers: Record<string, string> = { ...options.headers };
+  let body: BodyInit | undefined;
+
+  if (options.body !== undefined) {
+    headers['content-type'] = 'application/json';
+    body = JSON.stringify(options.body);
+  }
+
+  return performEnvelopeFetch<T>(path, {
+    method: options.method ?? 'GET',
+    headers,
+    body,
+    credentials: 'include',
+    signal: AbortSignal.timeout(10_000),
+  });
+}
+
+export async function apiUpload<T>(
+  path: string,
+  blob: Blob,
+  contentType: string,
+): Promise<T> {
+  return performEnvelopeFetch<T>(path, {
+    method: 'POST',
+    headers: { 'content-type': contentType },
+    body: blob,
+    credentials: 'include',
+    signal: AbortSignal.timeout(30_000),
+  });
 }
 
 export function errorMessage(error: unknown): string {

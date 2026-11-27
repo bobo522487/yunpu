@@ -18,10 +18,8 @@ import {
 import { createProjectRequest } from '../../features/dashboard/api'
 import type { AssetEditorSubmitValues } from '../../features/dashboard/components/AssetEditorModal'
 import { toCreateProjectPayload } from '../../features/dashboard/projectPayload'
-import { parsePlaceText } from '../../features/place-input'
 import { useProjectId } from '../../hooks/useProjectId'
 import { errorMessage } from '../../lib/api'
-import { useLineageStore } from '../../store/useLineageStore'
 import { useWorkspaceStore } from '../../store/useWorkspaceStore'
 import { ProjectColoredIcon } from './YunpuIcons'
 
@@ -154,14 +152,6 @@ const Breadcrumb: React.FC = () => {
     try {
       const payload = toCreateProjectPayload(values)
       const result = await createProjectRequest(activeWorkspaceId, payload)
-      if (values.ancestor?.trim()) {
-        useLineageStore.getState().initializeProjectLineage(result.project.id, {
-          familyName: values.name,
-          ancestor: values.ancestor,
-          surname: values.surname,
-          region: parsePlaceText(values.originText),
-        })
-      }
       syncProject(result.project)
       setActiveProjectId(result.project.id)
       setIsCreateProjectOpen(false)

@@ -20,8 +20,10 @@ export interface LineageEditorModalProps {
   open: boolean;
   mode: 'create' | 'edit';
   initialValue?: Partial<LineageChartMeta>;
+  saving?: boolean;
+  submitError?: string | null;
   onClose: () => void;
-  onSubmit: (values: LineageChartMeta) => void;
+  onSubmit: (values: LineageChartMeta) => void | Promise<void>;
 }
 
 type FieldErrors = {
@@ -34,6 +36,8 @@ export const LineageEditorModal: React.FC<LineageEditorModalProps> = ({
   open,
   mode,
   initialValue,
+  saving = false,
+  submitError = null,
   onClose,
   onSubmit,
 }) => {
@@ -245,14 +249,22 @@ export const LineageEditorModal: React.FC<LineageEditorModalProps> = ({
               支持输入省市区县联想匹配，或点击右侧图标精确选择与填写原始记载
             </p>
           </div>
+          {submitError && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] text-destructive"
+            >
+              {submitError}
+            </div>
+          )}
         </ModalBody>
 
         <ModalFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={saving}>
             取消
           </Button>
-          <Button id="lineageModalSubmitBtn" type="submit" size="sm">
-            确认
+          <Button id="lineageModalSubmitBtn" type="submit" size="sm" disabled={saving}>
+            {saving ? '保存中...' : '确认'}
           </Button>
         </ModalFooter>
       </form>

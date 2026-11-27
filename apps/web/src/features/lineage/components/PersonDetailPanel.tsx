@@ -35,6 +35,10 @@ interface PersonDetailPanelProps {
   onAddParent?: (personId: string) => void;
   width: number;
   onClose?: () => void;
+  onUploadPortrait?: (
+    blob: Blob,
+    contentType: string,
+  ) => Promise<{ key: string; url: string }>;
 }
 
 export const PersonDetailPanel: React.FC<PersonDetailPanelProps> = ({
@@ -49,6 +53,7 @@ export const PersonDetailPanel: React.FC<PersonDetailPanelProps> = ({
   onAddSpouse,
   width,
   onClose,
+  onUploadPortrait,
 }) => {
   const {
     portraitModalOpen,
@@ -282,6 +287,7 @@ export const PersonDetailPanel: React.FC<PersonDetailPanelProps> = ({
         person={person}
         displayName={displayName}
         onClose={() => setPortraitModalOpen(false)}
+        onUploadPortrait={onUploadPortrait}
         onUpdateAvatar={(updates) => onUpdatePerson(person.id, updates)}
       />
 

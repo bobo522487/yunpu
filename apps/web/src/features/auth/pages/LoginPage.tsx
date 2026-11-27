@@ -1,11 +1,9 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import AuthLayout from '../layouts/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { isMockMode, subscribeMockMode } from '../../../lib/api';
-import { DEMO_ACCOUNT } from '../demoAccount';
 import { useAuthStore } from '../useAuthStore';
 
 const LoginPage: React.FC = () => {
@@ -20,7 +18,6 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const mockMode = useSyncExternalStore(subscribeMockMode, isMockMode, isMockMode);
 
   const redirectTarget = search.redirect;
 
@@ -55,21 +52,6 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await signIn(email.trim(), password);
-      navigateAfterLogin(result.onboarding);
-    } catch {
-      // The store exposes the API error message below the form.
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    clearError();
-    setEmail(DEMO_ACCOUNT.email);
-    setPassword(DEMO_ACCOUNT.password);
-    setIsLoading(true);
-    try {
-      const result = await signIn(DEMO_ACCOUNT.email, DEMO_ACCOUNT.password);
       navigateAfterLogin(result.onboarding);
     } catch {
       // The store exposes the API error message below the form.
@@ -123,18 +105,6 @@ const LoginPage: React.FC = () => {
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? '正在登录...' : '登录工作区'}
         </Button>
-
-        {mockMode && (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={isLoading}
-            onClick={() => void handleDemoLogin()}
-          >
-            使用演示账号快速体验（{DEMO_ACCOUNT.email}）
-          </Button>
-        )}
       </form>
 
       <div className="mt-6 text-center text-sm">

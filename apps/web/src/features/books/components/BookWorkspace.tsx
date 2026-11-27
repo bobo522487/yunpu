@@ -14,7 +14,7 @@ import { useActiveProject } from '../../../hooks/useActiveProject';
 import { useEnsureBookInitialized } from '../../../hooks/useEnsureBookInitialized';
 import { useArticleStore } from '../../../store/useArticleStore';
 import { useBookStore } from '../../../store/useBookStore';
-import { useLineageStore } from '../../../store/useLineageStore';
+import { useProjectLineageSnapshot } from '../../lineage/queries';
 import { auditBookArticles } from '../domain/bookArticleAudit';
 import type { BookStep } from '../types';
 import { BookCatalogStep } from './BookCatalogStep';
@@ -63,8 +63,7 @@ export const BookWorkspace: React.FC = () => {
   useEnsureBookInitialized();
 
   const articlesByKey = useArticleStore((s) => s.articlesByKey);
-  const lineageTreesByProject = useLineageStore((s) => s.treesByProject);
-  const personsByChart = useLineageStore((s) => s.personsByChart);
+  const { lineageTree, personsByChart } = useProjectLineageSnapshot(activeProjectId);
 
   const booksByProject = useBookStore((s) => s.booksByProject);
   const selectedBookIdByProject = useBookStore(
@@ -110,7 +109,6 @@ export const BookWorkspace: React.FC = () => {
 
   const handleGenerateEdition = () => {
     if (!activeBook) return;
-    const lineageTree = lineageTreesByProject[activeProjectId] ?? [];
     generateEdition(activeProjectId, activeBook.id, {
       articlesByKey,
       lineageTree,

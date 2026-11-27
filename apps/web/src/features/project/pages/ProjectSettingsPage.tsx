@@ -116,8 +116,8 @@ const ProjectSettingsPage: React.FC = () => {
 
       const { project } = await updateProjectRequest(targetProjectId, {
         name: trimmedName,
-        surname: trimmedSurname,
-        ancestor: trimmedAncestor,
+        surname: trimmedSurname || null,
+        ancestor: trimmedAncestor || null,
         hallName: trimmedHall || null,
         originText: formattedRegion || null,
         description: trimmedDesc || null,

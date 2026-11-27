@@ -47,11 +47,19 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 ## 二、项目与谱系核心（Project & Genealogy）
 
 ### Project
-归属于一个 `Organization` 且创建后不可更换归属的谱系工作项，状态为 `planning`、`in_progress` 或 `completed`，可附姓氏、堂号、源流、说明、主题色（`colorTheme`）与分级（`projectLevel`）。
+归属于一个 `Organization` 且创建后不可更换归属的谱系工作项，状态为 `planning`、`in_progress` 或 `completed`，可附姓氏、始迁祖（`ancestor`）、堂号、源流、说明、主题色（`colorTheme`）与分级（`projectLevel`）。
 - _Avoid_: Workspace, Genealogy record, App
 
+### Folder
+归属于特定 `Project` 的平铺一级内容分组（带同项目唯一 `name` 与排序号 `seq >= 0`，无嵌套子文件夹），用于收纳同一项目内的多张 `Lineage`（以及后续谱文与谱书）；删除 `Folder` 仅解除其下内容根的 `folderId` 关联，不删除内容本身。
+- _Avoid_: Category, Tree node（与嵌套树节点混淆时）, Subfolder
+
+### Lineage
+归属于特定 `Project`（可选挂载至同项目某个 `Folder`）的独立世系谱表，包含名称、主姓氏、堂号、始祖名称（`progenitor`）、所在地区、排序序号 `seq >= 0` 与乐观锁版本号 `version`。删除 `Lineage` 将物理清理其下所有 `Person`、`PersonName`、`PersonRelation`、`PersonEvent` 与世系投影。
+- _Avoid_: Chart, Canvas（在后端领域模型中统一称 `Lineage`）
+
 ### Person
-谱系人物；谱系图中的一个人物节点，归属于特定 `Project`，记录其性别（`sex`）、姓氏（`surname`）、生卒年份（`birthYear`/`deathYear`）、在世状态（`isLiving`）与乐观锁版本号（`version`）。`Person` 可以是已故者，也可以没有 Yunpu 登录账号，只描述谱系事实。
+谱系人物；谱系图中的一个人物节点，归属于特定 `Project` 与特定 `Lineage`，记录其性别（`sex`）、姓氏（`surname`）、生卒年份（`birthYear`/`deathYear`）、结构化生卒与葬地信息、在世状态（`isLiving`）、肖像引用（`avatarKey`）与乐观锁版本号（`version`）。`Person` 可以是已故者，也可以没有 Yunpu 登录账号，只描述谱系事实。
 - _Avoid_: User, Account, Member, Profile（这些指账号或组织身份，不是谱系人物）
 - _Example_: 谱中一位已故祖父从未注册过 Yunpu，他在谱系里是一个 `Person` 而非 `User`；已登录的 `User` 只有被录入某条谱系时才对应其中的 `Person`。
 
@@ -60,8 +68,12 @@ Yunpu 是一个谱牒协作产品：用户登录后成为某个组织中的成�
 - _Avoid_: Alias（泛指所有名称时；仅在 UI 展示别名列表时可作补充说明）
 
 ### PersonRelation
-同一 `Project` 内两位 `Person` 之间的人物关系边（`fromPersonId` → `toPersonId`），支持血缘/拟制亲子与配偶关系（`biological_parent`、`adoptive_parent`、`ritual_heir`、`step_parent`、`foster_parent`、`spouse`、`partner`），禁止自环；对称关系（`spouse`、`partner`）在存储上强制规范序（`fromPersonId < toPersonId`）。
+同一 `Project` 与同一 `Lineage` 内两位 `Person` 之间的人物关系边（`fromPersonId` → `toPersonId`），支持血缘/拟制亲子与配偶关系（`biological_parent`、`adoptive_parent`、`ritual_heir`、`step_parent`、`foster_parent`、`spouse`、`partner`）及双向角色标签、排序与备注，禁止自环与跨 `Lineage` 连边；对称关系（`spouse`、`partner`）在存储上强制规范序（`fromPersonId < toPersonId`）。
 - _Avoid_: Edge, Link（在领域语义中应明确为关系类型或 `PersonRelation`）
+
+### PersonEvent
+隶属于某位 `Person` 的生平时间线事件（类型含 `birth`、`education`、`career`、`marriage`、`residence`、`death`、`other`），包含结构化历法日期、结构化地点、描述文本与顺序号（`seq >= 0`），随所属 `Person` 物理删除一并清理。
+- _Avoid_: Timeline log, History item（代码与契约统一使用 `PersonEvent`）
 
 ### LineageProjection
 针对 `Project` 内人物的派生世系投影视图，记录基于 PostgreSQL `ltree` 的主脉路径（`primaryPath`）与世代号（`generation`），随人物及亲子关系变更在同一事务内维护，用于受控子图与世系树快速查询。

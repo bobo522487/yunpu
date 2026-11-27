@@ -4,7 +4,7 @@ import { ArrowRight, FolderPlus, UserPlus } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCurrentUserProfile } from '../../../hooks/useCurrentUserProfile';
 import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
-import { useLineageStore } from '../../../store/useLineageStore';
+import { lineageKeys } from '../../lineage/queries';
 import { errorMessage } from '../../../lib/api';
 import { createProjectRequest } from '../api';
 import {
@@ -18,7 +18,6 @@ import {
   AssetEditorModal,
   type AssetEditorSubmitValues,
 } from '../components/AssetEditorModal';
-import { parsePlaceText } from '../../place-input';
 import { toCreateProjectPayload } from '../projectPayload';
 
 const WorkspaceHomePage: React.FC = () => {
@@ -55,17 +54,14 @@ const WorkspaceHomePage: React.FC = () => {
     try {
       const payload = toCreateProjectPayload(values);
       const created = await createProjectRequest(activeWorkspaceId, payload);
-      if (values.ancestor?.trim()) {
-        useLineageStore.getState().initializeProjectLineage(created.project.id, {
-          familyName: values.name,
-          ancestor: values.ancestor,
-          surname: values.surname,
-          region: parsePlaceText(values.originText),
-        });
-      }
       syncProject(created.project);
       setActiveProjectId(created.project.id);
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: lineageKeys.directory(created.project.id),
+        }),
+      ]);
       setCreateOpen(false);
       void navigate({
         to: '/projects/$projectId',

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { findFirstTreeNodeByType } from '../../../../lib/treeOps';
 import { useActiveProject } from '../../../../hooks/useActiveProject';
-import { useLineageStore } from '../../../../store/useLineageStore';
+import { useProjectLineageSnapshot } from '../../../lineage/queries';
 import { resolveChartPersons } from '../../bookCompiler';
 import type {
   BookRecord,
@@ -133,8 +133,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
 }) => {
   const { projectId: activeProjectId, surname: projectSurname } =
     useActiveProject();
-  const treesByProject = useLineageStore((s) => s.treesByProject);
-  const personsByChart = useLineageStore((s) => s.personsByChart);
+  const { lineageTree, personsByChart } = useProjectLineageSnapshot(activeProjectId);
 
   const [totalTitle, setTotalTitle] = useState('');
   const [eyebrowTitle, setEyebrowTitle] = useState('');
@@ -156,7 +155,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
   useEffect(() => {
     if (!open) return;
     setError('');
-    const tree = treesByProject[activeProjectId] ?? [];
+    const tree = lineageTree;
     const firstChart = findFirstTreeNodeByType(tree, 'chart');
     if (firstChart) {
       const resolved = resolveChartPersons(
@@ -188,10 +187,9 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
     setMaxGenerations('5');
   }, [
     open,
-    activeProjectId,
     projectSurname,
     book.bookName,
-    treesByProject,
+    lineageTree,
     personsByChart,
   ]);
 

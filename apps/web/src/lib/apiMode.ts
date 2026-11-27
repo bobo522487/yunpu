@@ -1,17 +1,7 @@
-export type ApiMode = 'direct-mock' | 'network';
-
 export type ApiModeEnv = {
-  VITE_ENABLE_MOCK?: string;
   VITE_API_PROXY_TARGET?: string;
   [key: string]: unknown;
 };
-
-export function resolveApiMode(env?: ApiModeEnv | null): ApiMode {
-  if (!env) return 'direct-mock';
-  if (env.VITE_ENABLE_MOCK === '0') return 'network';
-  if (env.VITE_API_PROXY_TARGET?.trim()) return 'network';
-  return 'direct-mock';
-}
 
 export function resolveProxyTarget(
   processEnv?: ApiModeEnv | null,

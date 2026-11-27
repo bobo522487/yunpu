@@ -55,8 +55,7 @@ export type ProjectRecord = {
   name: string;
   status: ProjectStatus;
   surname: string | null;
-  /** UI-only until backend persistence is decided in Step 3. */
-  ancestor?: string | null;
+  ancestor: string | null;
   hallName: string | null;
   originText: string | null;
   description: string | null;

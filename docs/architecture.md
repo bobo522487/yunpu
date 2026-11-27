@@ -57,7 +57,7 @@ yunpu/
 | :--- | :--- | :--- |
 | `auth` | 登录、注册、登出、Better Auth 集成、默认组织上下文与新用户个人默认组织范例家族数据初始化 | `better-auth.ts`, `router.ts`, `service.ts`, `provisioning.ts`, `demo-seed.ts` |
 | `organization` | 组织创建、切换、成员角色管理、所有权转移、邀请创建/撤回/兑换 | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
-| `project` | 组织下谱系项目 CRUD、项目元数据（姓氏、始迁祖 `ancestor`、堂号、源流、配色主题等）与已鉴权项目媒体（`/projects/:projectId/media`）S3 上传/读取 | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
+| `project` | 组织下谱系项目 CRUD、项目元数据（姓氏、始迁祖 `ancestor`、堂号、源流、配色主题等）与已鉴权项目媒体（`/projects/:projectId/media`）S3 上传（含魔数校验）/防嗅探读取与离线对账 GC | `router.ts`, `service.ts`, `queries.ts`, `media-gc.ts` |
 | `folder` | 家族项目内平铺一级目录分组（`Folder`）CRUD 与排序，删除时仅解绑下属 `Lineage` | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
 | `lineage` | 家族项目内世系谱表（`Lineage`）CRUD、始祖联动生成与整数 `version` CAS | `router.ts`, `service.ts`, `queries.ts`, `schema.ts`, `errors.ts` |
 | `account` | 当前登录用户个人资料与账户操作 | `router.ts`, `service.ts` |
@@ -102,10 +102,11 @@ HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/ex
 - 连接释放前事务结束（`COMMIT` 或 `ROLLBACK`），`SET LOCAL` 作用域自动失效；`ROLLBACK` 失败、连接级故障或角色断言失败时以 `release(true)` 销毁会话，避免连接池复用导致跨租户串数据。
 - `authMiddleware` 只挂在 `/api/v1/*`；`/api/health`、`/api/ready` 与 `/api/media/*` 不查会话。列表接口统一使用共享分页 schema 与 `limit + 1` 游标，游标非法时在查库前返回 `VALIDATION`。
 
-**仅有的三处非租户事务入口（严禁普通业务复用）：**
+**仅有的四处非租户事务入口（严禁普通业务复用）：**
 
 1. **健康检查（`apps/api/src/app.ts` `probeDatabase`）**：复用 `businessPool` 仅执行 `SELECT version()`，供 `/api/health` 与 `/api/ready` 探测数据库连通性与 PostgreSQL 18 版本；不新建短连接，也不访问租户表。
 2. **认证库（`apps/api/src/modules/auth/better-auth.ts` `authDatabase`）**：使用 `AUTH_DATABASE_URL` 独立连接池，只访问 `auth` schema 下的表，不查询业务租户表。
 3. **数据库迁移（`packages/db/src/migrate.ts`）**：使用迁移命令行独立连接执行跨租户 DDL 与策略变更，HTTP 请求与普通后台任务禁止借用。
+4. **孤立媒体对账清理（`scripts/gc-media.ts`）**：离线/定时对账脚本，在 `BEGIN READ ONLY` 事务中经特权/`BYPASSRLS` 连接读取全租户 `public.person.avatar_key`（强制校验角色权限，防止 RLS 静默过滤导致误删），再与 S3 `projects/` 前缀比对，仅清理超过宽限期且无引用的孤立对象；HTTP 请求禁止借用，详见 [ADR-0019](adr/ADR-0019-project-media-guard-and-gc.md)。
 
-新增第四种例外时，必须同步更新本文档并在 `docs/adr/` 记录原因。当前系统不存在「事务提交后再异步删除外部对象」的产品级写入流程。
+新增第五种例外时，必须同步更新本文档并在 `docs/adr/` 记录原因。当前系统不存在「事务提交后再异步删除外部对象」的产品级写入流程。

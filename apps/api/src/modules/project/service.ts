@@ -3,7 +3,12 @@ import {
   type TxDatabase,
   withTenantTransaction,
 } from "../../db/with-tenant-transaction";
-import { AppError, notFound, versionConflict } from "../../lib/errors";
+import {
+  AppError,
+  notFound,
+  validationError,
+  versionConflict,
+} from "../../lib/errors";
 import { createLineageInTx } from "../lineage/service";
 import {
   type CreateProjectValues,
@@ -60,6 +65,126 @@ export async function createProject(
     await requireMember(db, organizationId, userId, "editor");
     return createProjectInTx(db, organizationId, values);
   });
+}
+
+export const SUPPORTED_IMAGE_MIME_TO_EXT = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+} as const;
+
+export type SupportedImageExt =
+  (typeof SUPPORTED_IMAGE_MIME_TO_EXT)[keyof typeof SUPPORTED_IMAGE_MIME_TO_EXT];
+
+const EXT_TO_IMAGE_CONTENT_TYPE: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
+const GIF87A_MAGIC = [0x47, 0x49, 0x46, 0x38, 0x37, 0x61] as const;
+const GIF89A_MAGIC = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61] as const;
+const RIFF_MAGIC = [0x52, 0x49, 0x46, 0x46] as const;
+const WEBP_MAGIC = [0x57, 0x45, 0x42, 0x50] as const;
+
+function matchesBytesAt(
+  bytes: Uint8Array,
+  offset: number,
+  expected: readonly number[],
+): boolean {
+  if (bytes.length < offset + expected.length) return false;
+  for (let i = 0; i < expected.length; i += 1) {
+    if (bytes[offset + i] !== expected[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Inspect leading magic bytes to identify real PNG/JPEG/WEBP/GIF payloads.
+ * Returns null for unrecognized or truncated payloads.
+ */
+export function detectImageExtension(
+  bytes: Uint8Array,
+): SupportedImageExt | null {
+  if (matchesBytesAt(bytes, 0, PNG_MAGIC)) {
+    return "png";
+  }
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff
+  ) {
+    return "jpg";
+  }
+  if (
+    matchesBytesAt(bytes, 0, GIF87A_MAGIC) ||
+    matchesBytesAt(bytes, 0, GIF89A_MAGIC)
+  ) {
+    return "gif";
+  }
+  if (
+    bytes.length >= 12 &&
+    matchesBytesAt(bytes, 0, RIFF_MAGIC) &&
+    matchesBytesAt(bytes, 8, WEBP_MAGIC)
+  ) {
+    return "webp";
+  }
+  return null;
+}
+
+export function resolveDeclaredImageType(rawContentType: string | undefined): {
+  ext: SupportedImageExt;
+  contentType: string;
+} {
+  const mime = (rawContentType ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+  const ext =
+    SUPPORTED_IMAGE_MIME_TO_EXT[
+      mime as keyof typeof SUPPORTED_IMAGE_MIME_TO_EXT
+    ];
+  if (!ext) {
+    throw validationError({
+      contentType: "仅支持 PNG、JPEG、WEBP 或 GIF 图片",
+    });
+  }
+  return { ext, contentType: mime };
+}
+
+export function assertValidImageMagicBytes(
+  body: Uint8Array,
+  expectedExt: SupportedImageExt,
+): SupportedImageExt {
+  const detected = detectImageExtension(body);
+  if (!detected) {
+    throw validationError({
+      body: "文件内容不是有效的 PNG、JPEG、WEBP 或 GIF 图片",
+    });
+  }
+  if (detected !== expectedExt) {
+    throw validationError({
+      body: "图片文件头签名与 Content-Type 不匹配",
+    });
+  }
+  return detected;
+}
+
+export function buildMediaResponseHeaders(
+  fileName: string,
+): Record<string, string> {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  const contentType =
+    EXT_TO_IMAGE_CONTENT_TYPE[ext] ?? "application/octet-stream";
+  return {
+    "content-type": contentType,
+    "cache-control": "private, max-age=31536000, immutable",
+    "x-content-type-options": "nosniff",
+    "content-security-policy": "default-src 'none'; sandbox",
+    "content-disposition": `inline; filename="${fileName}"`,
+  };
 }
 
 export async function assertProjectMediaAccess(

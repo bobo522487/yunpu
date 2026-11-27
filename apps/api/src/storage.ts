@@ -1,7 +1,9 @@
 import {
   CreateBucketCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadBucketCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -79,7 +81,11 @@ function s3(): S3Client {
   return s3Client;
 }
 
-export async function putObject(key: string, body: Uint8Array): Promise<void> {
+export async function putObject(
+  key: string,
+  body: Uint8Array,
+  contentType?: string,
+): Promise<void> {
   const config = storageConfig;
   if (!config) throw new Error("storage not initialized");
   await s3().send(
@@ -87,8 +93,80 @@ export async function putObject(key: string, body: Uint8Array): Promise<void> {
       Bucket: config.bucket,
       Key: key,
       Body: body,
+      ...(contentType ? { ContentType: contentType } : {}),
     }),
   );
+}
+
+export interface StoredObjectSummary {
+  key: string;
+  lastModified?: Date;
+  size?: number;
+}
+
+export async function listObjects(
+  prefix: string,
+): Promise<StoredObjectSummary[]> {
+  const config = storageConfig;
+  if (!config) throw new Error("storage not initialized");
+
+  const results: StoredObjectSummary[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3().send(
+      new ListObjectsV2Command({
+        Bucket: config.bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+    for (const item of response.Contents ?? []) {
+      if (!item.Key) continue;
+      results.push({
+        key: item.Key,
+        lastModified: item.LastModified,
+        size: item.Size,
+      });
+    }
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+  return results;
+}
+
+export async function deleteObjects(keys: string[]): Promise<string[]> {
+  const config = storageConfig;
+  if (!config) throw new Error("storage not initialized");
+  if (keys.length === 0) return [];
+
+  const deleted: string[] = [];
+  const errors: string[] = [];
+  const chunkSize = 1000;
+  for (let offset = 0; offset < keys.length; offset += chunkSize) {
+    const chunk = keys.slice(offset, offset + chunkSize);
+    const response = await s3().send(
+      new DeleteObjectsCommand({
+        Bucket: config.bucket,
+        Delete: {
+          Objects: chunk.map((Key) => ({ Key })),
+          Quiet: false,
+        },
+      }),
+    );
+    for (const entry of response.Deleted ?? []) {
+      if (entry.Key) deleted.push(entry.Key);
+    }
+    for (const err of response.Errors ?? []) {
+      errors.push(
+        `${err.Key ?? "unknown"}: ${err.Code ?? "error"} ${err.Message ?? ""}`.trim(),
+      );
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`storage deleteObjects failed: ${errors.join("; ")}`);
+  }
+  return deleted;
 }
 
 export async function getObject(key: string): Promise<Uint8Array | undefined> {

@@ -20,6 +20,7 @@
     "test:web:browser": "pnpm --filter @yunpu/web run test:browser",
     "contract:export": "node --import ./scripts/ts-ext-register.mjs scripts/export-contract.ts",
     "contract:check": "pnpm contract:export && git diff --exit-code -- contracts/openapi.json",
+    "gc:media": "node --import ./scripts/ts-ext-register.mjs scripts/gc-media.ts",
     "test:all": "vitest run --config vitest.config.ts tests/env && vitest run --config vitest.config.ts --fileParallelism=false tests/auth tests/console tests/genealogy tests/security tests/runtime apps/api/test",
     "start:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts",
     "dev:api": "node --import ./scripts/ts-ext-register.mjs apps/api/src/index.ts",

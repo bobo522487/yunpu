@@ -18,41 +18,17 @@ import { getObject, putObject } from "../../storage";
 import type { ApiEnv } from "../../types";
 import {
   assertProjectMediaAccess,
+  assertValidImageMagicBytes,
+  buildMediaResponseHeaders,
   createProject,
   getProjectById,
   listProjectsForOrg,
   removeProject,
+  resolveDeclaredImageType,
   updateProject,
 } from "./service";
 
 const MAX_PROJECT_MEDIA_BYTES = 5 * 1024 * 1024;
-
-const IMAGE_CONTENT_TYPE_TO_EXT = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-  "image/gif": "gif",
-} as const;
-
-const EXT_TO_IMAGE_CONTENT_TYPE: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  webp: "image/webp",
-  gif: "image/gif",
-};
-
-function resolveImageExtension(rawContentType: string | undefined): string {
-  const mime = (rawContentType ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
-  const ext =
-    IMAGE_CONTENT_TYPE_TO_EXT[mime as keyof typeof IMAGE_CONTENT_TYPE_TO_EXT];
-  if (!ext) {
-    throw validationError({
-      contentType: "仅支持 PNG、JPEG、WEBP 或 GIF 图片",
-    });
-  }
-  return ext;
-}
 
 async function readBoundedImageBody(
   request: Request,
@@ -154,7 +130,9 @@ projectRouter.post("/projects/:projectId/media", async (c) => {
   const { projectId } = parseParams(c, ProjectIdParamsSchema);
   await assertProjectMediaAccess(user.id, projectId, "write");
 
-  const ext = resolveImageExtension(c.req.header("content-type"));
+  const { ext, contentType } = resolveDeclaredImageType(
+    c.req.header("content-type"),
+  );
   const read = await readBoundedImageBody(c.req.raw);
   if ("exceeded" in read) {
     return c.json(
@@ -162,10 +140,11 @@ projectRouter.post("/projects/:projectId/media", async (c) => {
       413,
     );
   }
+  assertValidImageMagicBytes(read.body, ext);
 
   const fileName = `${crypto.randomUUID()}.${ext}`;
   const objectKey = `projects/${projectId}/${fileName}`;
-  await putObject(objectKey, read.body);
+  await putObject(objectKey, read.body, contentType);
 
   return c.json(
     {
@@ -187,16 +166,9 @@ projectRouter.get("/projects/:projectId/media/:fileName", async (c) => {
   const bytes = await getObject(`projects/${projectId}/${fileName}`);
   if (!bytes) throw notFound();
 
-  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-  const contentType =
-    EXT_TO_IMAGE_CONTENT_TYPE[ext] ?? "application/octet-stream";
-
   return new Response(new Uint8Array(bytes), {
     status: 200,
-    headers: {
-      "content-type": contentType,
-      "cache-control": "private, max-age=31536000, immutable",
-    },
+    headers: buildMediaResponseHeaders(fileName),
   });
 });
 

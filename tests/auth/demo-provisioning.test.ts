@@ -46,14 +46,31 @@ describe("new user demo family provisioning (auth)", () => {
     );
     expect(graph.status).toBe(200);
     const persons = graph.data?.persons as {
+      id: string;
       names?: unknown[];
       events?: unknown[];
     }[];
     const relations = graph.data?.relations as { kind: string }[];
     expect(persons.length).toBe(9);
     expect(relations.length).toBeGreaterThanOrEqual(8);
-    expect(persons.some((p) => (p.events?.length ?? 0) > 0)).toBe(true);
+    expect(persons.every((p) => !("events" in p))).toBe(true);
     expect(persons.some((p) => (p.names?.length ?? 0) > 1)).toBe(true);
+
+    // Events are hydrated on demand via GET /persons/:personId rather than /graph.
+    let hasDemoEvents = false;
+    for (const person of persons) {
+      const detail = await call(
+        `/api/v1/projects/${demoProjectId}/persons/${person.id}`,
+        signedUp.cookie,
+      );
+      expect(detail.status).toBe(200);
+      const detailPerson = detail.data?.person as { events?: unknown[] };
+      if ((detailPerson.events?.length ?? 0) > 0) {
+        hasDemoEvents = true;
+        break;
+      }
+    }
+    expect(hasDemoEvents).toBe(true);
 
     // Demo project is editable
     const edited = await call(

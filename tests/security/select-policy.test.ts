@@ -77,6 +77,10 @@ test("descendant prefix predicate is eligible for idx_lineage_projection_path_te
       const rootPersonId = "01900000-0000-7000-8000-000000000093";
 
       await client.query("SET LOCAL session_replication_role = replica");
+      // Isolate planner statistics inside this rolled-back transaction from rows left by earlier suites;
+      // otherwise independence-assumption selectivity (freq(org) * freq(project)) underestimates
+      // idx_lineage_projection_org_project, and 20k rows keep path_text ahead of Seq Scan across bloated pages.
+      await client.query("DELETE FROM public.lineage_projection");
       await client.query(
         `INSERT INTO public.lineage_projection
            (organization_id, project_id, person_id, primary_path, generation)
@@ -94,7 +98,7 @@ test("descendant prefix predicate is eligible for idx_lineage_projection_path_te
         `INSERT INTO public.lineage_projection
            (organization_id, project_id, person_id, primary_path, generation)
          SELECT $1::uuid, $2::uuid, uuidv7(), ('u' || gs.i)::ltree, 0
-           FROM generate_series(1, 5000) AS gs(i)`,
+           FROM generate_series(1, 20000) AS gs(i)`,
         [orgId, projectId],
       );
       await client.query("SET LOCAL session_replication_role = origin");

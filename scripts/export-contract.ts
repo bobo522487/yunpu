@@ -1,13 +1,13 @@
-import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import * as shared from "../packages/shared/src/index.ts";
 import {
   OPENAPI_OPERATIONS,
   OPENAPI_SCHEMAS,
 } from "../apps/api/src/openapi/operations.ts";
+import * as shared from "../packages/shared/src/index.ts";
 
 const require = createRequire(
   new URL("../packages/shared/package.json", import.meta.url),
@@ -70,13 +70,131 @@ if (missing.length > 0 || stale.length > 0) {
   );
 }
 
-function jsonSchema(schema: z.ZodType): Record<string, unknown> {
-  return z.toJSONSchema(schema) as Record<string, unknown>;
+// Register all named schemas from @yunpu/shared and OPENAPI_SCHEMAS so nested
+// and operation-level usages emit `#/components/schemas/<Name>` $refs instead
+// of repeating multi-kilobyte inline definitions.
+const registry = z.registry<{ id: string }>();
+const schemaToId = new Map<z.ZodType, string>();
+const aliases: Array<[alias: string, target: string]> = [];
+
+function registerNamedSchemas(entries: Iterable<[string, unknown]>) {
+  for (const [name, value] of entries) {
+    if (!(value instanceof z.ZodType)) continue;
+    const existing = schemaToId.get(value);
+    if (existing) {
+      if (existing !== name) aliases.push([name, existing]);
+      continue;
+    }
+    schemaToId.set(value, name);
+    registry.add(value, { id: name });
+  }
+}
+
+registerNamedSchemas(Object.entries(shared));
+registerNamedSchemas(Object.entries(OPENAPI_SCHEMAS));
+
+const uuidJsonSchema = z.toJSONSchema(z.uuid()) as Record<string, unknown>;
+delete uuidJsonSchema.$schema;
+const isoDateTimeJsonSchema = z.toJSONSchema(z.iso.datetime()) as Record<
+  string,
+  unknown
+>;
+delete isoDateTimeJsonSchema.$schema;
+const uuidSignature = JSON.stringify(uuidJsonSchema);
+const isoDateTimeSignature = JSON.stringify(isoDateTimeJsonSchema);
+
+const exportedRegistry = z.toJSONSchema(registry, {
+  uri: (id) => `#/components/schemas/${id}`,
+});
+
+const schemas: Record<string, unknown> = {};
+if (!schemaToId.has(z.uuid()) && !("Uuid" in exportedRegistry.schemas)) {
+  schemas.Uuid = uuidJsonSchema;
+}
+if (!("IsoDateTime" in exportedRegistry.schemas)) {
+  schemas.IsoDateTime = isoDateTimeJsonSchema;
+}
+for (const [name, raw] of Object.entries(exportedRegistry.schemas)) {
+  if (name === "__shared") continue;
+  const copy = { ...(raw as Record<string, unknown>) };
+  delete copy.$schema;
+  delete copy.$id;
+  schemas[name] = copy;
+}
+for (const [alias, target] of aliases) {
+  schemas[alias] = { $ref: `#/components/schemas/${target}` };
+}
+
+const knownIds = new Set(Object.keys(schemas));
+
+function rewriteSchemaRefs(node: unknown): unknown {
+  if (Array.isArray(node)) {
+    return node.map(rewriteSchemaRefs);
+  }
+  if (node && typeof node === "object") {
+    const serialized = JSON.stringify(node);
+    if ("Uuid" in schemas && serialized === uuidSignature) {
+      return { $ref: "#/components/schemas/Uuid" };
+    }
+    if ("IsoDateTime" in schemas && serialized === isoDateTimeSignature) {
+      return { $ref: "#/components/schemas/IsoDateTime" };
+    }
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(
+      node as Record<string, unknown>,
+    )) {
+      if (
+        key === "$ref" &&
+        typeof value === "string" &&
+        value.startsWith("#/$defs/")
+      ) {
+        const refId = value.slice("#/$defs/".length);
+        out[key] = knownIds.has(refId) ? `#/components/schemas/${refId}` : value;
+      } else {
+        out[key] = rewriteSchemaRefs(value);
+      }
+    }
+    return out;
+  }
+  return node;
+}
+
+for (const [name, schema] of Object.entries(schemas)) {
+  if (name === "Uuid" || name === "IsoDateTime") continue;
+  schemas[name] = rewriteSchemaRefs(schema);
+}
+
+function toOpenApiSchema(schema: z.ZodType): unknown {
+  const directId = schemaToId.get(schema);
+  if (directId) {
+    return { $ref: `#/components/schemas/${directId}` };
+  }
+  const encoded = z.toJSONSchema(schema, { metadata: registry }) as Record<
+    string,
+    unknown
+  >;
+  delete encoded.$schema;
+  if (encoded.$defs && typeof encoded.$defs === "object") {
+    const remainingDefs: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(
+      encoded.$defs as Record<string, unknown>,
+    )) {
+      if (!knownIds.has(key)) {
+        remainingDefs[key] = rewriteSchemaRefs(value);
+      }
+    }
+    if (Object.keys(remainingDefs).length > 0) {
+      encoded.$defs = remainingDefs;
+    } else {
+      delete encoded.$defs;
+    }
+  }
+  return rewriteSchemaRefs(encoded);
 }
 
 function parametersFor(schema: z.ZodType | undefined, where: "path" | "query") {
   if (!schema) return [];
-  const encoded = jsonSchema(schema);
+  const encoded = z.toJSONSchema(schema) as Record<string, unknown>;
   const properties = (encoded.properties ?? {}) as Record<
     string,
     Record<string, unknown>
@@ -86,27 +204,60 @@ function parametersFor(schema: z.ZodType | undefined, where: "path" | "query") {
     name,
     in: where,
     required: where === "path" ? true : required.has(name),
-    schema: value,
+    schema: rewriteSchemaRefs(value),
   }));
 }
 
-const schemas: Record<string, unknown> = {};
-for (const [name, value] of Object.entries(shared)) {
-  if (value instanceof z.ZodType) schemas[name] = jsonSchema(value);
+function isFlatLeaf(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return true;
+  if (Array.isArray(value)) {
+    return value.every((item) => item === null || typeof item !== "object");
+  }
+  return Object.values(value as Record<string, unknown>).every((item) => {
+    if (item === null || typeof item !== "object") return true;
+    if (Array.isArray(item)) {
+      return item.every((el) => el === null || typeof el !== "object");
+    }
+    return false;
+  });
 }
-for (const [name, schema] of Object.entries(OPENAPI_SCHEMAS)) {
-  schemas[name] = jsonSchema(schema);
+
+function formatCompactReadableJson(value: unknown, indent = 0): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  const compact = JSON.stringify(value);
+  if (compact.length <= 100 || isFlatLeaf(value)) {
+    return compact;
+  }
+  const pad = "  ".repeat(indent);
+  const childPad = "  ".repeat(indent + 1);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    return `[\n${value
+      .map((item) => `${childPad}${formatCompactReadableJson(item, indent + 1)}`)
+      .join(",\n")}\n${pad}]`;
+  }
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([, item]) => item !== undefined,
+  );
+  if (entries.length === 0) return "{}";
+  return `{\n${entries
+    .map(
+      ([key, item]) =>
+        `${childPad}${JSON.stringify(key)}: ${formatCompactReadableJson(item, indent + 1)}`,
+    )
+    .join(",\n")}\n${pad}}`;
 }
 
 const paths: Record<string, Record<string, unknown>> = {};
 for (const operation of OPENAPI_OPERATIONS) {
-  const encodedSuccess = jsonSchema(operation.success);
   const contentType = operation.successContentType ?? "application/json";
   const responses: Record<string, unknown> = {
     [String(operation.successStatus)]: {
       description: operation.summary,
       content: {
-        [contentType]: { schema: encodedSuccess },
+        [contentType]: { schema: toOpenApiSchema(operation.success) },
       },
     },
   };
@@ -114,7 +265,7 @@ for (const operation of OPENAPI_OPERATIONS) {
     responses["400"] = {
       description: "校验或业务错误",
       content: {
-        "application/json": { schema: jsonSchema(operation.errors) },
+        "application/json": { schema: toOpenApiSchema(operation.errors) },
       },
     };
   }
@@ -133,7 +284,7 @@ for (const operation of OPENAPI_OPERATIONS) {
     entry.requestBody = {
       required: true,
       content: {
-        "application/json": { schema: jsonSchema(operation.body) },
+        "application/json": { schema: toOpenApiSchema(operation.body) },
       },
     };
   }
@@ -156,7 +307,7 @@ const document = {
 
 const output = join(repoRoot, "contracts/openapi.json");
 await mkdir(dirname(output), { recursive: true });
-await writeFile(output, `${JSON.stringify(document, null, 2)}\n`);
+await writeFile(output, `${formatCompactReadableJson(document)}\n`);
 console.log(
   `wrote ${output} (${OPENAPI_OPERATIONS.length} routes, ${Object.keys(schemas).length} schemas)`,
 );

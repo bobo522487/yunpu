@@ -1,9 +1,9 @@
-import type { TreeItem } from '../../components/common/Tree/types';
-import { collectTreeNodesByType } from '../../lib/treeOps';
-import type { GenealogyDate } from '../date-input/date.types';
-import type { GenealogyPlace } from '../place-input/place.types';
-import { createStarterProgenitorForChart } from './domain/starterProgenitor';
-import { type PersonRecord } from './types';
+import type { TreeItem } from '../../../components/common/Tree/types';
+import { collectTreeNodesByType } from '../../../lib/treeOps';
+import type { GenealogyDate } from '../../date-input/date.types';
+import type { GenealogyPlace } from '../../place-input/place.types';
+import { createStarterProgenitorForChart } from '../domain/starterProgenitor';
+import { type PersonRecord } from '../types';
 
 export const ROYAL_DEMO_LINEAGE_TREE: TreeItem[] = [
   {

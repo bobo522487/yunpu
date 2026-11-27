@@ -23,7 +23,7 @@ import {
   applyAddRelative,
   createDirectPersonRecord,
 } from './domain/relativeMutations';
-import { createSeedPersonsForChart } from './lineageData';
+import { createSeedPersonsForChart } from './__fixtures__/lineageData';
 import type { PersonEventType, PersonRecord } from './types';
 import { computeLineageStats } from './utils/lineageStats';
 import {

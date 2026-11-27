@@ -129,6 +129,26 @@ export interface LineageGraphPayload {
   projections: ProjectionDto[];
 }
 
+export interface PersonPagePayload {
+  persons: PersonDto[];
+  nextCursor: string | null;
+}
+
+export interface SubgraphPayload {
+  rootPersonId: string;
+  persons: PersonDto[];
+  relations: RelationDto[];
+  hasMoreAncestors: boolean;
+  hasMoreDescendants: boolean;
+}
+
+export interface SubgraphQueryOptions {
+  rootPersonId: string;
+  upDepth?: number;
+  downDepth?: number;
+  limit?: number;
+}
+
 export interface PersonAggregatePayload {
   person: PersonDto;
   relations: RelationDto[];
@@ -210,6 +230,46 @@ export const fetchLineageGraph = (projectId: string, lineageId: string) =>
   apiRequest<LineageGraphPayload>(
     `/api/v1/projects/${projectId}/lineages/${lineageId}/graph`,
   );
+
+export const fetchPersonDetail = (projectId: string, personId: string) =>
+  apiRequest<{ person: PersonDto }>(
+    `/api/v1/projects/${projectId}/persons/${personId}`,
+  );
+
+export const fetchLineagePersonsPage = (
+  projectId: string,
+  options: { lineageId?: string; cursor?: string; limit?: number } = {},
+) => {
+  const search = new URLSearchParams();
+  if (options.lineageId) search.set('lineageId', options.lineageId);
+  if (options.cursor) search.set('cursor', options.cursor);
+  if (options.limit !== undefined) search.set('limit', String(options.limit));
+  const qs = search.toString();
+  return apiRequest<PersonPagePayload>(
+    `/api/v1/projects/${projectId}/persons${qs ? `?${qs}` : ''}`,
+  );
+};
+
+export const fetchSubgraph = (
+  projectId: string,
+  options: SubgraphQueryOptions,
+) => {
+  const search = new URLSearchParams({
+    rootPersonId: options.rootPersonId,
+  });
+  if (options.upDepth !== undefined) {
+    search.set('upDepth', String(options.upDepth));
+  }
+  if (options.downDepth !== undefined) {
+    search.set('downDepth', String(options.downDepth));
+  }
+  if (options.limit !== undefined) {
+    search.set('limit', String(options.limit));
+  }
+  return apiRequest<SubgraphPayload>(
+    `/api/v1/projects/${projectId}/subgraph?${search.toString()}`,
+  );
+};
 
 // ---- 人物（聚合与创建/删除） ----
 

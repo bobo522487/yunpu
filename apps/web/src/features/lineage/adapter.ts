@@ -12,8 +12,10 @@ import {
   type LineageGraphPayload,
   type PersonDto,
   type PersonNameDto,
+  type ProjectionDto,
   projectMediaUrl,
   type RelationDto,
+  type SubgraphPayload,
 } from './api';
 import type {
   PersonAliasRecord,
@@ -462,6 +464,87 @@ export function graphToPersonRecords(
     if (!anchorGen || anchorGen === record.generation) return record;
     return { ...record, generation: anchorGen };
   });
+}
+
+/**
+ * Adapts a windowed /subgraph response into a LineageGraphPayload by computing
+ * relative 0-indexed generations across the visible parent-child DAG.
+ */
+export function subgraphToLineageGraphPayload(
+  lineage: LineageDto,
+  subgraph: SubgraphPayload,
+): LineageGraphPayload {
+  const personIds = new Set(subgraph.persons.map((p) => p.id));
+  const childrenByParent = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+
+  for (const p of subgraph.persons) {
+    inDegree.set(p.id, 0);
+  }
+
+  for (const rel of subgraph.relations) {
+    if (!PARENT_API_RELATION_KINDS.has(rel.kind)) continue;
+    if (!personIds.has(rel.fromPersonId) || !personIds.has(rel.toPersonId)) {
+      continue;
+    }
+    const children = childrenByParent.get(rel.fromPersonId) ?? [];
+    children.push(rel.toPersonId);
+    childrenByParent.set(rel.fromPersonId, children);
+    inDegree.set(rel.toPersonId, (inDegree.get(rel.toPersonId) ?? 0) + 1);
+  }
+
+  const generationById = new Map<string, number>();
+  const queue: string[] = [];
+  for (const [id, deg] of inDegree.entries()) {
+    if (deg === 0) {
+      generationById.set(id, 0);
+      queue.push(id);
+    }
+  }
+
+  for (let head = 0; head < queue.length; head += 1) {
+    const currentId = queue[head]!;
+    const currentGen = generationById.get(currentId) ?? 0;
+    for (const childId of childrenByParent.get(currentId) ?? []) {
+      const prevGen = generationById.get(childId) ?? 0;
+      if (currentGen + 1 > prevGen) {
+        generationById.set(childId, currentGen + 1);
+      }
+      const nextDeg = (inDegree.get(childId) ?? 1) - 1;
+      inDegree.set(childId, nextDeg);
+      if (nextDeg === 0) {
+        queue.push(childId);
+      }
+    }
+  }
+
+  const projections: ProjectionDto[] = subgraph.persons.map((p) => ({
+    personId: p.id,
+    primaryPath: p.id,
+    generation: generationById.get(p.id) ?? 0,
+  }));
+
+  return {
+    lineage,
+    persons: subgraph.persons,
+    relations: subgraph.relations,
+    projections,
+  };
+}
+
+/** Merges an on-demand GET /persons/:personId payload into the loaded graph DTOs. */
+export function mergePersonDetailIntoGraph(
+  graph: LineageGraphPayload,
+  detail: PersonDto | null | undefined,
+): LineageGraphPayload {
+  if (!detail) return graph;
+  let replaced = false;
+  const persons = graph.persons.map((item) => {
+    if (item.id !== detail.id) return item;
+    replaced = true;
+    return detail;
+  });
+  return replaced ? { ...graph, persons } : graph;
 }
 
 function cleanBirthInfo(

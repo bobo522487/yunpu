@@ -22,10 +22,16 @@ import {
   resolveChartSurname,
   useLineageStore,
 } from '../../../store/useLineageStore';
-import { directoryToTreeItems, graphToPersonRecords } from '../adapter';
+import {
+  directoryToTreeItems,
+  graphToPersonRecords,
+  mergePersonDetailIntoGraph,
+} from '../adapter';
 import {
   createLineageRequest,
   deletePersonRequest,
+  fetchPersonDetail,
+  type LineageGraphPayload,
   uploadProjectMediaRequest,
 } from '../api';
 import {
@@ -35,11 +41,14 @@ import {
   syncPersonUpdatesToApi,
 } from '../mutations';
 import {
+  DEFAULT_SUBGRAPH_DOWN_DEPTH,
+  DEFAULT_SUBGRAPH_LIMIT,
+  DEFAULT_SUBGRAPH_UP_DEPTH,
   invalidateLineageDirectory,
   invalidateLineageGraph,
   useLineageDirectoryQuery,
-  useLineageGraphQuery,
 } from '../queries';
+import { useLineageCanvasData } from '../hooks/useLineageCanvasData';
 import type { PersonRecord } from '../types';
 import { LineageTreeView } from '../components/LineageTreeView';
 import { PersonDetailPanel } from '../components/PersonDetailPanel';
@@ -123,7 +132,35 @@ const LineagePage: React.FC = () => {
   const chartName = selectedLineageNode?.data?.name || '世系图谱';
   const chartStorageKey = makeChartStorageKey(activeProjectId, chartId);
 
-  const graphQuery = useLineageGraphQuery(activeProjectId, chartId);
+  const activeLineage = useMemo(
+    () =>
+      directoryQuery.data?.lineages.find((item) => item.id === chartId) ?? null,
+    [directoryQuery.data, chartId],
+  );
+
+  const selectedPersonId =
+    selectedPersonIdByChart[chartStorageKey] ?? null;
+
+  const [windowAnchorPersonId, setWindowAnchorPersonId] = useState<
+    string | null
+  >(null);
+  const [windowUpDepth, setWindowUpDepth] = useState(
+    DEFAULT_SUBGRAPH_UP_DEPTH,
+  );
+  const [windowDownDepth, setWindowDownDepth] = useState(
+    DEFAULT_SUBGRAPH_DOWN_DEPTH,
+  );
+  const [windowLimit, setWindowLimit] = useState(DEFAULT_SUBGRAPH_LIMIT);
+
+  const canvasData = useLineageCanvasData({
+    projectId: activeProjectId,
+    lineage: activeLineage,
+    selectedPersonId,
+    anchorPersonId: windowAnchorPersonId,
+    upDepth: windowUpDepth,
+    downDepth: windowDownDepth,
+    limit: windowLimit,
+  });
 
   const effectiveSurname = useMemo(
     () => resolveChartSurname(selectedLineageNode, projectSurname),
@@ -131,12 +168,9 @@ const LineagePage: React.FC = () => {
   );
 
   const chartPersons = useMemo(() => {
-    if (!chartId || isFolderSelected || !graphQuery.data) return [];
-    return graphToPersonRecords(activeProjectId, graphQuery.data);
-  }, [activeProjectId, chartId, isFolderSelected, graphQuery.data]);
-
-  const selectedPersonId =
-    selectedPersonIdByChart[chartStorageKey] ?? null;
+    if (!chartId || isFolderSelected || !canvasData.graphData) return [];
+    return graphToPersonRecords(activeProjectId, canvasData.graphData);
+  }, [activeProjectId, chartId, isFolderSelected, canvasData.graphData]);
 
   const selectedPerson = useMemo(
     () =>
@@ -153,6 +187,10 @@ const LineagePage: React.FC = () => {
     setAddRelativeContext(null);
     setMutationError(null);
     setIsVersionConflict(false);
+    setWindowAnchorPersonId(null);
+    setWindowUpDepth(DEFAULT_SUBGRAPH_UP_DEPTH);
+    setWindowDownDepth(DEFAULT_SUBGRAPH_DOWN_DEPTH);
+    setWindowLimit(DEFAULT_SUBGRAPH_LIMIT);
   }, [activeProjectId, chartId]);
 
   const handleMutationError = (err: unknown) => {
@@ -167,18 +205,47 @@ const LineagePage: React.FC = () => {
     selectPersonStore(activeProjectId, chartId, personId);
   };
 
+  const ensureGraphPersonHydrated = async (
+    baseGraph: LineageGraphPayload,
+    personIds: string[],
+  ): Promise<LineageGraphPayload> => {
+    const missing = personIds.filter((id) => {
+      const dto = baseGraph.persons.find((item) => item.id === id);
+      return dto && (dto.events === undefined || dto.names === undefined);
+    });
+    if (missing.length === 0) return baseGraph;
+    const details = await Promise.all(
+      missing.map((id) => fetchPersonDetail(activeProjectId, id)),
+    );
+    return details.reduce(
+      (acc, { person }) => mergePersonDetailIntoGraph(acc, person),
+      baseGraph,
+    );
+  };
+
   const handleUpdatePerson = async (
     personId: string,
     updates: Partial<PersonRecord>,
   ) => {
-    if (!chartId || !graphQuery.data) return;
+    if (!chartId || !canvasData.graphData) return;
     setMutationError(null);
     setIsVersionConflict(false);
     try {
+      const needsDetail =
+        updates.events !== undefined ||
+        updates.aliasItems !== undefined ||
+        updates.aliases !== undefined;
+      const workingGraph = needsDetail
+        ? await ensureGraphPersonHydrated(canvasData.graphData, [personId])
+        : canvasData.graphData;
+      const workingPersons =
+        workingGraph === canvasData.graphData
+          ? chartPersons
+          : graphToPersonRecords(activeProjectId, workingGraph);
       await syncPersonUpdatesToApi(
         activeProjectId,
-        graphQuery.data,
-        chartPersons,
+        workingGraph,
+        workingPersons,
         personId,
         updates,
       );
@@ -296,7 +363,7 @@ const LineagePage: React.FC = () => {
     context: AddRelativeContext,
     payload: AddRelativeSubmitPayload,
   ) => {
-    if (!chartId || !graphQuery.data) return;
+    if (!chartId || !canvasData.graphData) return;
     const keepSelection = Boolean(selectedPersonId);
     setMutationError(null);
     setIsVersionConflict(false);
@@ -304,7 +371,7 @@ const LineagePage: React.FC = () => {
       const { selectId } = await createRelativeViaApi(
         activeProjectId,
         chartId,
-        graphQuery.data,
+        canvasData.graphData,
         chartPersons,
         effectiveSurname,
         context,
@@ -347,14 +414,28 @@ const LineagePage: React.FC = () => {
   };
 
   const handleCommitPersons = async (nextPersons: PersonRecord[]) => {
-    if (!chartId || !graphQuery.data) return;
+    if (!chartId || !canvasData.graphData) return;
     setMutationError(null);
     setIsVersionConflict(false);
     try {
+      const changedIds = nextPersons
+        .filter((next) => {
+          const prev = chartPersons.find((p) => p.id === next.id);
+          return prev && prev.events !== next.events;
+        })
+        .map((p) => p.id);
+      const workingGraph = await ensureGraphPersonHydrated(
+        canvasData.graphData,
+        changedIds,
+      );
+      const workingPrevPersons =
+        workingGraph === canvasData.graphData
+          ? chartPersons
+          : graphToPersonRecords(activeProjectId, workingGraph);
       await syncCoupleMarriageEventToApi(
         activeProjectId,
-        graphQuery.data,
-        chartPersons,
+        workingGraph,
+        workingPrevPersons,
         nextPersons,
       );
       await invalidateLineageGraph(queryClient, activeProjectId, chartId);
@@ -485,7 +566,72 @@ const LineagePage: React.FC = () => {
 
         <div className="flex-1 flex min-h-0 overflow-hidden relative">
           <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative bg-muted/10">
-            {graphQuery.isPending && !graphQuery.data ? (
+            {canvasData.mode === 'subgraph' && (
+              <div
+                data-testid="windowed-subgraph-banner"
+                className="shrink-0 border-b border-border bg-card/95 px-4 py-1.5 text-[12px] text-muted-foreground flex flex-wrap items-center justify-between gap-2 z-10"
+              >
+                <span>
+                  大谱系窗口化模式：当前仅加载锚点附近 {chartPersons.length} 人
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedPerson &&
+                    selectedPerson.id !==
+                      canvasData.subgraphMeta?.rootPersonId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWindowAnchorPersonId(selectedPerson.id);
+                          setWindowUpDepth(DEFAULT_SUBGRAPH_UP_DEPTH);
+                          setWindowDownDepth(DEFAULT_SUBGRAPH_DOWN_DEPTH);
+                        }}
+                        className="rounded border border-border px-2 py-0.5 text-foreground hover:bg-accent cursor-pointer"
+                      >
+                        以「{selectedPerson.surname ?? ''}
+                        {selectedPerson.name}」为中心展开
+                      </button>
+                    )}
+                  {canvasData.subgraphMeta?.hasMoreAncestors &&
+                    windowUpDepth < 10 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setWindowUpDepth((prev) => Math.min(10, prev + 2))
+                        }
+                        className="rounded border border-border px-2 py-0.5 text-foreground hover:bg-accent cursor-pointer"
+                      >
+                        向上扩展世代
+                      </button>
+                    )}
+                  {canvasData.subgraphMeta?.hasMoreDescendants &&
+                    windowDownDepth < 20 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setWindowDownDepth((prev) => Math.min(20, prev + 2))
+                        }
+                        className="rounded border border-border px-2 py-0.5 text-foreground hover:bg-accent cursor-pointer"
+                      >
+                        向下扩展世代
+                      </button>
+                    )}
+                  {(canvasData.subgraphMeta?.hasMoreAncestors ||
+                    canvasData.subgraphMeta?.hasMoreDescendants) &&
+                    windowLimit < 1000 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setWindowLimit((prev) => Math.min(1000, prev + 200))
+                        }
+                        className="rounded border border-border px-2 py-0.5 text-foreground hover:bg-accent cursor-pointer"
+                      >
+                        加载更多节点
+                      </button>
+                    )}
+                </div>
+              </div>
+            )}
+            {canvasData.isPending && !canvasData.graphData ? (
               <div className="flex-1 flex items-center justify-center text-[13px] text-muted-foreground">
                 正在加载世系图谱数据...
               </div>

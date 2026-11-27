@@ -10,7 +10,7 @@
 - **后端（`@yunpu/api`）**：Hono `4.13.19` + `@hono/node-server` + Zod `4.6.7` + Better Auth `1.7.27` + Drizzle ORM `0.45.4` + `pg` `8.23.1` + `@aws-sdk/client-s3`。只提供 `/api/*` JSON，不渲染登录页。
 - **前端（`@yunpu/web`）**：React 19 + Vite 8 + TanStack Router / Query + Tailwind CSS 4 + Zustand，位于 `apps/web`。通过 `"@yunpu/shared": "workspace:*"` 直接复用共享枚举、错误码与 Schema，并继续由 `pnpm contract:export` 导出 `contracts/openapi.json`（Hono 路由 + `@yunpu/shared` Zod schema）作为跨端契约权威。本地开发默认通过 `pnpm dev` 同时启动 API 与 Vite `/api` 同源代理，跨源联调可配置 `CORS_ORIGINS`。见 [ADR-0013](adr/ADR-0013-monorepo-web-integration.md)。
 - **数据存储与基础设施**：PostgreSQL 18（启用 `ltree` 扩展与 `FORCE ROW LEVEL SECURITY`）、S3 兼容对象存储（测试/开发环境由 `scripts/env.sh` 拉起容器，使用 `pgsty/silo`）。
-- **代码检查与测试**：后端与共享包使用 Biome `2.2.6` + `tsc --noEmit`（`pnpm run lint:api`）+ Vitest `5.1.0`；前端使用 ESLint + `tsc -b`（`pnpm run lint:web`）+ Vitest（单元测试 + Playwright Browser 组件测试）。`apps/api/tsconfig.json` 使用 `moduleResolution: bundler`，与仓库里的无扩展名 `.ts` 导入一致。
+- **代码检查与测试**：后端与共享包使用 Biome `2.2.6` + TypeScript `7.0.2`（`tsc --noEmit`，`pnpm run lint:api`）+ Vitest `5.1.0`；前端（`@yunpu/web`）使用 ESLint `10`（`typescript-eslint` `^8.58.2`）+ `tsc -b`（`pnpm run lint:web`）+ Vitest `5.1.0`（`@vitest/browser-playwright` / `@vitest/coverage-v8` / `@vitest/ui` 已全仓对齐 `5.1.0`，`vitest-browser-react` 为 `^2.3.0`）。前端 `typescript` 暂保留 `~6.0.3`（锁定 `6.0.3`），原因：`typescript-eslint@8.74.0`（含最新 `8.x` / `canary`）的 peerDependency 仍为 `typescript: ">=4.8.4 <6.1.0"`，在 TS `7.0.2` 下运行 `eslint .` 会直接报错 `typescript-eslint does not support TS 7.0.`（官方需待 `typescript-eslint#10940` 对接 TS `>=7.1` 后再统一升级）。`apps/api/tsconfig.json` 使用 `moduleResolution: bundler`，与仓库里的无扩展名 `.ts` 导入一致。
 
 ---
 

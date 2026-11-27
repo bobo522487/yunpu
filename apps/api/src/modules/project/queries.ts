@@ -1,4 +1,4 @@
-import { project } from "@yunpu/db";
+import { organization, project } from "@yunpu/db";
 import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
@@ -14,6 +14,7 @@ export type ProjectRecord = {
   name: string;
   status: ProjectStatus;
   surname: string | null;
+  ancestor: string | null;
   hallName: string | null;
   originText: string | null;
   description: string | null;
@@ -30,6 +31,7 @@ const projectColumns = {
   name: project.name,
   status: project.status,
   surname: project.surname,
+  ancestor: project.ancestor,
   hallName: project.hallName,
   originText: project.originText,
   description: project.description,
@@ -86,6 +88,7 @@ export type CreateProjectValues = {
   name: string;
   status?: ProjectStatus;
   surname?: string;
+  ancestor?: string;
   hallName?: string;
   originText?: string;
   description?: string;
@@ -105,6 +108,7 @@ export async function insertProject(
       name: values.name,
       status: values.status ?? "planning",
       surname: values.surname ?? null,
+      ancestor: values.ancestor ?? null,
       hallName: values.hallName ?? null,
       originText: values.originText ?? null,
       description: values.description ?? null,
@@ -117,9 +121,10 @@ export async function insertProject(
 
 export type UpdateProjectValues = Omit<
   Partial<CreateProjectValues>,
-  "surname" | "hallName" | "originText" | "description"
+  "surname" | "ancestor" | "hallName" | "originText" | "description"
 > & {
   surname?: string | null;
+  ancestor?: string | null;
   hallName?: string | null;
   originText?: string | null;
   description?: string | null;
@@ -140,6 +145,7 @@ export async function casUpdateProject(
   if (values.name !== undefined) set.name = values.name;
   if (values.status !== undefined) set.status = values.status;
   if (values.surname !== undefined) set.surname = values.surname;
+  if (values.ancestor !== undefined) set.ancestor = values.ancestor;
   if (values.hallName !== undefined) set.hallName = values.hallName;
   if (values.originText !== undefined) set.originText = values.originText;
   if (values.description !== undefined) set.description = values.description;
@@ -158,6 +164,18 @@ export async function casUpdateProject(
     )
     .returning(projectColumns);
   return rows[0] ?? null;
+}
+
+export async function isOrganizationArchived(
+  db: TxDatabase,
+  organizationId: string,
+): Promise<boolean> {
+  const rows = await db
+    .select({ status: organization.status })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  return rows[0]?.status === "archived";
 }
 
 export async function deleteProject(

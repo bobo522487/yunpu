@@ -165,7 +165,7 @@ describe("person relations (genealogy)", () => {
     const result = await createRelation(cookie, projectId, {
       fromPersonId: (a.data?.person as { id: string }).id,
       toPersonId: (b.data?.person as { id: string }).id,
-      kind: "step_parent",
+      kind: "invalid_kind",
     });
     expect(result.status).toBe(400);
     expect(result.json.code).toBe("VALIDATION");

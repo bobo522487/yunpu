@@ -38,13 +38,9 @@ export const RELATION_KINDS = [
 ] as const;
 export type RelationKind = (typeof RELATION_KINDS)[number];
 
-/** API write subset this batch accepts (DB still allows all RELATION_KINDS). */
-export const API_RELATION_KINDS = [
-  "biological_parent",
-  "adoptive_parent",
-  "spouse",
-] as const;
-export type ApiRelationKind = (typeof API_RELATION_KINDS)[number];
+/** API write subset now exposes all 7 database RELATION_KINDS. */
+export const API_RELATION_KINDS = RELATION_KINDS;
+export type ApiRelationKind = RelationKind;
 
 export const PERSON_NAME_KINDS = [
   "formal",
@@ -57,15 +53,29 @@ export const PERSON_NAME_KINDS = [
 ] as const;
 export type PersonNameKind = (typeof PERSON_NAME_KINDS)[number];
 
+export const PERSON_EVENT_TYPES = [
+  "birth",
+  "education",
+  "career",
+  "marriage",
+  "residence",
+  "death",
+  "other",
+] as const;
+export type PersonEventType = (typeof PERSON_EVENT_TYPES)[number];
+
 export const TABLE_NAMES = [
   "organization",
   "organization_member",
   "invite",
   "audit_log",
   "project",
+  "folder",
+  "lineage",
   "person",
   "person_name",
   "person_relation",
+  "person_event",
   "lineage_projection",
 ] as const;
 export type TableName = (typeof TABLE_NAMES)[number];

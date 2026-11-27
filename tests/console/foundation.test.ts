@@ -96,6 +96,8 @@ describe("console foundation (project table)", () => {
       "project_level",
       // 0019 迁移以 ADD COLUMN 追加到表尾。
       "version",
+      // 0027 迁移以 ADD COLUMN 追加到表尾。
+      "ancestor",
     ]);
   });
 });

@@ -12,11 +12,14 @@ describe("database foundation", () => {
 
     expect(tables).toEqual([
       "audit_log",
+      "folder",
       "invite",
+      "lineage",
       "lineage_projection",
       "organization",
       "organization_member",
       "person",
+      "person_event",
       "person_name",
       "person_relation",
       "project",
@@ -42,11 +45,14 @@ describe("database foundation", () => {
 
     expect(rows.map((row) => row.relname)).toEqual([
       "audit_log",
+      "folder",
       "invite",
+      "lineage",
       "lineage_projection",
       "organization",
       "organization_member",
       "person",
+      "person_event",
       "person_name",
       "person_relation",
       "project",

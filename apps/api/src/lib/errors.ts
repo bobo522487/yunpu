@@ -66,6 +66,12 @@ export function tryMapDatabaseError(error: unknown): AppError | null {
       if (dbError.constraint === "uk_person_relation_kind") {
         return new AppError("CONFLICT", "这条关系已存在");
       }
+      if (dbError.constraint === "uq_folder_project_name") {
+        return new AppError("CONFLICT", "同项目下分组名称已存在");
+      }
+      if (dbError.constraint === "uq_person_name_kind_value") {
+        return new AppError("CONFLICT", "该人物已存在相同类型的名号");
+      }
       return new AppError("CONFLICT", "记录已存在");
     case "23001":
       if (dbError.constraint === "fk_organization_owner") {
@@ -97,6 +103,10 @@ export function tryMapDatabaseError(error: unknown): AppError | null {
       });
     case "GX013":
       return new AppError("CONFLICT", "不能修改所有者角色");
+    case "GX014":
+      return new AppError("CONFLICT", "不能跨越不同谱系图建立人物关系", 409, {
+        sqlstate: dbError.code,
+      });
     case "GX001":
       return new AppError("CYCLE_DETECTED", "会形成祖先环路", 409, {
         sqlstate: dbError.code,

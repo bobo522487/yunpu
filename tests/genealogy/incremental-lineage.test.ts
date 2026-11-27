@@ -10,12 +10,20 @@ describe("incremental lineage projection", () => {
       await seedOwnerProject("lineage-depth");
 
     await withAdminDb(async (client) => {
-      const inserted = await client.query<{ id: string }>(
-        `INSERT INTO person (organization_id, project_id, sex, is_living, version)
-         SELECT $1::uuid, $2::uuid, 'unknown', true, 1
-           FROM generate_series(1, $3)
+      const lineageRow = await client.query<{ id: string }>(
+        `INSERT INTO lineage (organization_id, project_id, name)
+         VALUES ($1::uuid, $2::uuid, '主世系')
          RETURNING id`,
-        [organizationId, projectId, DEPTH + 1],
+        [organizationId, projectId],
+      );
+      const lineageId = lineageRow.rows[0].id;
+
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO person (organization_id, project_id, lineage_id, sex, is_living, version)
+         SELECT $1::uuid, $2::uuid, $3::uuid, 'unknown', true, 1
+           FROM generate_series(1, $4)
+         RETURNING id`,
+        [organizationId, projectId, lineageId, DEPTH + 1],
       );
       const ids = inserted.rows.map((row) => row.id);
       expect(ids).toHaveLength(DEPTH + 1);
@@ -51,12 +59,20 @@ describe("incremental lineage projection", () => {
         await seedOwnerProject("lineage-perf");
 
       const { elapsedMs, subtreeSize } = await withAdminDb(async (client) => {
-        const inserted = await client.query<{ id: string }>(
-          `INSERT INTO person (organization_id, project_id, sex, is_living, version)
-           SELECT $1::uuid, $2::uuid, 'unknown', true, 1
-             FROM generate_series(1, 10000)
+        const lineageRow = await client.query<{ id: string }>(
+          `INSERT INTO lineage (organization_id, project_id, name)
+           VALUES ($1::uuid, $2::uuid, '主世系')
            RETURNING id`,
           [organizationId, projectId],
+        );
+        const lineageId = lineageRow.rows[0].id;
+
+        const inserted = await client.query<{ id: string }>(
+          `INSERT INTO person (organization_id, project_id, lineage_id, sex, is_living, version)
+           SELECT $1::uuid, $2::uuid, $3::uuid, 'unknown', true, 1
+             FROM generate_series(1, 10000)
+           RETURNING id`,
+          [organizationId, projectId, lineageId],
         );
         const ids = inserted.rows.map((row) => row.id);
 

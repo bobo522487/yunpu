@@ -114,6 +114,7 @@ export const project = pgTable(
       .notNull()
       .default("planning"),
     surname: text("surname"),
+    ancestor: text("ancestor"),
     hallName: text("hall_name"),
     originText: text("origin_text"),
     description: text("description"),
@@ -129,6 +130,10 @@ export const project = pgTable(
     uniqueIndex("uq_project_org_id").on(table.organizationId, table.id),
     index("idx_project_org_status").on(table.organizationId, table.status),
     check("ck_project_version_positive", sql`${table.version} > 0`),
+    check(
+      "ck_project_ancestor_not_blank",
+      sql`${table.ancestor} IS NULL OR btrim(${table.ancestor}) <> ''`,
+    ),
   ],
 );
 

@@ -2,17 +2,33 @@ import { describe, expect, test } from "vitest";
 import { withAdminDb } from "../auth/fixtures";
 import { createPerson, seedOwnerProject } from "./fixtures/helpers";
 
+async function createTestLineage(
+  organizationId: string,
+  projectId: string,
+): Promise<string> {
+  return withAdminDb(async (client) => {
+    const rows = await client.query<{ id: string }>(
+      `INSERT INTO lineage (organization_id, project_id, name)
+       VALUES ($1::uuid, $2::uuid, '主世系')
+       RETURNING id`,
+      [organizationId, projectId],
+    );
+    return rows.rows[0].id;
+  });
+}
+
 describe("person life years", () => {
   test("death year on a living person is a check violation", async () => {
     const { organizationId, projectId, cookie } =
       await seedOwnerProject("life-years");
+    const lineageId = await createTestLineage(organizationId, projectId);
 
     await expect(
       withAdminDb((client) =>
         client.query(
-          `INSERT INTO person (organization_id, project_id, sex, birth_year, death_year, is_living)
-           VALUES ($1, $2, 'unknown', 1900, 1950, true)`,
-          [organizationId, projectId],
+          `INSERT INTO person (organization_id, project_id, lineage_id, sex, birth_year, death_year, is_living)
+           VALUES ($1, $2, $3, 'unknown', 1900, 1950, true)`,
+          [organizationId, projectId, lineageId],
         ),
       ),
     ).rejects.toMatchObject({
@@ -34,11 +50,12 @@ describe("person life years", () => {
   test("death year before birth year is rejected and the stored row stays", async () => {
     const { organizationId, projectId, cookie } =
       await seedOwnerProject("life-years-order");
+    const lineageId = await createTestLineage(organizationId, projectId);
     await withAdminDb((client) =>
       client.query(
-        `INSERT INTO person (organization_id, project_id, sex, birth_year, is_living)
-         VALUES ($1, $2, 'unknown', 1920, true)`,
-        [organizationId, projectId],
+        `INSERT INTO person (organization_id, project_id, lineage_id, sex, birth_year, is_living)
+         VALUES ($1, $2, $3, 'unknown', 1920, true)`,
+        [organizationId, projectId, lineageId],
       ),
     );
 
@@ -86,21 +103,22 @@ describe("person life years", () => {
   test("birth year alone, or a death with an unknown year, is allowed", async () => {
     const { organizationId, projectId } =
       await seedOwnerProject("life-years-allow");
+    const lineageId = await createTestLineage(organizationId, projectId);
 
     const birthOnly = await withAdminDb((client) =>
       client.query(
-        `INSERT INTO person (organization_id, project_id, sex, birth_year, is_living)
-         VALUES ($1, $2, 'unknown', 1930, true)
+        `INSERT INTO person (organization_id, project_id, lineage_id, sex, birth_year, is_living)
+         VALUES ($1, $2, $3, 'unknown', 1930, true)
          RETURNING id`,
-        [organizationId, projectId],
+        [organizationId, projectId, lineageId],
       ),
     );
     const unknownDeath = await withAdminDb((client) =>
       client.query(
-        `INSERT INTO person (organization_id, project_id, sex, is_living)
-         VALUES ($1, $2, 'unknown', false)
+        `INSERT INTO person (organization_id, project_id, lineage_id, sex, is_living)
+         VALUES ($1, $2, $3, 'unknown', false)
          RETURNING id`,
-        [organizationId, projectId],
+        [organizationId, projectId, lineageId],
       ),
     );
     expect(birthOnly.rows).toHaveLength(1);

@@ -5,12 +5,15 @@ import { withAdminDb } from "../auth/fixtures";
 // RLS, while their write policies already used the single security-definer
 // helper. Keep both the catalog contract and the runtime plan honest.
 const LEAF_TABLES = [
+  "folder",
   "invite",
-  "project",
+  "lineage",
+  "lineage_projection",
   "person",
+  "person_event",
   "person_name",
   "person_relation",
-  "lineage_projection",
+  "project",
 ] as const;
 
 test("leaf tenant_select policies use visible_org_array only", async () => {

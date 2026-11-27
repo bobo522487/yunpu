@@ -15,6 +15,8 @@ import media from "./media";
 import { authMiddleware } from "./middleware/auth";
 import { accountRouter } from "./modules/account/router";
 import { authRouter } from "./modules/auth";
+import { folderRouter } from "./modules/folder/router";
+import { lineageRouter } from "./modules/lineage/router";
 import { organizationRouter } from "./modules/organization/router";
 import { personRouter } from "./modules/person/router";
 import { projectRouter } from "./modules/project/router";
@@ -190,6 +192,8 @@ const apiRoutes = new Hono<ApiEnv>()
   .route("/auth", authRouter)
   .route("/", organizationRouter)
   .route("/", projectRouter)
+  .route("/", folderRouter)
+  .route("/", lineageRouter)
   .route("/", accountRouter)
   .route("/", personRouter);
 

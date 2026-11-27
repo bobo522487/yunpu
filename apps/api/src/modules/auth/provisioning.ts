@@ -1,10 +1,12 @@
+import { withTenantTransaction } from "../../db/with-tenant-transaction";
 import { AppError, extractDatabaseError } from "../../lib/errors";
 import {
   acceptInvite,
-  createOrganization,
+  createOrganizationInTx,
   type OrganizationSummary,
 } from "../organization/service";
 import { authPool } from "./better-auth";
+import { seedDemoFamilyProjectInTx } from "./demo-seed";
 
 export type InviteOutcome = {
   organization: OrganizationSummary;
@@ -21,7 +23,15 @@ export async function provisionDefaultOrganization(
   userId: string,
   email: string,
 ): Promise<OrganizationSummary> {
-  return createOrganization(userId, defaultOrganizationName(email));
+  return withTenantTransaction({ userId }, async (db) => {
+    const organization = await createOrganizationInTx(
+      db,
+      userId,
+      defaultOrganizationName(email),
+    );
+    await seedDemoFamilyProjectInTx(db, organization.id);
+    return organization;
+  });
 }
 
 export async function provisionWithInvite(

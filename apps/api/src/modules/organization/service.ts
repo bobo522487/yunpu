@@ -1,7 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { MemberRole } from "@yunpu/shared";
 import { memberRole, requireMember } from "../../access";
-import { withTenantTransaction } from "../../db/with-tenant-transaction";
+import {
+  type TxDatabase,
+  withTenantTransaction,
+} from "../../db/with-tenant-transaction";
 import { AppError, conflict, notFound } from "../../lib/errors";
 import {
   acceptInviteWithFunction,
@@ -34,16 +37,24 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type { OrganizationSummary } from "./queries";
 
+export async function createOrganizationInTx(
+  db: TxDatabase,
+  userId: string,
+  name: string,
+): Promise<OrganizationSummary> {
+  const organizationId = await createOrganizationWithFunction(db, name);
+  const summary = await getOrganizationSummary(db, organizationId, userId);
+  if (!summary) throw notFound();
+  return summary;
+}
+
 export async function createOrganization(
   userId: string,
   name: string,
 ): Promise<OrganizationSummary> {
-  return withTenantTransaction({ userId }, async (db) => {
-    const organizationId = await createOrganizationWithFunction(db, name);
-    const summary = await getOrganizationSummary(db, organizationId, userId);
-    if (!summary) throw notFound();
-    return summary;
-  });
+  return withTenantTransaction({ userId }, (db) =>
+    createOrganizationInTx(db, userId, name),
+  );
 }
 
 export async function listMyOrganizations(

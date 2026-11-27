@@ -1,4 +1,9 @@
-import { PERSON_NAME_KINDS, PERSON_SEXES, RELATION_KINDS } from "@yunpu/shared";
+import {
+  PERSON_EVENT_TYPES,
+  PERSON_NAME_KINDS,
+  PERSON_SEXES,
+  RELATION_KINDS,
+} from "@yunpu/shared";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -7,6 +12,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -29,17 +35,104 @@ const ltree = customType<{ data: string; driverData: string }>({
   },
 });
 
+export const folder = pgTable(
+  "folder",
+  {
+    projectId: uuid("project_id").notNull(),
+    id: uuid("id").notNull().default(sql`uuidv7()`),
+    organizationId: uuid("organization_id").notNull(),
+    name: text("name").notNull(),
+    seq: integer("seq").notNull().default(0),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    primaryKey({ columns: [table.projectId, table.id], name: "pk_folder" }),
+    uniqueIndex("uq_folder_project_name").on(table.projectId, table.name),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [project.organizationId, project.id],
+      name: "fk_folder_project",
+    }).onDelete("cascade"),
+    check("ck_folder_name_not_blank", sql`btrim(${table.name}) <> ''`),
+    check("ck_folder_seq_non_negative", sql`${table.seq} >= 0`),
+    index("idx_folder_org_project").on(table.organizationId, table.projectId),
+  ],
+);
+
+export const lineage = pgTable(
+  "lineage",
+  {
+    projectId: uuid("project_id").notNull(),
+    id: uuid("id").notNull().default(sql`uuidv7()`),
+    organizationId: uuid("organization_id").notNull(),
+    folderId: uuid("folder_id"),
+    name: text("name").notNull(),
+    surname: text("surname"),
+    hallName: text("hall_name"),
+    progenitor: text("progenitor"),
+    region: jsonb("region"),
+    seq: integer("seq").notNull().default(0),
+    version: integer("version").notNull().default(1),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    primaryKey({ columns: [table.projectId, table.id], name: "pk_lineage" }),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [project.organizationId, project.id],
+      name: "fk_lineage_project",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.projectId, table.folderId],
+      foreignColumns: [folder.projectId, folder.id],
+      name: "fk_lineage_folder",
+    }).onDelete("set null"),
+    check("ck_lineage_name_not_blank", sql`btrim(${table.name}) <> ''`),
+    check(
+      "ck_lineage_surname_not_blank",
+      sql`${table.surname} IS NULL OR btrim(${table.surname}) <> ''`,
+    ),
+    check(
+      "ck_lineage_hall_name_not_blank",
+      sql`${table.hallName} IS NULL OR btrim(${table.hallName}) <> ''`,
+    ),
+    check(
+      "ck_lineage_progenitor_not_blank",
+      sql`${table.progenitor} IS NULL OR btrim(${table.progenitor}) <> ''`,
+    ),
+    check("ck_lineage_seq_non_negative", sql`${table.seq} >= 0`),
+    check("ck_lineage_version_positive", sql`${table.version} > 0`),
+    index("idx_lineage_org_project").on(table.organizationId, table.projectId),
+    index("idx_lineage_project_folder").on(table.projectId, table.folderId),
+  ],
+);
+
 export const person = pgTable(
   "person",
   {
     id: uuid("id").notNull().default(sql`uuidv7()`),
     organizationId: uuid("organization_id").notNull(),
     projectId: uuid("project_id").notNull(),
+    lineageId: uuid("lineage_id").notNull(),
     sex: text("sex", { enum: PERSON_SEXES }).notNull().default("unknown"),
     surname: text("surname"),
+    givenName: text("given_name"),
+    romanizedSurname: text("romanized_surname"),
+    romanizedName: text("romanized_name"),
+    romanizedSuffix: text("romanized_suffix"),
     birthYear: integer("birth_year"),
     deathYear: integer("death_year"),
     isLiving: boolean("is_living").notNull().default(true),
+    birthInfo: jsonb("birth_info"),
+    deathInfo: jsonb("death_info"),
+    generationWord: text("generation_word"),
+    relationTitle: text("relation_title"),
+    siblingOrder: integer("sibling_order"),
+    biography: text("biography"),
+    notes: text("notes"),
+    avatarKey: text("avatar_key"),
     version: integer("version").notNull().default(1),
     createdAt,
     updatedAt,
@@ -51,7 +144,12 @@ export const person = pgTable(
       columns: [table.organizationId, table.projectId],
       foreignColumns: [project.organizationId, project.id],
       name: "fk_person_project",
-    }).onDelete("restrict"),
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.projectId, table.lineageId],
+      foreignColumns: [lineage.projectId, lineage.id],
+      name: "fk_person_lineage",
+    }).onDelete("cascade"),
     check(
       "ck_person_sex",
       sql`${table.sex} IN ('male', 'female', 'unknown', 'other')`,
@@ -62,10 +160,15 @@ export const person = pgTable(
     ),
     check("ck_person_version_positive", sql`${table.version} > 0`),
     check(
+      "ck_person_sibling_order",
+      sql`${table.siblingOrder} IS NULL OR ${table.siblingOrder} >= 0`,
+    ),
+    check(
       "ck_person_life_years",
       sql`(${table.deathYear} IS NULL OR ${table.isLiving} = false) AND (${table.birthYear} IS NULL OR ${table.deathYear} IS NULL OR ${table.deathYear} >= ${table.birthYear})`,
     ),
     index("idx_person_org_project").on(table.organizationId, table.projectId),
+    index("idx_person_project_lineage").on(table.projectId, table.lineageId),
     index("idx_person_project_surname")
       .on(table.projectId, table.surname)
       .where(sql`surname IS NOT NULL`),
@@ -81,6 +184,10 @@ export const personName = pgTable(
     personId: uuid("person_id").notNull(),
     kind: text("kind", { enum: PERSON_NAME_KINDS }).notNull(),
     value: text("value").notNull(),
+    surname: text("surname"),
+    romanizedSurname: text("romanized_surname"),
+    romanizedName: text("romanized_name"),
+    label: text("label"),
     isPrimary: boolean("is_primary").notNull().default(false),
     createdAt,
     updatedAt,
@@ -94,7 +201,7 @@ export const personName = pgTable(
       columns: [table.organizationId, table.projectId],
       foreignColumns: [project.organizationId, project.id],
       name: "fk_person_name_project",
-    }).onDelete("restrict"),
+    }).onDelete("cascade"),
     foreignKey({
       columns: [table.projectId, table.personId],
       foreignColumns: [person.projectId, person.id],
@@ -146,7 +253,7 @@ export const personRelation = pgTable(
       columns: [table.organizationId, table.projectId],
       foreignColumns: [project.organizationId, project.id],
       name: "fk_person_relation_project",
-    }).onDelete("restrict"),
+    }).onDelete("cascade"),
     foreignKey({
       columns: [table.projectId, table.fromPersonId],
       foreignColumns: [person.projectId, person.id],
@@ -228,7 +335,7 @@ export const lineageProjection = pgTable(
       columns: [table.organizationId, table.projectId],
       foreignColumns: [project.organizationId, project.id],
       name: "fk_lineage_projection_project",
-    }).onDelete("restrict"),
+    }).onDelete("cascade"),
     foreignKey({
       columns: [table.projectId, table.personId],
       foreignColumns: [person.projectId, person.id],
@@ -238,6 +345,48 @@ export const lineageProjection = pgTable(
     index("idx_lineage_projection_org_project").on(
       table.organizationId,
       table.projectId,
+    ),
+  ],
+);
+
+export const personEvent = pgTable(
+  "person_event",
+  {
+    projectId: uuid("project_id").notNull(),
+    id: uuid("id").notNull().default(sql`uuidv7()`),
+    organizationId: uuid("organization_id").notNull(),
+    personId: uuid("person_id").notNull(),
+    type: text("type", { enum: PERSON_EVENT_TYPES }).notNull(),
+    structuredDate: jsonb("structured_date"),
+    structuredPlace: jsonb("structured_place"),
+    description: text("description"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.projectId, table.id],
+      name: "pk_person_event",
+    }),
+    foreignKey({
+      columns: [table.organizationId, table.projectId],
+      foreignColumns: [project.organizationId, project.id],
+      name: "fk_person_event_project",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.projectId, table.personId],
+      foreignColumns: [person.projectId, person.id],
+      name: "fk_person_event_person",
+    }).onDelete("cascade"),
+    check(
+      "ck_person_event_type",
+      sql`${table.type} IN ('birth', 'education', 'career', 'marriage', 'residence', 'death', 'other')`,
+    ),
+    check("ck_person_event_sort_order", sql`${table.sortOrder} >= 0`),
+    index("idx_person_event_project_person").on(
+      table.projectId,
+      table.personId,
     ),
   ],
 );

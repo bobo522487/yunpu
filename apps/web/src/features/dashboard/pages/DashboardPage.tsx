@@ -444,10 +444,12 @@ const DashboardPage: React.FC = () => {
               ? (() => {
                   const p = formDialog.project;
                   return {
+                    id: p.id,
                     name: p.name,
                     description: p.description ?? '',
                     // 网络边界兜底：后端未返回新字段时避免预览组件读 undefined 崩溃。
                     colorTheme: p.colorTheme ?? 'sky',
+                    iconKey: p.iconKey ?? null,
                     surname: p.surname ?? '',
                     ancestor: p.ancestor ?? '',
                     originText: p.originText ?? '',

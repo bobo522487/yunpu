@@ -98,6 +98,8 @@ describe("console foundation (project table)", () => {
       "version",
       // 0027 迁移以 ADD COLUMN 追加到表尾。
       "ancestor",
+      // 0029 迁移以 ADD COLUMN 追加到表尾。
+      "icon_key",
     ]);
   });
 });

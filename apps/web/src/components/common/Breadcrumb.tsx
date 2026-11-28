@@ -21,6 +21,7 @@ import { toCreateProjectPayload } from '../../features/dashboard/projectPayload'
 import { useProjectId } from '../../hooks/useProjectId'
 import { errorMessage } from '../../lib/api'
 import { useWorkspaceStore } from '../../store/useWorkspaceStore'
+import { FamilyIcon } from './FamilyIcon'
 import { ProjectColoredIcon } from './YunpuIcons'
 
 const AssetEditorModal = lazy(() =>
@@ -190,12 +191,14 @@ const Breadcrumb: React.FC = () => {
             data-testid='nc-sidebar-project-selector'
             className='flex max-w-[260px] min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors duration-150 hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
           >
-            <ProjectColoredIcon
-              colorTheme={
-                isWorkspaceShell ? 'indigo' : activeProject?.colorTheme || 'sky'
-              }
-              className='h-5 w-5 shrink-0'
-            />
+            {isWorkspaceShell ? (
+              <ProjectColoredIcon
+                colorTheme='indigo'
+                className='h-5 w-5 shrink-0'
+              />
+            ) : (
+              <FamilyIcon project={activeProject} size='sm' />
+            )}
             <span className='flex-1 truncate text-[14px] font-semibold whitespace-nowrap text-foreground'>
               {isWorkspaceShell ? '所有家族' : activeProject?.name || '家族'}
             </span>
@@ -296,10 +299,7 @@ const Breadcrumb: React.FC = () => {
                           : 'font-medium text-foreground hover:bg-[var(--surface-hover)]'
                       }`}
                     >
-                      <ProjectColoredIcon
-                        colorTheme={proj.colorTheme}
-                        className='h-4 w-4 shrink-0'
-                      />
+                      <FamilyIcon project={proj} size='xs' />
                       <span className='flex-1 truncate'>{proj.name}</span>
                       {isCurrent && (
                         <Check size={13} className='shrink-0 text-primary' />

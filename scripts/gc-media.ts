@@ -99,7 +99,7 @@ export function parseGcArgs(
 /**
  * Query all referenced project media object keys across all tenants.
  * Requires a privileged/BYPASSRLS role so RLS cannot hide tenant rows and
- * falsely mark live portraits as orphaned.
+ * falsely mark live portraits or project icons as orphaned.
  */
 export async function queryAllReferencedMediaKeys(
   connectionString: string,
@@ -125,17 +125,21 @@ export async function queryAllReferencedMediaKeys(
 
       const result = await client.query<{
         project_id: string;
-        avatar_key: string;
+        media_key: string;
       }>(
-        `SELECT project_id::text AS project_id, avatar_key
+        `SELECT project_id::text AS project_id, avatar_key AS media_key
            FROM public.person
-          WHERE avatar_key IS NOT NULL AND btrim(avatar_key) <> ''`,
+          WHERE avatar_key IS NOT NULL AND btrim(avatar_key) <> ''
+         UNION ALL
+         SELECT id::text AS project_id, icon_key AS media_key
+           FROM public.project
+          WHERE icon_key IS NOT NULL AND btrim(icon_key) <> ''`,
       );
       await client.query("COMMIT");
 
       const keys = new Set<string>();
       for (const row of result.rows) {
-        const key = toProjectMediaObjectKey(row.project_id, row.avatar_key);
+        const key = toProjectMediaObjectKey(row.project_id, row.media_key);
         if (key) keys.add(key);
       }
       return keys;

@@ -55,7 +55,7 @@ export function ProjectSidebar({
     >
       <div
         data-testid='nc-sidebar-header'
-        className='relative flex h-13 shrink-0 items-center justify-between gap-2 border-b border-border bg-[var(--surface-subtle)] px-3.5'
+        className='relative flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-[var(--surface-subtle)] px-3.5 md:h-14'
       >
         <span className='truncate text-[14px] font-semibold text-foreground'>
           {sectionTitles[section]}

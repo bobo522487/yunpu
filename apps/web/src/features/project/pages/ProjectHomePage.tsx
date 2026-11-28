@@ -9,21 +9,17 @@ import {
   Settings,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
-import { ProjectColoredIcon } from '../../../components/common/YunpuIcons';
+import { FamilyIcon } from '@/components/common/FamilyIcon';
 import { Button } from '@/components/ui/button';
 import type { AssetEditorSubmitValues } from '../../dashboard/components/AssetEditorModal';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { usePreferencesStore } from '../../../store/usePreferencesStore';
 
 const AssetEditorModal = lazy(() =>
   import('../../dashboard/components/AssetEditorModal').then((m) => ({
     default: m.AssetEditorModal,
   }))
 );
-import {
-  ASSET_COLOR_PALETTES,
-  useWorkspaceStore,
-} from '../../../store/useWorkspaceStore';
+import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import { useArticlesDirectoryQuery } from '../../articles/queries';
 import { useBooksQuery } from '../../books/queries';
 import {
@@ -47,7 +43,6 @@ const ProjectHomePage: React.FC = () => {
   const queryClient = useQueryClient();
   const activeProjectId = useProjectId();
 
-  const isDarkMode = usePreferencesStore((s) => s.isDarkMode);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const projects = useWorkspaceStore((s) => s.projects);
   const syncProject = useWorkspaceStore((s) => s.syncProject);
@@ -77,10 +72,6 @@ const ProjectHomePage: React.FC = () => {
   const activeProject = projectQuery.data ?? cachedProject;
   const expectedVersion = projectQuery.data?.version ?? null;
   const projectStatus = projectQuery.data?.status ?? null;
-
-  const palette =
-    ASSET_COLOR_PALETTES[activeProject?.colorTheme || 'sky'] ||
-    ASSET_COLOR_PALETTES.sky;
 
   const articleCount = articlesDirQuery.data
     ? articlesDirQuery.data.articles.length
@@ -167,19 +158,7 @@ const ProjectHomePage: React.FC = () => {
           {/* Project Identity Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
             <div className="flex items-center gap-4 min-w-0">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-black/[0.04] dark:border-white/[0.06]"
-                style={{
-                  backgroundColor: isDarkMode
-                    ? palette.darkTileBg
-                    : palette.tileBg,
-                }}
-              >
-                <ProjectColoredIcon
-                  colorTheme={activeProject?.colorTheme || 'sky'}
-                  className="w-6 h-6"
-                />
-              </div>
+              <FamilyIcon project={activeProject} size="lg" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <h1 className="yp-h1 text-foreground truncate">
@@ -339,9 +318,11 @@ const ProjectHomePage: React.FC = () => {
             initialValue={
               activeProject
                 ? {
+                    id: activeProject.id,
                     name: activeProject.name,
                     description: activeProject.description ?? '',
                     colorTheme: activeProject.colorTheme,
+                    iconKey: activeProject.iconKey,
                     surname: activeProject.surname ?? '',
                     ancestor: activeProject.ancestor ?? undefined,
                     originText: activeProject.originText ?? '',

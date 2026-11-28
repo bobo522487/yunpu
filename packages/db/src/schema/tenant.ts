@@ -122,6 +122,7 @@ export const project = pgTable(
       .notNull()
       .default("sky"),
     projectLevel: smallint("project_level").notNull().default(1),
+    iconKey: text("icon_key"),
     version: integer("version").notNull().default(1),
     createdAt,
     updatedAt,
@@ -133,6 +134,10 @@ export const project = pgTable(
     check(
       "ck_project_ancestor_not_blank",
       sql`${table.ancestor} IS NULL OR btrim(${table.ancestor}) <> ''`,
+    ),
+    check(
+      "ck_project_icon_key_not_blank",
+      sql`${table.iconKey} IS NULL OR btrim(${table.iconKey}) <> ''`,
     ),
   ],
 );

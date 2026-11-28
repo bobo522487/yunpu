@@ -9,6 +9,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { FamilyIcon } from '@/components/common/FamilyIcon';
 import type { ProjectRecord, ProjectStatus } from '../api';
 
 export interface FamilyCardMetrics {
@@ -53,12 +54,6 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({
   onDelete,
   onManageZibei,
 }) => {
-  const surnameChar = (
-    project.surname?.trim() ||
-    project.name.trim().slice(0, 1) ||
-    '谱'
-  ).slice(0, 1);
-
   const zibeiPreview =
     zibeiWords.length > 0
       ? `${zibeiWords.slice(0, 8).join(' ')}${zibeiWords.length > 8 ? '…' : ''}`
@@ -79,21 +74,19 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({
       }`}
     >
       <div>
-        {/* Top Row: Surname Seal + Action Icons */}
+        {/* Top Row: Family Icon Seal/Crest + Action Icons */}
         <div className="flex justify-between items-start gap-3 mb-4">
           <button
             type="button"
             onClick={() => onOpen(project, '')}
             title={`进入「${project.name}」工作台`}
-            className={`w-12 h-12 rounded-lg flex items-center justify-center border shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`rounded-xl shrink-0 transition-transform duration-150 group-hover:scale-[1.03] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               isCurrent
-                ? 'bg-[var(--surface-active)] border-primary/30 text-primary'
-                : 'bg-[var(--surface-subtle)] border-border text-muted-foreground group-hover:text-primary group-hover:border-primary/40'
+                ? 'ring-2 ring-primary/35 ring-offset-2 ring-offset-card'
+                : ''
             }`}
           >
-            <span className="font-serif text-[22px] font-bold select-none leading-none">
-              {surnameChar}
-            </span>
+            <FamilyIcon project={project} size="lg" />
           </button>
 
           <div className="family-card__actions flex items-center gap-1">

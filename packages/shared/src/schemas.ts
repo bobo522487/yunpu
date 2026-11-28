@@ -122,6 +122,7 @@ export const CreateProjectSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   colorTheme: z.enum(PROJECT_COLOR_THEMES).optional(),
   projectLevel: z.coerce.number().int().min(1).max(5).optional(),
+  iconKey: optionalNonBlank(255),
 });
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
 
@@ -136,6 +137,7 @@ export const UpdateProjectSchema = z
     description: z.string().trim().max(2000).nullable().optional(),
     colorTheme: z.enum(PROJECT_COLOR_THEMES).optional(),
     projectLevel: z.coerce.number().int().min(1).max(5).optional(),
+    iconKey: optionalNonBlank(255).nullable().optional(),
     version: z.coerce.number().int().positive(),
   })
   .refine((value) => Object.keys(value).some((key) => key !== "version"), {

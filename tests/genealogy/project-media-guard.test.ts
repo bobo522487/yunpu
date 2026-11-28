@@ -195,8 +195,9 @@ describe("project media magic-byte guard, nosniff headers & reconciliation GC", 
       return json.data.key;
     };
 
-    // Upload referenced portrait and an unreferenced orphan at T0
+    // Upload referenced portrait, referenced project icon, and an unreferenced orphan at T0
     const referencedKey = await uploadImage(VALID_IMAGE_SAMPLES[0]);
+    const projectIconKey = await uploadImage(VALID_IMAGE_SAMPLES[3]);
     const orphanOldKey = await uploadImage(VALID_IMAGE_SAMPLES[1]);
 
     // Attach referencedKey to a person in PostgreSQL
@@ -205,6 +206,29 @@ describe("project media magic-byte guard, nosniff headers & reconciliation GC", 
       avatarKey: referencedKey,
     });
     expect(personRes.status).toBe(201);
+
+    // Attach projectIconKey to project in PostgreSQL
+    const projectGetRes = await call(`/api/v1/projects/${projectId}`, cookie);
+    expect(projectGetRes.status).toBe(200);
+    const currentProject = projectGetRes.data?.project as {
+      version: number;
+    };
+    const patchProjectRes = await call(
+      `/api/v1/projects/${projectId}`,
+      cookie,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          iconKey: projectIconKey,
+          version: currentProject.version,
+        }),
+      },
+    );
+    expect(patchProjectRes.status).toBe(200);
+    const patchedProject = patchProjectRes.data?.project as {
+      iconKey: string | null;
+    };
+    expect(patchedProject.iconKey).toBe(projectIconKey);
 
     // Wait > 1.2s so S3 LastModified (1s granularity) separates old vs fresh uploads
     await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -250,11 +274,11 @@ describe("project media magic-byte guard, nosniff headers & reconciliation GC", 
       expect(dryRunReport.orphanCandidateKeys).toEqual([
         `${prefix}${orphanOldKey}`,
       ]);
-      expect(dryRunReport.activeCount).toBe(1);
+      expect(dryRunReport.activeCount).toBe(2);
       expect(dryRunReport.withinGraceCount).toBe(1);
       expect(await getObject(`${prefix}${orphanOldKey}`)).toBeDefined();
 
-      // 2. Real GC deletes only orphanOld, preserving referencedKey and orphanFresh
+      // 2. Real GC deletes only orphanOld, preserving referencedKey, projectIconKey, and orphanFresh
       const liveReport = await runMediaReconciliationGc({
         prefix,
         gracePeriodMs,
@@ -267,6 +291,7 @@ describe("project media magic-byte guard, nosniff headers & reconciliation GC", 
       expect(liveReport.deletedKeys).toEqual([`${prefix}${orphanOldKey}`]);
       expect(await getObject(`${prefix}${orphanOldKey}`)).toBeUndefined();
       expect(await getObject(`${prefix}${referencedKey}`)).toBeDefined();
+      expect(await getObject(`${prefix}${projectIconKey}`)).toBeDefined();
       expect(await getObject(`${prefix}${orphanFreshKey}`)).toBeDefined();
     } else {
       // Fallback if S3 clock rounded both to the exact same second: still verify
@@ -296,6 +321,7 @@ describe("project media magic-byte guard, nosniff headers & reconciliation GC", 
         [`${prefix}${orphanFreshKey}`, `${prefix}${orphanOldKey}`].sort(),
       );
       expect(await getObject(`${prefix}${referencedKey}`)).toBeDefined();
+      expect(await getObject(`${prefix}${projectIconKey}`)).toBeDefined();
     }
   });
 });

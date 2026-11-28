@@ -20,6 +20,7 @@ export type ProjectRecord = {
   description: string | null;
   colorTheme: ProjectColorTheme;
   projectLevel: number;
+  iconKey: string | null;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +38,7 @@ const projectColumns = {
   description: project.description,
   colorTheme: project.colorTheme,
   projectLevel: project.projectLevel,
+  iconKey: project.iconKey,
   version: project.version,
   createdAt: timestamp(project.createdAt),
   updatedAt: timestamp(project.updatedAt),
@@ -94,6 +96,7 @@ export type CreateProjectValues = {
   description?: string;
   colorTheme?: ProjectColorTheme;
   projectLevel?: number;
+  iconKey?: string;
 };
 
 export async function insertProject(
@@ -114,6 +117,7 @@ export async function insertProject(
       description: values.description ?? null,
       colorTheme: values.colorTheme ?? "sky",
       projectLevel: values.projectLevel ?? 1,
+      iconKey: values.iconKey ?? null,
     })
     .returning(projectColumns);
   return rows[0];
@@ -121,13 +125,14 @@ export async function insertProject(
 
 export type UpdateProjectValues = Omit<
   Partial<CreateProjectValues>,
-  "surname" | "ancestor" | "hallName" | "originText" | "description"
+  "surname" | "ancestor" | "hallName" | "originText" | "description" | "iconKey"
 > & {
   surname?: string | null;
   ancestor?: string | null;
   hallName?: string | null;
   originText?: string | null;
   description?: string | null;
+  iconKey?: string | null;
 };
 
 /** CAS：`version` 令牌不匹配返回 null（路由映射 VERSION_CONFLICT），不静默覆盖。 */
@@ -151,6 +156,7 @@ export async function casUpdateProject(
   if (values.description !== undefined) set.description = values.description;
   if (values.colorTheme !== undefined) set.colorTheme = values.colorTheme;
   if (values.projectLevel !== undefined) set.projectLevel = values.projectLevel;
+  if (values.iconKey !== undefined) set.iconKey = values.iconKey;
 
   const rows = await db
     .update(project)

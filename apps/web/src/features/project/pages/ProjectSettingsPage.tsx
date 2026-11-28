@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Trash2 } from 'lucide-react';
+import { RotateCcw, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { FamilyIcon } from '@/components/common/FamilyIcon';
 import {
   formatGenealogyPlace,
   parsePlaceText,
@@ -15,6 +17,7 @@ import {
   updateProjectRequest,
 } from '../../dashboard/api';
 import { dashboardKeys, useProjectQuery } from '../../dashboard/queries';
+import { uploadProjectMediaRequest } from '../../lineage/api';
 import { errorMessage } from '../../../lib/api';
 import {
   FamilyProfileFields,
@@ -23,10 +26,23 @@ import {
   type FamilyProfileFormValues,
 } from '../components/FamilyProfileFields';
 
+const MAX_ICON_BYTES = 5 * 1024 * 1024;
+const SUPPORTED_ICON_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+]);
+
+type SettingsDraft = FamilyProfileFormValues & {
+  iconKey: string | null;
+};
+
 const ProjectSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const activeProjectId = useProjectId();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const projects = useWorkspaceStore((s) => s.projects);
   const syncProject = useWorkspaceStore((s) => s.syncProject);
@@ -48,7 +64,7 @@ const ProjectSettingsPage: React.FC = () => {
   const activeProject = projectQuery.data ?? cachedProject;
   const expectedVersion = projectQuery.data?.version ?? null;
 
-  const baseValues = useMemo<FamilyProfileFormValues>(
+  const baseValues = useMemo<SettingsDraft>(
     () => ({
       familyName: activeProject?.name || '',
       familySurname: activeProject?.surname || '',
@@ -56,13 +72,14 @@ const ProjectSettingsPage: React.FC = () => {
       hallName: activeProject?.hallName || '',
       regionPlace: parsePlaceText(activeProject?.originText ?? undefined),
       description: activeProject?.description || '',
+      iconKey: activeProject?.iconKey ?? null,
     }),
     [activeProject],
   );
 
   const [draft, setDraft] = useState<{
     projectId: string;
-    values: FamilyProfileFormValues;
+    values: SettingsDraft;
   } | null>(null);
   const values =
     draft && draft.projectId === targetProjectId ? draft.values : baseValues;
@@ -71,12 +88,14 @@ const ProjectSettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedToast, setSavedToast] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const handleFieldsChange = (patch: Partial<FamilyProfileFormValues>) => {
+  const handleFieldsChange = (patch: Partial<SettingsDraft>) => {
     setDraft((prev) => {
       const current =
         prev && prev.projectId === targetProjectId ? prev.values : baseValues;
@@ -84,6 +103,39 @@ const ProjectSettingsPage: React.FC = () => {
     });
     if (savedToast) setSavedToast(false);
     if (saveError) setSaveError(null);
+  };
+
+  const handleIconFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !targetProjectId) return;
+
+    const mime = file.type === 'image/jpg' ? 'image/jpeg' : file.type;
+    if (!SUPPORTED_ICON_TYPES.has(mime)) {
+      setIconError('仅支持 PNG、JPEG、WEBP 或 GIF 图片');
+      return;
+    }
+    if (file.size > MAX_ICON_BYTES) {
+      setIconError('图标图片大小不能超过 5MB');
+      return;
+    }
+
+    setUploadingIcon(true);
+    setIconError(null);
+    try {
+      const uploaded = await uploadProjectMediaRequest(
+        targetProjectId,
+        file,
+        mime,
+      );
+      handleFieldsChange({ iconKey: uploaded.key });
+    } catch (err) {
+      setIconError(errorMessage(err));
+    } finally {
+      setUploadingIcon(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -121,6 +173,7 @@ const ProjectSettingsPage: React.FC = () => {
         hallName: trimmedHall || null,
         originText: formattedRegion || null,
         description: trimmedDesc || null,
+        iconKey: values.iconKey,
         version: versionStamp,
       });
 
@@ -172,6 +225,82 @@ const ProjectSettingsPage: React.FC = () => {
             基本信息
           </h2>
           <form onSubmit={(e) => void handleSave(e)} noValidate className="space-y-5 max-w-xl">
+            <div className="space-y-3 pb-4 border-b border-border/70">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="block">家族图标</Label>
+                <span className="text-[11px] text-muted-foreground">
+                  展示于导航条顶部、家族卡片与面包屑
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <FamilyIcon
+                  project={{
+                    id: targetProjectId,
+                    name: values.familyName || activeProject?.name,
+                    surname: values.familySurname,
+                    iconKey: values.iconKey,
+                  }}
+                  size="xl"
+                />
+
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(e) => void handleIconFileChange(e)}
+                      disabled={saving || uploadingIcon}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={saving || uploadingIcon}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 gap-1.5 text-[12px]"
+                    >
+                      <Upload size={13} />
+                      {uploadingIcon
+                        ? '上传中...'
+                        : values.iconKey
+                          ? '更换图片'
+                          : '上传图片'}
+                    </Button>
+
+                    {values.iconKey && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={saving || uploadingIcon}
+                        onClick={() => {
+                          setIconError(null);
+                          handleFieldsChange({ iconKey: null });
+                        }}
+                        className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+                      >
+                        <RotateCcw size={13} />
+                        恢复默认姓氏图标
+                      </Button>
+                    )}
+                  </div>
+
+                  <p className="text-[11.5px] text-muted-foreground leading-snug">
+                    默认根据家族姓氏生成并自动适配当前配色预设；也可上传自定义图片（PNG/JPEG/WEBP/GIF，不超过 5MB）。
+                  </p>
+
+                  {iconError && (
+                    <p role="alert" className="text-[12px] text-destructive">
+                      {iconError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <FamilyProfileFields
               values={values}
               errors={errors}
@@ -196,7 +325,7 @@ const ProjectSettingsPage: React.FC = () => {
               <Button
                 type="submit"
                 size="sm"
-                disabled={saving}
+                disabled={saving || uploadingIcon}
                 className="whitespace-nowrap shrink-0"
               >
                 {saving ? '保存中...' : '保存更改'}

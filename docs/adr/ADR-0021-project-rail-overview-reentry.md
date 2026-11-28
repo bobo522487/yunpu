@@ -1,9 +1,12 @@
 ---
 status: accepted
 amends: ADR-0017-project-rail-icon-text-navigation
+amended_by: ADR-0022-project-rail-redesign-and-family-icon
 ---
 
 # ADR-0021: 项目 mini rail 恢复「概览」入口并统一设置入口命名
+
+> **状态说明（2026-11-28）：** 本 ADR 关于图标导航条末项视觉标签使用四字「家族设置」的决定已被 [ADR-0022](ADR-0022-project-rail-redesign-and-family-icon.md) 修订：为保持图标导航条五项均呈「图标 + 两个汉字」，导航条视觉标签简写为「设置」（`aria-label`、面包屑、设置页标题与页内入口仍保留「家族设置」），且顶部图标改为可配置的家族图标。其余关于首位恢复「概览」与五项顺序的决定继续有效。
 
 2026-11-28，组织空间侧栏优化需求（GitHub Spec #5 / FR-005 / FR-007）要求去掉全局侧栏的「当前项目」分组，并在项目内 mini rail 首位恢复「概览」入口（指向 `/projects/:projectId`），将原「设置」入口改名为「家族设置」以与全局「组织设置」同屏区分。
 

@@ -61,6 +61,7 @@ export type ProjectRecord = {
   description: string | null;
   colorTheme: ProjectColorTheme;
   projectLevel: number;
+  iconKey: string | null;
   version: number;
   createdAt: string;
   updatedAt: string;
@@ -105,6 +106,7 @@ export type CreateProjectPayload = {
   description?: string;
   colorTheme?: ProjectColorTheme;
   projectLevel?: number;
+  iconKey?: string;
 };
 
 export type UpdateProjectPayload = {
@@ -117,6 +119,7 @@ export type UpdateProjectPayload = {
   description?: string | null;
   colorTheme?: ProjectColorTheme;
   projectLevel?: number;
+  iconKey?: string | null;
 };
 
 function query(params: Record<string, string | number | undefined>): string {

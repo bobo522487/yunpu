@@ -4,10 +4,8 @@ import {
   ASSET_COLOR_PALETTES,
 } from '../../../store/useWorkspaceStore';
 import { usePreferencesStore } from '../../../store/usePreferencesStore';
-import {
-  AppColoredIcon,
-  ProjectColoredIcon,
-} from '../../../components/common/YunpuIcons';
+import { FamilyIcon } from '@/components/common/FamilyIcon';
+import { AppColoredIcon } from '../../../components/common/YunpuIcons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,9 +45,11 @@ export interface AssetEditorModalProps {
   mode: 'create' | 'edit';
   kind: 'project' | 'app';
   initialValue?: {
+    id?: string;
     name: string;
     description?: string;
     colorTheme: AssetColorTheme;
+    iconKey?: string | null;
     surname?: string;
     ancestor?: string;
     originText?: string;
@@ -279,19 +279,15 @@ export const AssetEditorModal: React.FC<AssetEditorModalProps> = ({
         title={modalTitle}
         titleId="family-project-modal-title"
         icon={
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{
-              backgroundColor: isDarkMode
-                ? ASSET_COLOR_PALETTES[projectColorTheme].darkTileBg
-                : ASSET_COLOR_PALETTES[projectColorTheme].tileBg,
+          <FamilyIcon
+            project={{
+              id: initialValue?.id,
+              name: familyName || initialValue?.name,
+              surname: familySurname || initialValue?.surname,
+              iconKey: initialValue?.iconKey,
             }}
-          >
-            <ProjectColoredIcon
-              colorTheme={projectColorTheme}
-              className="w-4 h-4"
-            />
-          </div>
+            size="sm"
+          />
         }
         onClose={() => {
           if (!submitting) onClose();

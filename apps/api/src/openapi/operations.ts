@@ -162,6 +162,7 @@ const ProjectSchema = z.object({
   description: nullableText,
   colorTheme: z.enum(PROJECT_COLOR_THEMES),
   projectLevel: z.number().int(),
+  iconKey: nullableText,
   version: z.number().int().positive(),
   createdAt: timestamp,
   updatedAt: timestamp,

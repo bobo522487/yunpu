@@ -110,6 +110,6 @@ HTTP 契约的唯一权威是 `apps/api/src/openapi/operations.ts`；`scripts/ex
 1. **健康检查（`apps/api/src/app.ts` `probeDatabase`）**：复用 `businessPool` 仅执行 `SELECT version()`，供 `/api/health` 与 `/api/ready` 探测数据库连通性与 PostgreSQL 18 版本；不新建短连接，也不访问租户表。
 2. **认证库（`apps/api/src/modules/auth/better-auth.ts` `authDatabase`）**：使用 `AUTH_DATABASE_URL` 独立连接池，只访问 `auth` schema 下的表，不查询业务租户表。
 3. **数据库迁移（`packages/db/src/migrate.ts`）**：使用迁移命令行独立连接执行跨租户 DDL 与策略变更，HTTP 请求与普通后台任务禁止借用。
-4. **孤立媒体对账清理（`scripts/gc-media.ts`）**：离线/定时对账脚本，在 `BEGIN READ ONLY` 事务中经特权/`BYPASSRLS` 连接读取全租户 `public.person.avatar_key`（强制校验角色权限，防止 RLS 静默过滤导致误删），再与 S3 `projects/` 前缀比对，仅清理超过宽限期且无引用的孤立对象；HTTP 请求禁止借用，详见 [ADR-0019](adr/ADR-0019-project-media-guard-and-gc.md)。
+4. **孤立媒体对账清理（`scripts/gc-media.ts`）**：离线/定时对账脚本，在 `BEGIN READ ONLY` 事务中经特权/`BYPASSRLS` 连接读取全租户 `public.person.avatar_key` 与 `public.project.icon_key`（强制校验角色权限，防止 RLS 静默过滤导致误删），再与 S3 `projects/` 前缀比对，仅清理超过宽限期且无引用的孤立对象；HTTP 请求禁止借用，详见 [ADR-0019](adr/ADR-0019-project-media-guard-and-gc.md) 与 [ADR-0022](adr/ADR-0022-project-rail-redesign-and-family-icon.md)。
 
 新增第五种例外时，必须同步更新本文档并在 `docs/adr/` 记录原因。当前系统不存在「事务提交后再异步删除外部对象」的产品级写入流程。

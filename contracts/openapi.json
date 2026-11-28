@@ -3374,7 +3374,8 @@
           "originText": {"type":"string","maxLength":200},
           "description": {"type":"string","maxLength":2000},
           "colorTheme": {"type":"string","enum":["sky","pink","orange","indigo","emerald","violet"]},
-          "projectLevel": {"type":"integer","minimum":1,"maximum":5}
+          "projectLevel": {"type":"integer","minimum":1,"maximum":5},
+          "iconKey": {"type":"string","maxLength":255}
         },
         "required": ["name"],
         "additionalProperties": false
@@ -4175,6 +4176,7 @@
           "description": {"anyOf":[{"type":"string","maxLength":2000},{"type":"null"}]},
           "colorTheme": {"type":"string","enum":["sky","pink","orange","indigo","emerald","violet"]},
           "projectLevel": {"type":"integer","minimum":1,"maximum":5},
+          "iconKey": {"anyOf":[{"type":"string","maxLength":255},{"type":"null"}]},
           "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991}
         },
         "required": ["version"],
@@ -4269,11 +4271,12 @@
           "description": {"type":["string","null"]},
           "colorTheme": {"type":"string","enum":["sky","pink","orange","indigo","emerald","violet"]},
           "projectLevel": {"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},
+          "iconKey": {"type":["string","null"]},
           "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
           "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
           "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
         },
-        "required": ["id","organizationId","name","status","surname","ancestor","hallName","originText","description","colorTheme","projectLevel","version","createdAt","updatedAt"],
+        "required": ["id","organizationId","name","status","surname","ancestor","hallName","originText","description","colorTheme","projectLevel","iconKey","version","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "Folder": {

@@ -73,7 +73,7 @@ export function ProjectShellLayout({ children }: ProjectShellLayoutProps) {
         title='打开侧边栏'
         aria-label='打开侧边栏'
         onClick={() => setDrawerOpen(true)}
-        className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[hsl(var(--surface-hover))] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:hidden'
+        className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:hidden'
       >
         <PanelLeft size={16} />
       </button>
@@ -87,7 +87,7 @@ export function ProjectShellLayout({ children }: ProjectShellLayoutProps) {
           title='显示侧边栏'
           aria-label='显示侧边栏'
           onClick={() => setCollapsed(false)}
-          className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[hsl(var(--surface-hover))] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+          className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
         >
           <PanelLeftOpen size={16} />
         </button>
@@ -98,7 +98,7 @@ export function ProjectShellLayout({ children }: ProjectShellLayoutProps) {
           title='统计'
           aria-label='统计'
           onClick={() => setStatsOpen(true)}
-          className='hidden h-7 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-[hsl(var(--surface-hover))] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:flex'
+          className='hidden h-7 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:flex'
         >
           <BarChart3 size={14} />
           <span className='hidden lg:inline'>统计</span>

@@ -16,7 +16,8 @@ export function createStarterProgenitorForChart(
     cleanProgenitor ||
     (cleanSurname
       ? `${cleanSurname}始祖`
-      : chartName?.replace(/世系图|图系|世次/g, '').trim() || '始祖');
+      // [世谱]系图 同时兼容存量「世系图」与统一后的「谱系图」命名
+      : chartName?.replace(/[世谱]系图|图系|世次/g, '').trim() || '始祖');
 
   return [
     {
@@ -28,7 +29,7 @@ export function createStarterProgenitorForChart(
       relationTitle: '始祖',
       status: 'deceased',
       fatherId: null,
-      biography: `「${chartName || '新建世系图'}」开基始祖，可点击节点上方或右侧档案面板继续添录配偶、子嗣与生平传记。`,
+      biography: `「${chartName || '新建谱系图'}」开基始祖，可点击节点上方或右侧档案面板继续添录配偶、子嗣与生平传记。`,
       branchId: chartId,
       sequenceMeta: { originalPage: 1 },
       biographyOrder: 1,

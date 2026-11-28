@@ -58,12 +58,12 @@ export const LineageEditorModal: React.FC<LineageEditorModalProps> = ({
     setRegionPlace(parsePlaceText(initialValue?.region));
   }, [open, initialValue]);
 
-  const modalTitle = mode === 'create' ? '新建世系' : '编辑世系';
+  const modalTitle = mode === 'create' ? '新建谱系' : '编辑谱系';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const nextErrors: FieldErrors = {};
-    if (!name.trim()) nextErrors.name = '请输入世系名称';
+    if (!name.trim()) nextErrors.name = '请输入谱系名称';
     if (!surname.trim()) nextErrors.surname = '请输入姓氏';
     if (!progenitor.trim()) nextErrors.progenitor = '请输入始祖姓名';
 
@@ -118,12 +118,12 @@ export const LineageEditorModal: React.FC<LineageEditorModalProps> = ({
               htmlFor="addLineageName"
               className="flex items-center gap-1"
             >
-              <span>世系名称</span>
+              <span>谱系名称</span>
               <span className="text-destructive">*</span>
             </Label>
             <Input
               id="addLineageName"
-              placeholder="请输入世系名称"
+              placeholder="请输入谱系名称"
               required
               type="text"
               autoFocus

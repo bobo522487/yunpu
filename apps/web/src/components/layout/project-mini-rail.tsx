@@ -3,17 +3,44 @@ import {
   ArrowLeft,
   BookOpenText,
   GitBranch,
+  LayoutDashboard,
   LibraryBig,
   Settings2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkspaceLogoIcon } from '@/components/common/YunpuIcons'
 
-const railItems = [
-  { key: 'lineage', label: '谱系', icon: GitBranch },
-  { key: 'articles', label: '谱文', icon: BookOpenText },
-  { key: 'books', label: '谱书', icon: LibraryBig },
-  { key: 'settings', label: '设置', icon: Settings2 },
+export const railItems = [
+  {
+    key: 'overview',
+    label: '概览',
+    to: '/projects/:projectId',
+    icon: LayoutDashboard,
+  },
+  {
+    key: 'lineage',
+    label: '谱系',
+    to: '/projects/:projectId/lineage',
+    icon: GitBranch,
+  },
+  {
+    key: 'articles',
+    label: '谱文',
+    to: '/projects/:projectId/articles',
+    icon: BookOpenText,
+  },
+  {
+    key: 'books',
+    label: '谱书',
+    to: '/projects/:projectId/books',
+    icon: LibraryBig,
+  },
+  {
+    key: 'settings',
+    label: '家族设置',
+    to: '/projects/:projectId/settings',
+    icon: Settings2,
+  },
 ] as const
 
 type ProjectMiniRailProps = {
@@ -26,7 +53,7 @@ export function ProjectMiniRail({ projectId }: ProjectMiniRailProps) {
   const section = pathname.startsWith(`${basePath}/`)
     ? (pathname.split('/')[3] ?? '')
     : ''
-  const activeKey = section
+  const activeKey = section === '' ? 'overview' : section
 
   return (
     <aside
@@ -51,7 +78,7 @@ export function ProjectMiniRail({ projectId }: ProjectMiniRailProps) {
         {railItems.map((item) => {
           const Icon = item.icon
           const active = activeKey === item.key
-          const url = `${basePath}/${item.key}`
+          const url = item.to.replace(':projectId', projectId)
 
           return (
             <Link

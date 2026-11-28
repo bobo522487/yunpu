@@ -575,8 +575,8 @@ export const GenealogyCanvas: React.FC<GenealogyCanvasProps> = ({
           type="button"
           onClick={() => window.print()}
           className="h-8 w-8 rounded-md text-muted-foreground hover:text-primary hover:bg-[var(--surface-active)] transition-colors flex items-center justify-center cursor-pointer shrink-0"
-          title="打印世系图"
-          aria-label="打印世系图"
+          title="打印谱系图"
+          aria-label="打印谱系图"
         >
           <Printer size={14} />
         </button>

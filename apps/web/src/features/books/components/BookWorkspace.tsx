@@ -143,7 +143,7 @@ export const BookWorkspace: React.FC = () => {
               暂无谱书项目
             </h2>
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              创建一部谱书后，即可按「目录编排 → 设置版式 → 查看谱例」三步流程汇编家族世系与谱文。
+              创建一部谱书后，即可按「目录编排 → 设置版式 → 查看谱例」三步流程汇编家族谱系与谱文。
             </p>
           </div>
           <Button

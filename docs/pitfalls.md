@@ -5,7 +5,7 @@ A record of repeated mistakes. Every row carries a date or `@commit`; stale entr
 
 | 锚点（日期 / Commit） | 命中次数 | 反模式（禁止 X） | 正确做法（必须 Y） | 晋升状态 |
 |---|---|---|---|---|
-| _(示例待填：YYYY-MM-DD 或 @commit)_ | 0 | _(禁止的做法)_ | _(必须的做法)_ | 观察中 |
+| 2026-11-28 | 1 | 用户决策推翻既有 ADR 后，实施与 code-review 均未回写 ADR，直到审查才发现文档与代码冲突 | 决策反转（如恢复 ADR-0017 已移除的「概览」入口）必须在同轮 `/code-review` 收尾前新增或修订 ADR，并在原 ADR 标注 `amended_by` | 观察中 |
 
 本表严控 ≤ 30 条，原位更新（update in place），新增前先查是否已有同类锚点。
 

@@ -45,7 +45,7 @@ export async function resolveOrCreateDefaultLineageId(
     .values({
       organizationId,
       projectId,
-      name: "主世系",
+      name: "主谱系",
     })
     .returning({ id: lineage.id });
   return inserted[0].id;

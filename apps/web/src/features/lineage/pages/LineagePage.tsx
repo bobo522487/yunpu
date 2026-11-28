@@ -129,7 +129,7 @@ const LineagePage: React.FC = () => {
     selectedLineageNode && !isFolderSelected
       ? String(selectedLineageNode.id)
       : '';
-  const chartName = selectedLineageNode?.data?.name || '世系图谱';
+  const chartName = selectedLineageNode?.data?.name || '谱系图谱';
   const chartStorageKey = makeChartStorageKey(activeProjectId, chartId);
 
   const activeLineage = useMemo(
@@ -473,7 +473,7 @@ const LineagePage: React.FC = () => {
   if (directoryQuery.isPending) {
     return (
       <div className="flex-1 flex items-center justify-center p-6 bg-background text-[13px] text-muted-foreground">
-        正在加载世系工作区...
+        正在加载谱系工作区...
       </div>
     );
   }
@@ -486,9 +486,9 @@ const LineagePage: React.FC = () => {
             <GitFork size={22} />
           </div>
           <div className="space-y-1.5">
-            <h2 className="yp-h2 text-foreground">暂无世系图谱</h2>
+            <h2 className="yp-h2 text-foreground">暂无谱系图谱</h2>
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              为当前家族新建一份世系图以录入始迁祖及后裔脉络。
+              为当前家族新建一份谱系图以录入始迁祖及后裔脉络。
             </p>
           </div>
           <div className="flex items-center justify-center gap-2.5 pt-1">
@@ -499,7 +499,7 @@ const LineagePage: React.FC = () => {
                 setIsCreateLineageOpen(true);
               }}
             >
-              <Plus size={14} /> 新建世系图
+              <Plus size={14} /> 新建谱系图
             </Button>
           </div>
         </div>
@@ -633,7 +633,7 @@ const LineagePage: React.FC = () => {
             )}
             {canvasData.isPending && !canvasData.graphData ? (
               <div className="flex-1 flex items-center justify-center text-[13px] text-muted-foreground">
-                正在加载世系图谱数据...
+                正在加载谱系图谱数据...
               </div>
             ) : (
               <LineageTreeView
@@ -706,7 +706,7 @@ const LineagePage: React.FC = () => {
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <h1 className="yp-h2 text-foreground truncate">
-                  {selectedLineageNode.data?.name || '世系'}
+                  {selectedLineageNode.data?.name || '谱系'}
                 </h1>
                 <span className="text-[12px] text-muted-foreground truncate">
                   {activeProject?.hallName || activeProject?.name}
@@ -754,7 +754,7 @@ const LineagePage: React.FC = () => {
               <FolderOpen size={16} className="text-primary" />
               <span>{selectedLineageNode.data?.name}</span>
               <span className="text-[12px] font-medium text-muted-foreground tabular-nums">
-                ({selectedLineageNode.children?.length || 0} 份世系图)
+                ({selectedLineageNode.children?.length || 0} 份谱系图)
               </span>
             </div>
             <Button
@@ -766,7 +766,7 @@ const LineagePage: React.FC = () => {
               }}
               className="h-8 gap-1.5 text-[13px]"
             >
-              <Plus size={14} /> 新增世系图
+              <Plus size={14} /> 新增谱系图
             </Button>
           </div>
 
@@ -797,7 +797,7 @@ const LineagePage: React.FC = () => {
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-card/50 py-12 px-6 text-center space-y-3">
               <p className="text-[13px] text-muted-foreground">
-                该分组下暂无世系图，可直接点击上方「新增世系图」或从左侧拖拽节点移入。
+                该分组下暂无谱系图，可直接点击上方「新增谱系图」或从左侧拖拽节点移入。
               </p>
             </div>
           )}

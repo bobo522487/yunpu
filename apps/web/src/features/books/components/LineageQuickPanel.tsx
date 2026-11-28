@@ -70,7 +70,7 @@ export const LineageQuickPanel: React.FC<LineageQuickPanelProps> = ({
 
   const { chartName, persons } = useMemo(() => {
     if (!activeChartId) {
-      return { chartName: '暂无世系图', persons: [] as PersonRecord[] };
+      return { chartName: '暂无谱系图', persons: [] as PersonRecord[] };
     }
     return resolveChartPersons(
       activeProjectId,
@@ -238,7 +238,7 @@ export const LineageQuickPanel: React.FC<LineageQuickPanelProps> = ({
         <div className="flex items-center gap-1.5 min-w-0">
           <GitFork size={14} className="text-primary shrink-0" />
           <span className="text-[13px] font-semibold text-foreground truncate">
-            世系信息
+            谱系信息
           </span>
         </div>
         <span className="text-[11px] text-muted-foreground truncate">
@@ -253,7 +253,7 @@ export const LineageQuickPanel: React.FC<LineageQuickPanelProps> = ({
       >
         <div className="flex items-center gap-2">
           <label className="text-[12px] text-muted-foreground shrink-0 w-10">
-            世系表
+            谱系表
           </label>
           <select
             value={activeChartId}
@@ -313,7 +313,7 @@ export const LineageQuickPanel: React.FC<LineageQuickPanelProps> = ({
             renderTreeNodes(rootPersons, 0, new Set())
           ) : (
             <div className="h-full flex items-center justify-center text-[12px] text-muted-foreground py-6">
-              该世系表暂无族丁记录
+              该谱系表暂无族丁记录
             </div>
           )}
         </div>

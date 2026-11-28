@@ -70,7 +70,7 @@ export function generateProofHtmlDocument(
               </div>`
           )
           .join('');
-        body = `<h2 style="font-size:18px; margin-bottom:12px;">${p.title || '世系表'}</h2>${items}`;
+        body = `<h2 style="font-size:18px; margin-bottom:12px;">${p.title || '谱系表'}</h2>${items}`;
       }
 
       return `<section class="book-page">

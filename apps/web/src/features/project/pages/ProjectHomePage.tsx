@@ -99,7 +99,7 @@ const ProjectHomePage: React.FC = () => {
   }[] = [
     {
       id: 'lineage',
-      title: '世系',
+      title: '谱系',
       desc: '维护家族世代脉络、支派分房与成员关系图谱。',
       status: '已启用',
       to: '/projects/$projectId/lineage',
@@ -199,7 +199,7 @@ const ProjectHomePage: React.FC = () => {
                 </div>
                 <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
                   {activeProject?.description ||
-                    '围绕世系梳理、谱文编修与谱书排版开展家族谱牒协作。'}
+                    '围绕谱系梳理、谱文编修与谱书排版开展家族谱牒协作。'}
                 </p>
               </div>
             </div>

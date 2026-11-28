@@ -22,7 +22,7 @@ export const PersonDeleteBar: React.FC<PersonDeleteBarProps> = ({
     <div className="shrink-0 border-t border-border bg-[var(--surface-subtle)] px-5 py-3.5">
       {isRoot ? (
         <p className="text-center text-[12px] text-muted-foreground select-none">
-          开基始祖节点不可从世系中删除
+          开基始祖节点不可从谱系中删除
         </p>
       ) : !confirming ? (
         <button
@@ -37,7 +37,7 @@ export const PersonDeleteBar: React.FC<PersonDeleteBarProps> = ({
       ) : (
         <div className="space-y-2.5">
           <p className="text-[13px] text-center font-medium text-destructive">
-            确认从世系中删除「{displayName}」？
+            确认从谱系中删除「{displayName}」？
           </p>
           <div className="flex items-center gap-2.5">
             <button

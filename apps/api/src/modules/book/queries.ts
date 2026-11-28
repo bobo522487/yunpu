@@ -45,8 +45,8 @@ export function createEmptyBookSections(): BookSectionsInput {
     },
     lineage: {
       code: "lineage",
-      label: "世系",
-      hint: "(族丁检索表、吊线图、世系表)",
+      label: "谱系",
+      hint: "(族丁检索表、吊线图、谱系表)",
       collapsed: false,
       items: [],
     },

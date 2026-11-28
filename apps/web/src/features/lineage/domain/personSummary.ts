@@ -54,5 +54,5 @@ export function buildPersonSummary(
   if (childrenNames.length > 0) {
     parts.push(`子：${childrenNames.join('、')}`);
   }
-  return parts.filter(Boolean).join('。') || '世系谱名录存录，待补行传。';
+  return parts.filter(Boolean).join('。') || '谱系谱名录存录，待补行传。';
 }

@@ -60,7 +60,7 @@ export function AppTitle() {
             <DropdownMenuItem asChild>
               <Link to='/settings'>
                 <Settings />
-                工作区设置
+                组织设置
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

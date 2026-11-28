@@ -43,7 +43,7 @@ const EMPTY_COLLAPSED: Record<string, boolean> = {};
 
 function nextDefaultFolderName(existing: FolderDto[]): string {
   const taken = new Set(existing.map((f) => f.name));
-  const base = '新建世系分组';
+  const base = '新建谱系分组';
   if (!taken.has(base)) return base;
   let seq = 2;
   while (taken.has(`${base} ${seq}`)) {
@@ -327,7 +327,7 @@ export const LineageTreePanel: React.FC = () => {
         {/* Tree Section Header */}
         <div className="px-3 pt-2.5 pb-1.5 flex items-center justify-between gap-2 shrink-0">
           <span className="text-[12px] font-semibold text-muted-foreground">
-            世系目录
+            谱系目录
           </span>
           <div className="flex items-center gap-0.5">
             <button
@@ -342,8 +342,8 @@ export const LineageTreePanel: React.FC = () => {
             <button
               type="button"
               onClick={() => openCreateModal()}
-              title="新建世系"
-              aria-label="新建世系"
+              title="新建谱系"
+              aria-label="新建谱系"
               className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
             >
               <Plus size={14} />
@@ -364,17 +364,17 @@ export const LineageTreePanel: React.FC = () => {
         <div className="flex-1 overflow-y-auto px-1.5 pb-3">
           {directoryQuery.isPending ? (
             <div className="px-3 py-6 text-center text-[12px] text-muted-foreground">
-              正在加载世系目录...
+              正在加载谱系目录...
             </div>
           ) : treeItems.length === 0 ? (
             <div className="px-2.5 py-6 text-center space-y-2.5">
-              <p className="text-[12px] text-muted-foreground">暂无世系图</p>
+              <p className="text-[12px] text-muted-foreground">暂无谱系图</p>
               <button
                 type="button"
                 onClick={() => openCreateModal()}
                 className="w-full h-7 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors cursor-pointer"
               >
-                新建世系图
+                新建谱系图
               </button>
             </div>
           ) : (

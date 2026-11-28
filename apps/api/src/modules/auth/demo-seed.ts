@@ -33,7 +33,7 @@ export async function seedDemoFamilyProjectInTx(
   );
 
   const folder = await insertFolderInTx(db, organizationId, project.id, {
-    name: "总世系与支系",
+    name: "总谱系与支系",
     seq: 0,
   });
 
@@ -43,7 +43,7 @@ export async function seedDemoFamilyProjectInTx(
     project.id,
     {
       folderId: folder.id,
-      name: "义门陈氏总世系",
+      name: "义门陈氏总谱系",
       surname: "陈",
       hallName: "义门堂",
       progenitor: "陈旺",

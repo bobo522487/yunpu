@@ -309,7 +309,7 @@ export const UpdateFolderSchema = z
 export type UpdateFolderInput = z.infer<typeof UpdateFolderSchema>;
 
 export const CreateLineageSchema = z.object({
-  name: z.string().trim().min(1, "世系名称不能为空").max(120),
+  name: z.string().trim().min(1, "谱系名称不能为空").max(120),
   folderId: z.uuid().nullable().optional(),
   surname: optionalNonBlank(50),
   hallName: optionalNonBlank(50),
@@ -321,7 +321,7 @@ export type CreateLineageInput = z.infer<typeof CreateLineageSchema>;
 
 export const UpdateLineageSchema = z
   .object({
-    name: z.string().trim().min(1, "世系名称不能为空").max(120).optional(),
+    name: z.string().trim().min(1, "谱系名称不能为空").max(120).optional(),
     folderId: z.uuid().nullable().optional(),
     surname: optionalNonBlank(50).nullable().optional(),
     hallName: optionalNonBlank(50).nullable().optional(),

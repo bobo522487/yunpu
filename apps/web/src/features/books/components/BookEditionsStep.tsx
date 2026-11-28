@@ -123,7 +123,7 @@ export const BookEditionsStep: React.FC<BookEditionsStepProps> = ({
         <div className="rounded-xl border border-border bg-[var(--surface-subtle)] px-4 py-3 flex items-start gap-2.5 text-[12px] text-muted-foreground">
           <Info size={15} className="text-primary shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            每次点击「生成新谱例」，系统会将当前目录结构、谱文正文、世系范围与版式参数固化为独立快照（单本谱书最多保留 9 份谱例）。若修改了目录或原谱文内容，请重新生成新谱例以查看最新成书效果。
+            每次点击「生成新谱例」，系统会将当前目录结构、谱文正文、谱系范围与版式参数固化为独立快照（单本谱书最多保留 9 份谱例）。若修改了目录或原谱文内容，请重新生成新谱例以查看最新成书效果。
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export const BookEditionsStep: React.FC<BookEditionsStepProps> = ({
                       </span>
                       <span>总页数：{edition.pageCount} 页</span>
                       <span className="inline-flex items-center gap-1">
-                        <span>世系人数：{edition.memberCount} 人</span>
+                        <span>谱系人数：{edition.memberCount} 人</span>
                         <HelpTipButton tipKey="book-member-count" />
                       </span>
                       <span>

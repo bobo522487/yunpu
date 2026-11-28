@@ -269,7 +269,7 @@ export const BookListPanel: React.FC = () => {
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="删除谱书"
-        description={`确定要删除《${deleteTarget?.bookName || ''}》吗？该谱书的目录编排与已生成的谱例快照将被一并移除，但不会影响原世系图与谱文库中的内容。`}
+        description={`确定要删除《${deleteTarget?.bookName || ''}》吗？该谱书的目录编排与已生成的谱例快照将被一并移除，但不会影响原谱系图与谱文库中的内容。`}
         confirmLabel="确认删除"
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {

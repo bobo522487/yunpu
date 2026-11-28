@@ -75,7 +75,7 @@ describe('SearchProvider and CommandMenu', () => {
     await expect.element(getByText('Light')).toBeInTheDocument()
     await expect.element(getByText('Dark')).toBeInTheDocument()
     await expect.element(getByText('System')).toBeInTheDocument()
-    await expect.element(getByText('工作台')).toBeInTheDocument()
+    await expect.element(getByText('家族')).toBeInTheDocument()
   })
 
   it('does not show the dialog content when search is closed', async () => {
@@ -119,16 +119,16 @@ describe('SearchProvider and CommandMenu', () => {
       .not.toBeInTheDocument()
   })
 
-  it('navigates for project sidebar items', async () => {
+  it('navigates for a top-level sidebar item', async () => {
     const screen = await renderWithSearchProvider()
     const { getByPlaceholder, getByRole } = screen
 
     await openCommandPalette(screen)
 
-    await userEvent.click(getByRole('option', { name: '项目设置' }))
+    await userEvent.click(getByRole('option', { name: '家族' }))
 
     expect(mocks.navigate).toHaveBeenCalledWith({
-      to: '/projects/proj-1/settings',
+      to: '/projects',
     })
     await expect
       .element(getByPlaceholder(COMMAND_MENU_PLACEHOLDER))

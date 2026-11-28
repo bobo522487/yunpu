@@ -140,7 +140,7 @@ export const BookLayoutStep: React.FC<BookLayoutStepProps> = ({
 
           <div className="space-y-2">
             <div className="text-[12px] font-medium text-muted-foreground">
-              世系排法体例
+              谱系排法体例
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {(
@@ -389,7 +389,7 @@ export const BookLayoutStep: React.FC<BookLayoutStepProps> = ({
               <div className="flex items-center justify-between text-[9px] text-[#64748B] border-b border-[#057091]/30 pb-1 mb-2 shrink-0">
                 <span>{cfg.showHeaderName ? book.headerName : ''}</span>
                 <span className="font-semibold text-[#057091]">
-                  {LINEAGE_STYLE_LABELS[cfg.lineageStyle]}世系示例
+                  {LINEAGE_STYLE_LABELS[cfg.lineageStyle]}谱系示例
                 </span>
               </div>
 

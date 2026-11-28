@@ -156,7 +156,7 @@ test.describe('Cross-device Cloud Persistence for Articles and Books', () => {
           email,
           password: DEFAULT_E2E_PASSWORD,
         });
-        await expect(pageB).toHaveURL(/\/home/, { timeout: 20_000 });
+        await expect(pageB).toHaveURL(/\/projects/, { timeout: 20_000 });
 
         // Device B loads synced article directory, content, and revision
         await pageB.goto(`/projects/${projectId}/articles`);

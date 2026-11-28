@@ -173,7 +173,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({
           <p className="flex items-center gap-2 tabular-nums">
             <GitFork size={15} className="shrink-0 text-muted-foreground/80" />
             <span className="truncate">
-              世系 {metrics.lineageCount} · 谱文 {metrics.articleCount} · 谱书 {metrics.bookCount}
+              谱系 {metrics.lineageCount} · 谱文 {metrics.articleCount} · 谱书 {metrics.bookCount}
             </span>
           </p>
 
@@ -216,7 +216,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({
           onClick={() => onOpen(project, '/lineage')}
           className="h-9 flex-1 px-3.5 rounded-lg bg-primary text-primary-foreground text-[13px] font-medium shadow-[var(--shadow-control)] hover:bg-primary/90 transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          进入世系
+          进入谱系
         </button>
 
         <div className="flex items-center gap-1 shrink-0">

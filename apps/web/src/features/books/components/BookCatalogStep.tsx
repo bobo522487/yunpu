@@ -57,7 +57,7 @@ function describeLineageScope(node: CatalogLineageNode): string {
   const tables: string[] = [];
   if (node.indexConfig.enabled) tables.push('检索表');
   if (node.diaoxianConfig.enabled) tables.push('吊线图');
-  if (node.shixiConfig.enabled) tables.push('世系表');
+  if (node.shixiConfig.enabled) tables.push('谱系表');
   parts.push(tables.join(' / ') || '未勾选附表');
   return parts.join(' · ');
 }
@@ -116,7 +116,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
   }>({
     open: false,
     sectionCode: 'lineage',
-    label: '世系',
+    label: '谱系',
   });
 
   const [editDocNode, setEditDocNode] = useState<CatalogArticleNode | null>(
@@ -250,7 +250,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
           </button>
           <button
             type="button"
-            title={isArticle ? '编辑谱文引用' : '世系详细设置'}
+            title={isArticle ? '编辑谱文引用' : '谱系详细设置'}
             onClick={() => {
               if (isArticle) {
                 setEditDocNode(leaf);
@@ -349,7 +349,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors cursor-pointer whitespace-nowrap"
               >
                 <Plus size={12} />
-                <span>添加世系</span>
+                <span>添加谱系</span>
               </button>
             )}
             <button
@@ -544,7 +544,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
                     className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/[0.08] hover:bg-primary/15 text-[12px] font-medium text-primary transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <GitFork size={13} />
-                    <span>添加世系</span>
+                    <span>添加谱系</span>
                   </button>
                 )}
               </div>
@@ -711,7 +711,7 @@ export const BookCatalogStep: React.FC<BookCatalogStepProps> = ({
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={deleteTarget?.isChapter ? '删除空章节' : '移出目录条目'}
-        description={`确定要从谱书目录中移除「${deleteTarget?.title || ''}」吗？此操作仅影响当前谱书编排，不会删除原谱文库或世系图中的数据。`}
+        description={`确定要从谱书目录中移除「${deleteTarget?.title || ''}」吗？此操作仅影响当前谱书编排，不会删除原谱文库或谱系图中的数据。`}
         confirmLabel="确认移除"
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {

@@ -36,8 +36,13 @@ test.describe('Auth Register, Login, Redirect & Logout Lifecycle', () => {
     await registerUserViaUi(page, { email, password: DEFAULT_E2E_PASSWORD });
     await expect(page.getByText(email)).toBeVisible();
 
-    // 2. Authenticated user visiting /login, /register, or /onboarding (no invite) redirects to /home
-    for (const authPath of ['/login', '/register', '/onboarding']) {
+    // 2a. 已登录用户访问 /login 时按登录默认落点进入家族列表
+    await page.goto('/login');
+    await expect(page).toHaveURL(/\/projects/);
+    await expect(page.getByRole('heading', { name: '家族', level: 1 })).toBeVisible();
+
+    // 2b. /register 与 /onboarding 的既有落点保持 /home（不属于 FR-008 范围）
+    for (const authPath of ['/register', '/onboarding']) {
       await page.goto(authPath);
       await expect(page).toHaveURL(/\/home/);
     }

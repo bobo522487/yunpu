@@ -172,7 +172,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
       setChartName(resolved.chartName);
       setStartMemberId(root?.id || '');
       setStartMemberName(root?.name || '');
-      setEyebrowTitle(`${resolved.chartName}世系`);
+      setEyebrowTitle(`${resolved.chartName}谱系`);
     } else {
       setChartId('');
       setChartName('');
@@ -198,7 +198,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!eyebrowTitle.trim()) {
-      setError('请填写世系谱眉名');
+      setError('请填写谱系谱眉名');
       return;
     }
     if (!startMemberId) {
@@ -235,7 +235,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
           : undefined,
       indexConfig: { enabled: true, inToc: true, tocTitle: '族丁检索表' },
       diaoxianConfig: { enabled: true, inToc: true, tocTitle: '吊线图' },
-      shixiConfig: { enabled: true, inToc: true, tocTitle: '世系表' },
+      shixiConfig: { enabled: true, inToc: true, tocTitle: '谱系表' },
     });
   };
 
@@ -255,7 +255,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
             <div className="flex items-center gap-2 min-w-0">
               <GitFork size={16} className="text-primary shrink-0" />
               <h3 className="text-[15px] font-semibold text-foreground truncate">
-                添加世系章节
+                添加谱系章节
               </h3>
               <span className="text-[12px] text-muted-foreground truncate">
                 · {targetLabel}
@@ -299,7 +299,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
                     htmlFor="lineageEyebrowTitle"
                     className="flex items-center gap-1.5"
                   >
-                    <span>世系谱眉名</span>
+                    <span>谱系谱眉名</span>
                     <span className="text-destructive">*</span>
                     <HelpTipButton tipKey="lineage-eyebrow" />
                   </Label>
@@ -310,7 +310,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
                       setEyebrowTitle(e.target.value);
                       if (error) setError('');
                     }}
-                    placeholder="例如：主支世系、长房分支世系"
+                    placeholder="例如：主支谱系、长房分支谱系"
                   />
                 </div>
 
@@ -437,7 +437,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
                         textOrientation: 'upright',
                       }}
                     >
-                      {totalTitle || book.bookName || '宗谱世系'}
+                      {totalTitle || book.bookName || '宗谱谱系'}
                     </div>
                     <div className="flex-1 grid grid-rows-5 divide-y divide-[#CBD5E1] text-[10px]">
                       {['一世', '二世', '三世', '四世', '五世'].map(
@@ -476,7 +476,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
                           textOrientation: 'upright',
                         }}
                       >
-                        {eyebrowTitle || '世系谱眉'}
+                        {eyebrowTitle || '谱系谱眉'}
                       </span>
                       <span className="text-[8px] text-[#64748B]">第一页</span>
                     </div>
@@ -490,7 +490,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
                 取消
               </Button>
               <Button type="submit" size="sm">
-                确认添加世系
+                确认添加谱系
               </Button>
             </div>
           </form>
@@ -509,7 +509,7 @@ export const AddLineageModal: React.FC<AddLineageModalProps> = ({
             setStartMemberId(picked.person.id);
             setStartMemberName(picked.person.name);
             if (!eyebrowTitle.trim()) {
-              setEyebrowTitle(`${picked.chartName}世系`);
+              setEyebrowTitle(`${picked.chartName}谱系`);
             }
           } else {
             setEndMemberId(picked.person.id);

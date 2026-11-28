@@ -29,5 +29,5 @@ test('传略摘要串起字号、生年和子女', () => {
 
 test('没有任何事实时给出待补行传', () => {
   const summary = buildPersonSummary(person({ id: 'p2', name: '某' }), [], [], [], '');
-  assert.equal(summary, '世系谱名录存录，待补行传。');
+  assert.equal(summary, '谱系谱名录存录，待补行传。');
 });

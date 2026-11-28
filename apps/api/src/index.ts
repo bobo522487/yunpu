@@ -26,10 +26,14 @@ try {
   process.exit(1);
 }
 
+// Bind all interfaces so the dev API can be reached from the LAN.
+// Override with HOST=127.0.0.1 when only local access is wanted.
+const host = process.env.HOST?.trim() || "0.0.0.0";
+
 const server = serve({
   fetch: app.fetch,
   port: env.PORT,
-  hostname: "127.0.0.1",
+  hostname: host,
 });
 
 let shuttingDown = false;
@@ -51,4 +55,4 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 
-console.log(`yunpu api listening on http://127.0.0.1:${env.PORT}`);
+console.log(`yunpu api listening on http://${host}:${env.PORT}`);

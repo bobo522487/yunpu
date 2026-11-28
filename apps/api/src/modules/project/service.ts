@@ -32,7 +32,7 @@ export async function createProjectInTx(
   const ancestorName = values.ancestor?.trim();
   if (!options?.skipStarterLineage && ancestorName) {
     await createLineageInTx(db, organizationId, created.id, {
-      name: `${values.name}主世系`,
+      name: `${values.name}主谱系`,
       surname: values.surname,
       hallName: values.hallName,
       progenitor: ancestorName,

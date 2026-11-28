@@ -30,7 +30,7 @@ export function PersonMentionView({
     <NodeViewWrapper
       as="span"
       className={`puwen-person-mention${missing ? ' is-missing' : ''}`}
-      title={missing ? '原世系节点已移除' : undefined}
+      title={missing ? '原谱系节点已移除' : undefined}
       data-type="personMention"
       data-person-id={personId}
       data-chart-id={chartId}

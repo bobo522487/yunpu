@@ -68,7 +68,7 @@ test.describe('Auth Route Guards & Public Navigation', () => {
     await page.goto('/login?redirect=//evil.example.com/phish');
     await loginUserViaUi(page, { email, password: DEFAULT_E2E_PASSWORD });
 
-    await expect(page).toHaveURL(/\/home/, { timeout: 20_000 });
+    await expect(page).toHaveURL(/\/projects/, { timeout: 20_000 });
     expect(new URL(page.url()).host).toBe(
       new URL(baseURL ?? 'http://127.0.0.1:3000').host,
     );

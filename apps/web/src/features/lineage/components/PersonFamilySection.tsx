@@ -877,7 +877,7 @@ export const PersonFamilySection: React.FC<PersonFamilySectionProps> = ({
         ) : (
           <p className="py-1 text-[13px] text-muted-foreground leading-relaxed">
             {isSpouseNode
-              ? '当前为配偶节点，未关联原生父母世系。'
+              ? '当前为配偶节点，未关联原生父母谱系。'
               : '暂无父母与兄弟姐妹记录（开基始祖或尚未关联父母）。'}
           </p>
         )}

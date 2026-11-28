@@ -48,7 +48,7 @@ export function resolveChartPersons(
   _projectSurname?: string
 ): { chartName: string; persons: PersonRecord[] } {
   const node = findTreeNode(lineageTree, chartId);
-  const chartName = node?.data?.name || '世系图谱';
+  const chartName = node?.data?.name || '谱系图谱';
   const key = `${projectId}::${chartId}`;
   return {
     chartName,
@@ -343,7 +343,7 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
       }
     }
 
-    const eyebrow = leaf.eyebrowTitle || '世系';
+    const eyebrow = leaf.eyebrowTitle || '谱系';
     const totalTitle = leaf.totalTitle || book.bookName;
 
     // 1. 世系表 (allocate page numbers first or collect entries)
@@ -390,7 +390,7 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
         if (i === 0 && leaf.indexConfig.inToc) {
           tocEntries.push({
             title: `${leaf.eyebrowTitle} · ${leaf.indexConfig.tocTitle || '族丁检索表'}`,
-            sectionLabel: chapterTitle || '世系',
+            sectionLabel: chapterTitle || '谱系',
             pageNo,
             level: 2,
           });
@@ -427,7 +427,7 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
       if (leaf.diaoxianConfig.inToc) {
         tocEntries.push({
           title: `${leaf.eyebrowTitle} · ${leaf.diaoxianConfig.tocTitle || '吊线图'}`,
-          sectionLabel: chapterTitle || '世系',
+          sectionLabel: chapterTitle || '谱系',
           pageNo,
           level: 2,
         });
@@ -463,8 +463,8 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
         const pageNo = pages.length + 1;
         if (i === 0 && leaf.shixiConfig.inToc) {
           tocEntries.push({
-            title: `${leaf.eyebrowTitle} · ${leaf.shixiConfig.tocTitle || '世系表'}`,
-            sectionLabel: chapterTitle || '世系',
+            title: `${leaf.eyebrowTitle} · ${leaf.shixiConfig.tocTitle || '谱系表'}`,
+            sectionLabel: chapterTitle || '谱系',
             pageNo,
             level: 2,
           });
@@ -477,7 +477,7 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
           eyebrowTitle: eyebrow,
           hallName: book.hallName || '',
           chapterTitle,
-          title: `${totalTitle} · ${leaf.shixiConfig.tocTitle || '世系表'}`,
+          title: `${totalTitle} · ${leaf.shixiConfig.tocTitle || '谱系表'}`,
           lineageEntries: entries.slice(
             i * entriesPerPage,
             (i + 1) * entriesPerPage
@@ -490,7 +490,7 @@ export function compileBookEdition(params: CompileBookParams): BookEdition {
 
   const postSections: Array<{ code: CatalogSectionCode; label: string }> = [
     { code: 'body', label: '正文' },
-    { code: 'lineage', label: '世系' },
+    { code: 'lineage', label: '谱系' },
     { code: 'appendix', label: '附录' },
   ];
 

@@ -67,7 +67,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
       return (
         allCharts.find((c) => c.chartId === String(selectedNode.id)) || {
           chartId: String(selectedNode.id),
-          chartName: selectedNode.data?.name || '世系图谱',
+          chartName: selectedNode.data?.name || '谱系图谱',
           index: 1,
         }
       );
@@ -76,7 +76,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
       allCharts.find((c) => c.chartId === defaultChartId) ||
       allCharts[0] || {
         chartId: defaultChartId,
-        chartName: '世系图谱',
+        chartName: '谱系图谱',
         index: 1,
       }
     );
@@ -121,7 +121,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/12 text-sky-700 dark:text-sky-300 text-[12px] font-semibold border border-sky-500/25 whitespace-nowrap shrink-0">
-            {scope === 'chart' ? '世系' : '宗谱'}
+            {scope === 'chart' ? '谱系' : '宗谱'}
           </span>
           <span className="text-[14px] font-semibold text-foreground font-mono tabular-nums whitespace-nowrap shrink-0">
             {scope === 'chart'
@@ -160,7 +160,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
                   : 'text-muted-foreground font-medium hover:text-foreground'
               )}
             >
-              当前世系图
+              当前谱系图
             </button>
             <button
               type="button"

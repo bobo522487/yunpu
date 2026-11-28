@@ -36,7 +36,7 @@ export const LineageSettingsModal: React.FC<LineageSettingsModalProps> = ({
   const [shixiCfg, setShixiCfg] = useState<LineageSubTableConfig>({
     enabled: true,
     inToc: true,
-    tocTitle: '世系表',
+    tocTitle: '谱系表',
   });
 
   useEffect(() => {
@@ -71,8 +71,8 @@ export const LineageSettingsModal: React.FC<LineageSettingsModalProps> = ({
     },
     {
       key: 'shixi',
-      label: '世系表',
-      desc: '按所选欧式/苏式/双栏版式排版输出完整世系与行传。',
+      label: '谱系表',
+      desc: '按所选欧式/苏式/双栏版式排版输出完整谱系与行传。',
       cfg: shixiCfg,
       setCfg: setShixiCfg,
     },
@@ -92,7 +92,7 @@ export const LineageSettingsModal: React.FC<LineageSettingsModalProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
           <div className="min-w-0">
             <h3 className="text-[15px] font-semibold text-foreground truncate">
-              世系详细设置 · {node.eyebrowTitle}
+              谱系详细设置 · {node.eyebrowTitle}
             </h3>
           </div>
           <Button

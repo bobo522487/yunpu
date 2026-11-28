@@ -238,7 +238,7 @@ export const BookReaderModal: React.FC<BookReaderModalProps> = ({
                   <th className="text-left py-1.5 px-2">世次</th>
                   <th className="text-left py-1.5 px-2">谱名</th>
                   <th className="text-left py-1.5 px-2">父讳</th>
-                  <th className="text-right py-1.5 px-2">世系页码</th>
+                  <th className="text-right py-1.5 px-2">谱系页码</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E8F0] dark:divide-slate-700/80">
@@ -322,7 +322,7 @@ export const BookReaderModal: React.FC<BookReaderModalProps> = ({
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-3 pb-1.5 border-b border-[#CBD5E1] dark:border-slate-700">
           <h2 className="text-[17px] font-bold text-[#057091] dark:text-[#58B1CD]">
-            {page.title || '世系表'}
+            {page.title || '谱系表'}
           </h2>
           <span className="text-[11px] text-[#64748B] dark:text-slate-400">
             {LINEAGE_STYLE_LABELS[style]}

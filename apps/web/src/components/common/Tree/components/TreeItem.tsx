@@ -274,7 +274,7 @@ export const TreeItem = forwardRef<HTMLLIElement, TreeItemProps>(
                                                     }}
                                                 >
                                                     <SquarePen size={12} className="text-muted-foreground" />
-                                                    {editLabel || '编辑世系'}
+                                                    {editLabel || '编辑谱系'}
                                                 </button>
                                             )}
                                             {onRename && (

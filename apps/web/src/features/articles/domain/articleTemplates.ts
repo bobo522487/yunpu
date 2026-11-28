@@ -37,10 +37,10 @@ export const ARTICLE_TEMPLATES: ArticleTemplate[] = [
     buildContent: (ctx) => {
       const { familyName, hallName, ancestor, region } = names(ctx);
       return `<h2>一、修谱缘起</h2>
-<p>夫木有本而枝叶茂，水有源而流泽长；人有祖而后世系明，族有谱而亲疏序。吾族${familyName}，以「${hallName}」为堂号，自始迁祖${ancestor}公择居${region}以来，耕读传家，瓜瓞绵延，迄今已历数世。</p>
+<p>夫木有本而枝叶茂，水有源而流泽长；人有祖而后谱系明，族有谱而亲疏序。吾族${familyName}，以「${hallName}」为堂号，自始迁祖${ancestor}公择居${region}以来，耕读传家，瓜瓞绵延，迄今已历数世。</p>
 <blockquote><p>「盛世修志，旺族修谱。」谱牒之设，非徒纪名讳、辨昭穆而已，实欲使后世子孙知所从来，明孝悌之义，敦睦宗族之情。</p></blockquote>
 <h2>二、本次重修宗旨</h2>
-<p>岁月既久，旧谱残佚堪虞，加之近年宗亲迁徙四方，生卒婚配亟待续录。今由族中贤达共议，依托云谱数字修谱平台汇辑旧闻、采录新丁，务求世系清晰、传记翔实、体例谨严，俾千秋百代之后，展卷而知本源，开帙而见先风。</p>
+<p>岁月既久，旧谱残佚堪虞，加之近年宗亲迁徙四方，生卒婚配亟待续录。今由族中贤达共议，依托云谱数字修谱平台汇辑旧闻、采录新丁，务求谱系清晰、传记翔实、体例谨严，俾千秋百代之后，展卷而知本源，开帙而见先风。</p>
 <hr />
 <p style="text-align: right">岁次重修之时 · ${hallName}谨识</p>`;
     },
@@ -145,7 +145,7 @@ export const ARTICLE_TEMPLATES: ArticleTemplate[] = [
     buildContent: (ctx) => {
       const { hallName } = names(ctx);
       return `<h2 style="text-align: center">${hallName}宗祠重修记</h2>
-<p>维岁序更新，宗亲合力修葺祖祠。栋宇既崇，丹楹刻桷，非徒壮观瞻也，实以安先灵、聚宗情、垂典范于后昆。祠内正厅悬「${hallName}」匾额，左列昭穆世系，右刻祖训家规，凡入斯堂者，当肃然起敬，思先人之劳苦，勉今日之奋发。</p>
+<p>维岁序更新，宗亲合力修葺祖祠。栋宇既崇，丹楹刻桷，非徒壮观瞻也，实以安先灵、聚宗情、垂典范于后昆。祠内正厅悬「${hallName}」匾额，左列昭穆谱系，右刻祖训家规，凡入斯堂者，当肃然起敬，思先人之劳苦，勉今日之奋发。</p>
 <hr />
 <h3 style="text-align: center">宗谱告成偶成</h3>
 <p style="text-align: center">一脉相承数百秋，山高水长溯源流。</p>

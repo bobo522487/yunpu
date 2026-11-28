@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
         void navigate({ href: redirectTarget, replace: true });
         return;
       }
-      void navigate({ to: '/home', replace: true });
+      void navigate({ to: '/projects', replace: true });
     },
     [navigate, redirectTarget]
   );

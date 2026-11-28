@@ -55,6 +55,7 @@ function SidebarProvider({
   open: openProp,
   onOpenChange: setOpenProp,
   shortcutEnabled = true,
+  resizing = false,
   className,
   style,
   children,
@@ -64,6 +65,7 @@ function SidebarProvider({
   open?: boolean
   onOpenChange?: (open: boolean) => void
   shortcutEnabled?: boolean
+  resizing?: boolean
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
@@ -144,6 +146,7 @@ function SidebarProvider({
       <TooltipProvider delayDuration={0}>
         <div
           data-slot='sidebar-wrapper'
+          data-resizing={resizing ? 'true' : undefined}
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH,
@@ -177,6 +180,8 @@ function Sidebar({
   collapsible?: 'offcanvas' | 'icon' | 'none'
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const showOwnEdge =
+    variant === 'sidebar' && state === 'collapsed' && collapsible === 'icon'
 
   if (collapsible === 'none') {
     return (
@@ -231,7 +236,7 @@ function Sidebar({
       <div
         data-slot='sidebar-gap'
         className={cn(
-          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
+          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear group-data-[resizing=true]/sidebar-wrapper:transition-none',
           'group-data-[collapsible=offcanvas]:w-0',
           'group-data-[side=right]:rotate-180',
           variant === 'floating' || variant === 'inset'
@@ -242,14 +247,16 @@ function Sidebar({
       <div
         data-slot='sidebar-container'
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[inset-inline,width] duration-200 ease-linear md:flex',
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[inset-inline,width] duration-200 ease-linear group-data-[resizing=true]/sidebar-wrapper:transition-none md:flex',
           side === 'left'
             ? 'inset-s-0 group-data-[collapsible=offcanvas]:-inset-s-[calc(var(--sidebar-width))]'
             : 'inset-e-0 group-data-[collapsible=offcanvas]:-inset-e-[calc(var(--sidebar-width))]',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
-            : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-e group-data-[side=right]:border-s',
+            : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon)',
+          showOwnEdge && side === 'left' && 'border-e',
+          showOwnEdge && side === 'right' && 'border-s',
           className
         )}
         {...props}

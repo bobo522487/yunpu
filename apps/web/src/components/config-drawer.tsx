@@ -294,7 +294,14 @@ function SidebarConfig() {
 
 function LayoutConfig() {
   const { open, setOpen } = useSidebar()
-  const { defaultCollapsible, collapsible, setCollapsible } = useLayout()
+  const {
+    defaultCollapsible,
+    collapsible,
+    setCollapsible,
+    sidebarWidth,
+    defaultSidebarWidth,
+    resetSidebarWidth,
+  } = useLayout()
 
   const radioState = open ? 'default' : collapsible
 
@@ -302,10 +309,13 @@ function LayoutConfig() {
     <div className='max-md:hidden'>
       <SectionTitle
         title='Layout'
-        showReset={radioState !== 'default'}
+        showReset={
+          radioState !== 'default' || sidebarWidth !== defaultSidebarWidth
+        }
         onReset={() => {
           setOpen(true)
           setCollapsible(defaultCollapsible)
+          resetSidebarWidth()
         }}
         resetAriaLabel='Reset layout options to default'
       />

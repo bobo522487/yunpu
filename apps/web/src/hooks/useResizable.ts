@@ -6,6 +6,7 @@ interface UseResizableProps {
   maxWidth: number;
   edge: 'left' | 'right';
   leftOffset?: number; // For left sidebar, compensates for things like ActivityBar width
+  onWidthChange?: (width: number) => void;
 }
 
 export const useResizable = ({ 
@@ -13,16 +14,20 @@ export const useResizable = ({
   minWidth, 
   maxWidth, 
   edge, 
-  leftOffset = 0 
+  leftOffset = 0,
+  onWidthChange,
 }: UseResizableProps) => {
   const [width, setWidthState] = useState(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
 
   // 宽度必须落在整数像素上，否则分隔线会骑在半个设备像素上被摊成两条。
   const setWidth = useCallback(
-    (next: number) =>
-      setWidthState(Math.min(maxWidth, Math.max(minWidth, Math.round(next)))),
-    [minWidth, maxWidth]
+    (next: number) => {
+      const clamped = Math.min(maxWidth, Math.max(minWidth, Math.round(next)))
+      setWidthState(clamped)
+      onWidthChange?.(clamped)
+    },
+    [minWidth, maxWidth, onWidthChange]
   );
 
   const startResizing = useCallback(() => setIsResizing(true), []);

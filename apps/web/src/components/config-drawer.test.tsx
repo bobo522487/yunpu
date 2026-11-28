@@ -2,7 +2,7 @@ import { clearCookies } from '@/test-utils/cookies'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, type RenderResult } from 'vitest-browser-react'
 import { userEvent } from 'vitest/browser'
-import { getCookie } from '@/lib/cookies'
+import { getCookie, setCookie } from '@/lib/cookies'
 import { LayoutProvider } from '@/context/layout-provider'
 import { ThemeProvider } from '@/context/theme-provider'
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -214,6 +214,31 @@ describe('ConfigDrawer (integration)', () => {
       await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('sidebar'))
     })
 
+    it('resets remembered org sidebar width together with layout', async () => {
+      setCookie('sidebar_width', '320')
+      const screen = await renderConfigDrawer({ sidebarDefaultOpen: true })
+      await openDrawer(screen)
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /reset layout options to default/i,
+        })
+      )
+      await vi.waitFor(() => expect(getCookie('sidebar_width')).toBeUndefined())
+    })
+
+    it('keeps remembered org sidebar width when the sidebar style changes', async () => {
+      setCookie('sidebar_width', '320')
+      const screen = await renderConfigDrawer()
+      await openDrawer(screen)
+
+      await userEvent.click(
+        screen.getByRole('radio', { name: /select floating/i })
+      )
+      await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('floating'))
+      expect(getCookie('sidebar_width')).toBe('320')
+    })
+
     it('resets layout via section control after choosing compact', async () => {
       const screen = await renderConfigDrawer({ sidebarDefaultOpen: true })
       await openDrawer(screen)
@@ -256,6 +281,7 @@ describe('ConfigDrawer (integration)', () => {
   })
 
   it('reset restores defaults across sidebar/theme/layout', async () => {
+    setCookie('sidebar_width', '320')
     const screen = await renderConfigDrawer({ sidebarDefaultOpen: true })
 
     await openDrawer(screen)
@@ -288,5 +314,6 @@ describe('ConfigDrawer (integration)', () => {
     )
     await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('sidebar'))
     await vi.waitFor(() => expect(getCookie('layout_collapsible')).toBe('icon'))
+    await vi.waitFor(() => expect(getCookie('sidebar_width')).toBeUndefined())
   })
 })

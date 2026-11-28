@@ -7,8 +7,9 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
+import { ORG_SIDEBAR_ID } from './org-sidebar-separator'
 import { AppTitle } from './app-title'
 import { sidebarData } from './data/sidebar-data'
 import { NavGroup } from './nav-group'
@@ -17,6 +18,7 @@ import { type NavGroup as NavGroupData } from './types'
 
 export function AppSidebar() {
   const { collapsible, variant } = useLayout()
+  const { isMobile } = useSidebar()
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId)
   const user = useAuthStore((s) => s.user)
 
@@ -45,7 +47,13 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible={collapsible} variant={variant}>
+    <Sidebar
+      collapsible={collapsible}
+      variant={variant}
+      {...(isMobile
+        ? {}
+        : { id: ORG_SIDEBAR_ID, 'data-testid': 'nc-org-sidebar' })}
+    >
       <SidebarHeader>
         <AppTitle />
       </SidebarHeader>
@@ -57,7 +65,6 @@ export function AppSidebar() {
       <SidebarFooter>
         <NavUser user={sidebarUser} />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }

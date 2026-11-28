@@ -3,7 +3,6 @@ import { formatGivenName } from '../../utils/nameUtils';
 import { getLineageGraph } from '../../domain/lineageGraph';
 import { getSpouseSortScore } from '../../utils/personHelpers';
 import {
-  type ClanHeaderFlowNode,
   type GenealogyFlowEdge,
   type GenealogyFlowNode,
   type PersonFlowNode,
@@ -225,35 +224,6 @@ export function buildGenealogyGraph(
 
   const nodes: GenealogyFlowNode[] = [];
   const edges: GenealogyFlowEdge[] = [];
-
-  // Clan surname header above top-level root couple blocks (e.g. "陈 氏")
-  roots.forEach((root) => {
-    const rootPos = positions.get(root.id);
-    if (!rootPos) return;
-    const surname = root.surname?.trim() || clanSurname.trim();
-    if (!surname) return;
-    const attachedSpouses = spousesByPartnerId.get(root.id) || [];
-    const coupleWidth = FS_CARD_W + attachedSpouses.length * FS_SPOUSE_STEP_X;
-    const coupleCenterX = rootPos.x + coupleWidth / 2;
-    const clanLabel = surname.endsWith('氏') ? surname : `${surname} 氏`;
-
-    const clanHeaderNode: ClanHeaderFlowNode = {
-      id: `clan-header-${root.id}`,
-      type: 'clanHeader',
-      initialWidth: 240,
-      initialHeight: 42,
-      position: {
-        x: coupleCenterX - 120,
-        y: rootPos.y - 58,
-      },
-      draggable: false,
-      selectable: false,
-      data: {
-        label: clanLabel,
-      },
-    };
-    nodes.push(clanHeaderNode);
-  });
 
   const primaryRootId =
     roots.find((r) => (r.generation || 1) === 1)?.id ?? roots[0]?.id ?? null;

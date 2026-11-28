@@ -84,8 +84,6 @@ export function buildElkGraph(
   nodes: GenealogyFlowNode[],
   edges: GenealogyFlowEdge[]
 ): ElkNode {
-  const graphNodes = nodes.filter((n) => n.type !== 'clanHeader');
-
   return {
     id: 'root',
     layoutOptions: {
@@ -97,7 +95,7 @@ export function buildElkGraph(
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.edgeRouting': 'ORTHOGONAL',
     },
-    children: graphNodes.map((node) => {
+    children: nodes.map((node) => {
       const isCard = node.type === 'person';
       const isUnion = node.type === 'union';
       const width = isCard ? FS_CARD_W : isUnion ? 32 : 8;
@@ -130,15 +128,12 @@ export function applyElkLayoutResult(
   nodes: GenealogyFlowNode[],
   layouted: ElkNode
 ): GenealogyFlowNode[] {
-  const clanHeaders = nodes.filter((n) => n.type === 'clanHeader');
-  const graphNodes = nodes.filter((n) => n.type !== 'clanHeader');
-
   const layoutNodeById = new Map<string, ElkNode>();
   for (const child of layouted.children ?? []) {
     layoutNodeById.set(child.id, child);
   }
 
-  const updatedGraphNodes = graphNodes.map((node) => {
+  return nodes.map((node) => {
     const layoutNode = layoutNodeById.get(node.id);
     return {
       ...node,
@@ -148,24 +143,6 @@ export function applyElkLayoutResult(
       },
     };
   });
-
-  const graphNodeById = new Map(updatedGraphNodes.map((n) => [n.id, n]));
-
-  // Reposition clan headers right above their corresponding root card
-  const updatedHeaders = clanHeaders.map((header) => {
-    const rootId = header.id.replace(/^clan-header-/, '');
-    const rootNode = graphNodeById.get(rootId);
-    if (!rootNode) return header;
-    return {
-      ...header,
-      position: {
-        x: rootNode.position.x + FS_CARD_W / 2 - 120,
-        y: rootNode.position.y - 58,
-      },
-    };
-  });
-
-  return [...updatedHeaders, ...updatedGraphNodes];
 }
 
 interface PendingLayoutRequest {

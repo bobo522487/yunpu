@@ -192,10 +192,11 @@
   --lineage-minimap-node: oklch(0.72 0.045 64);
   --lineage-progenitor-bg: oklch(0.8 0.145 86);
   --lineage-progenitor-fg: oklch(0.24 0.04 55);
-  --lineage-male: oklch(0.56 0.115 240);
-  --lineage-male-fg: oklch(0.43 0.11 242);
-  --lineage-female: oklch(0.6 0.155 16);
-  --lineage-female-fg: oklch(0.46 0.135 16);
+  /* Solar Dusk 性别色走暖调（男性深琥珀/赭、女性暖棕褐），与琥珀主色/鎏金徽章靠色相+明度双重区分（ADR-0023 修订） */
+  --lineage-male: oklch(0.58 0.135 50);
+  --lineage-male-fg: oklch(0.44 0.12 48);
+  --lineage-female: oklch(0.74 0.085 68);
+  --lineage-female-fg: oklch(0.52 0.085 62);
   --lineage-unknown: oklch(0.66 0.032 65);
   --lineage-unknown-fg: oklch(0.46 0.042 58);
   --lineage-living: oklch(0.6 0.115 142);
@@ -258,10 +259,11 @@
   --lineage-minimap-node: oklch(0.56 0.045 60);
   --lineage-progenitor-bg: oklch(0.76 0.14 90);
   --lineage-progenitor-fg: oklch(0.2 0.04 55);
-  --lineage-male: oklch(0.66 0.105 240);
-  --lineage-male-fg: oklch(0.78 0.09 238);
-  --lineage-female: oklch(0.67 0.14 18);
-  --lineage-female-fg: oklch(0.79 0.115 18);
+  /* Solar Dusk 深色：暖调性别色整体提亮以在暗底可见（ADR-0023 修订） */
+  --lineage-male: oklch(0.72 0.125 52);
+  --lineage-male-fg: oklch(0.84 0.10 55);
+  --lineage-female: oklch(0.82 0.065 70);
+  --lineage-female-fg: oklch(0.88 0.055 72);
   --lineage-unknown: oklch(0.56 0.032 62);
   --lineage-unknown-fg: oklch(0.78 0.03 68);
   --lineage-living: oklch(0.69 0.115 145);

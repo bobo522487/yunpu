@@ -74,9 +74,6 @@ describe('lineageTheme 辅助函数与 CSS 令牌契约', () => {
 
   it('resolveMiniMapNodeColor 仅返回 CSS 令牌且清晰区分选中节点与一世始祖', () => {
     expect(
-      resolveMiniMapNodeColor({ id: 'header-1', type: 'clanHeader' }, 'p-1')
-    ).toBe('transparent');
-    expect(
       resolveMiniMapNodeColor({ id: 'union-1', type: 'union' }, 'p-1')
     ).toBe('var(--lineage-edge)');
 
@@ -146,5 +143,24 @@ describe('lineageTheme 辅助函数与 CSS 令牌契约', () => {
 
     const printBlock = extractCssBlock(domainCss, /@media print\s*\{/);
     expect(printBlock).toContain('--lineage-canvas-bg: #ffffff');
+
+    // The shared print palette is the Default preset's cool snapshot, so Solar
+    // Dusk needs its own warm override or printing silently reverts male nodes
+    // to blue.
+    const solarDuskPrintBlock = extractCssBlock(
+      printBlock,
+      /\[data-preset='solar-dusk'\],\s*\.dark\[data-preset='solar-dusk'\]\s*\{/
+    );
+    for (const token of ['--lineage-male', '--lineage-female']) {
+      const value = new RegExp(`${token}:\\s*#([0-9a-fA-F]{6})`).exec(
+        solarDuskPrintBlock
+      );
+      expect(value, `solar-dusk print missing ${token}`).not.toBeNull();
+      // Warm hue: red channel dominates blue for every Solar Dusk gender colour.
+      const [, hex] = value!;
+      const red = parseInt(hex.slice(0, 2), 16);
+      const blue = parseInt(hex.slice(4, 6), 16);
+      expect(red, `${token} print value is not warm`).toBeGreaterThan(blue);
+    }
   });
 });

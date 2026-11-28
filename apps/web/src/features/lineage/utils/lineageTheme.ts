@@ -73,7 +73,6 @@ export function resolveMiniMapNodeColor(
   node: MiniMapNodeLike,
   selectedPersonId?: string | null
 ): string {
-  if (node.type === 'clanHeader') return 'transparent';
   if (node.type === 'union') return 'var(--lineage-edge)';
   if (selectedPersonId && node.id === selectedPersonId) {
     return 'var(--primary)';

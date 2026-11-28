@@ -33,9 +33,10 @@ export function computeTopologySignature(
   });
 
   const collapsedKey = Array.from(collapsedNodeIds).sort().join(',');
-  const hasClanHeaderSurname = clanSurname.trim() ? '1' : '0';
+  // Clan surname feeds person/union display names, so its presence is structural.
+  const hasClanSurname = clanSurname.trim() ? '1' : '0';
 
-  return `${hasClanHeaderSurname}::${collapsedKey}::${personEntries.join(';')}`;
+  return `${hasClanSurname}::${collapsedKey}::${personEntries.join(';')}`;
 }
 
 function formatUnionMemberName(
@@ -137,24 +138,6 @@ export function patchFlowNodesAttributes(
           ...node.data,
           fatherName: nextFatherName,
           spouseName: nextSpouseName,
-        },
-      };
-    }
-
-    if (node.type === 'clanHeader') {
-      const rootId = node.id.replace(/^clan-header-/, '');
-      const root = graph.personById.get(rootId);
-      const surname = root?.surname?.trim() || clanSurname.trim();
-      if (!surname) return node;
-      const nextLabel = surname.endsWith('氏') ? surname : `${surname} 氏`;
-      if (node.data.label === nextLabel) return node;
-
-      mutated = true;
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          label: nextLabel,
         },
       };
     }

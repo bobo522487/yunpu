@@ -138,6 +138,23 @@
     --lineage-unknown-fg: #374151 !important;
   }
 
+  /*
+   * The print palette above is the Default preset's cool snapshot. Solar Dusk must
+   * keep its own warm gender family on paper too, otherwise printing silently
+   * reverts male nodes to blue. Placed after the shared block so it wins on equal
+   * specificity; values are the paper-safe (>=3:1 on white) counterparts of the
+   * on-screen Solar Dusk tokens.
+   */
+  [data-preset='solar-dusk'],
+  .dark[data-preset='solar-dusk'] {
+    --lineage-male: #b45309 !important;
+    --lineage-male-fg: #92400e !important;
+    --lineage-female: #a8763e !important;
+    --lineage-female-fg: #7a5024 !important;
+    --lineage-unknown: #78716c !important;
+    --lineage-unknown-fg: #44403c !important;
+  }
+
   aside,
   header,
   [data-no-print='true'] {

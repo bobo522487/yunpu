@@ -164,7 +164,7 @@ describe('elkLayout Web Worker migration', () => {
     assert.equal(factoryCalls, 0);
   });
 
-  test('computes valid non-overlapping layered coordinates and clanHeader offset via real elkjs worker thread', async () => {
+  test('computes valid non-overlapping layered coordinates via real elkjs worker thread', async () => {
     const runner = createElkLayoutRunner({
       workerFactory: createNodeThreadWorker,
     });
@@ -249,9 +249,8 @@ describe('elkLayout Web Worker migration', () => {
     const c1Node = byId.get('p-c1');
     const c2Node = byId.get('p-c2');
     const gc1Node = byId.get('p-gc1');
-    const headerNode = byId.get('clan-header-p-root');
 
-    assert.ok(rootNode && c1Node && c2Node && gc1Node && headerNode);
+    assert.ok(rootNode && c1Node && c2Node && gc1Node);
     assert.equal(rootNode.type, 'person');
     assert.equal(rootNode.data.onSelect, onSelect);
     assert.ok(rootNode.position.y < c1Node.position.y);
@@ -263,10 +262,6 @@ describe('elkLayout Web Worker migration', () => {
       horizontalGap >= FS_CARD_W,
       `Expected siblings separated by >= ${FS_CARD_W}px, got ${horizontalGap}`
     );
-
-    // Clan header positioned directly above root card
-    assert.equal(headerNode.position.x, rootNode.position.x + FS_CARD_W / 2 - 120);
-    assert.equal(headerNode.position.y, rootNode.position.y - 58);
 
     // All person cards have non-overlapping bounding boxes
     const personNodes = layouted.filter((n) => n.type === 'person');

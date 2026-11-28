@@ -15,7 +15,6 @@ import {
 import '@xyflow/react/dist/style.css';
 import { type PersonRecord } from '../types';
 import { PersonNode } from './nodes/PersonNode';
-import { ClanHeaderNode } from './nodes/ClanHeaderNode';
 import { UnionNode } from './nodes/UnionNode';
 import { GenealogyEdge } from './edges/GenealogyEdge';
 import { buildGenealogyGraph } from './utils/layoutBuilder';
@@ -41,7 +40,6 @@ import { resolveMiniMapNodeColor } from '../utils/lineageTheme';
 
 const nodeTypes = {
   person: PersonNode,
-  clanHeader: ClanHeaderNode,
   union: UnionNode,
 };
 

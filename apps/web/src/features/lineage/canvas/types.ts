@@ -36,18 +36,10 @@ export interface UnionNodeData extends Record<string, unknown> {
   onToggleCollapse?: (personId: string) => void;
 }
 
-export interface ClanHeaderNodeData extends Record<string, unknown> {
-  label: string;
-}
-
 export type PersonFlowNode = Node<PersonNodeData, 'person'>;
 export type UnionFlowNode = Node<UnionNodeData, 'union'>;
-export type ClanHeaderFlowNode = Node<ClanHeaderNodeData, 'clanHeader'>;
 
-export type GenealogyFlowNode =
-  | PersonFlowNode
-  | UnionFlowNode
-  | ClanHeaderFlowNode;
+export type GenealogyFlowNode = PersonFlowNode | UnionFlowNode;
 
 export type GenealogyFlowEdge = Edge<{
   relationship?:

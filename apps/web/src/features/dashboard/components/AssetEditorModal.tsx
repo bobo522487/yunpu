@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { type AssetColorTheme } from '../../../types';
 import {
   ASSET_COLOR_PALETTES,
-} from '../../../store/useWorkspaceStore';
+} from '../projectView';
 import { usePreferencesStore } from '../../../store/usePreferencesStore';
 import { FamilyIcon } from '@/components/common/FamilyIcon';
 import { AppColoredIcon } from '../../../components/common/YunpuIcons';

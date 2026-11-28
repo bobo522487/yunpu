@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
-import { usePreferencesStore } from '@/store/usePreferencesStore'
-import { ChevronsLeft, Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useSearch } from '@/context/search-provider'
 import { BookListPanel } from '@/features/books/components/BookListPanel'
 import { ArticleTreePanel } from '@/features/project/components/ArticleTreePanel'
@@ -9,7 +9,8 @@ import { LineageTreePanel } from '@/features/project/components/LineageTreePanel
 type ProjectSidebarProps = {
   projectId: string
   width?: number | string
-  onClose?: () => void
+  id?: string
+  inDrawer?: boolean
 }
 
 const sectionTitles: Record<string, string> = {
@@ -21,19 +22,14 @@ const sectionTitles: Record<string, string> = {
 export function ProjectSidebar({
   projectId,
   width,
-  onClose,
+  id,
+  inDrawer = false,
 }: ProjectSidebarProps) {
   const pathname = useLocation({ select: (location) => location.pathname })
   const section = pathname.startsWith(`/projects/${projectId}/`)
     ? (pathname.split('/')[3] ?? '')
     : ''
   const { setOpen: openSearch } = useSearch()
-  const setCollapsed = usePreferencesStore((s) => s.setProjectSidebarCollapsed)
-
-  const collapse = () => {
-    setCollapsed(true)
-    onClose?.()
-  }
 
   const panel =
     section === 'lineage' ? (
@@ -48,14 +44,21 @@ export function ProjectSidebar({
 
   return (
     <aside
+      id={id}
       data-testid='nc-sidebar'
       data-panel='business-sidebar'
       style={{ width }}
-      className='relative z-30 flex h-full shrink-0 flex-col border-r border-border bg-background select-none'
+      className={cn(
+        'relative flex h-full shrink-0 flex-col bg-background select-none',
+        !inDrawer && 'z-30'
+      )}
     >
       <div
         data-testid='nc-sidebar-header'
-        className='relative flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-[var(--surface-subtle)] px-3.5 md:h-14'
+        className={cn(
+          'relative flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-[var(--surface-subtle)] ps-3.5 md:h-14',
+          inDrawer ? 'pe-11' : 'pe-3.5'
+        )}
       >
         <span className='truncate text-[14px] font-semibold text-foreground'>
           {sectionTitles[section]}
@@ -68,29 +71,8 @@ export function ProjectSidebar({
             onClick={() => openSearch(true)}
             className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
           >
-            <Search size={14} />
+            <Search size={14} aria-hidden='true' />
           </button>
-          <button
-            type='button'
-            title='隐藏侧边栏'
-            aria-label='隐藏侧边栏'
-            data-testid='nc-sidebar-collapse-btn'
-            onClick={collapse}
-            className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-          >
-            <ChevronsLeft size={15} />
-          </button>
-          {onClose && (
-            <button
-              type='button'
-              title='关闭侧边栏'
-              aria-label='关闭侧边栏'
-              onClick={onClose}
-              className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--surface-hover)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-            >
-              <X size={14} />
-            </button>
-          )}
         </div>
       </div>
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-background'>

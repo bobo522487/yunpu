@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronsUpDown, Command, Home, Settings } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/useAuthStore'
+import { useCurrentOrganization } from '@/features/dashboard/queries'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ import {
 
 export function AppTitle() {
   const { isMobile } = useSidebar()
-  const organization = useAuthStore((s) => s.defaultOrganization)
+  const organization = useCurrentOrganization()
 
   return (
     <SidebarMenu>

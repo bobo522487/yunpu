@@ -15,8 +15,15 @@ export const useResizable = ({
   edge, 
   leftOffset = 0 
 }: UseResizableProps) => {
-  const [width, setWidth] = useState(initialWidth);
+  const [width, setWidthState] = useState(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
+
+  // 宽度必须落在整数像素上，否则分隔线会骑在半个设备像素上被摊成两条。
+  const setWidth = useCallback(
+    (next: number) =>
+      setWidthState(Math.min(maxWidth, Math.max(minWidth, Math.round(next)))),
+    [minWidth, maxWidth]
+  );
 
   const startResizing = useCallback(() => setIsResizing(true), []);
   const stopResizing = useCallback(() => setIsResizing(false), []);
@@ -36,8 +43,6 @@ export const useResizable = ({
           ? e.clientX - leftOffset
           : document.body.clientWidth - e.clientX;
 
-      if (nextRaw < minWidth || nextRaw > maxWidth) return;
-
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         setWidth(nextRaw);
@@ -56,7 +61,7 @@ export const useResizable = ({
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isResizing, edge, leftOffset, minWidth, maxWidth, stopResizing]);
+  }, [isResizing, edge, leftOffset, setWidth, stopResizing]);
 
   return { width, setWidth, isResizing, startResizing };
 };

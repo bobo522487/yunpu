@@ -1,22 +1,14 @@
 import { useMemo } from 'react';
 import type { ProjectArticleSeedContext } from '../features/articles/types';
+import { useProjectQuery } from '../features/dashboard/queries';
 import { surnameOf } from '../features/dashboard/projectView';
 import { parsePlaceText } from '../features/place-input';
-import { useWorkspaceStore } from '../store/useWorkspaceStore';
 import { useProjectId } from './useProjectId';
 
 export function useActiveProject() {
   const projectId = useProjectId();
-  const projects = useWorkspaceStore((s) => s.projects);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-
-  const project = useMemo(
-    () =>
-      projects.find((p) => p.id === projectId) ||
-      projects.find((p) => p.organizationId === activeWorkspaceId) ||
-      projects[0],
-    [projects, projectId, activeWorkspaceId],
-  );
+  const projectQuery = useProjectQuery(projectId);
+  const project = projectQuery.data;
 
   const surname = surnameOf(project);
 

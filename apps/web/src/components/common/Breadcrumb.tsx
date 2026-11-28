@@ -15,12 +15,16 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
-import { createProjectRequest } from '../../features/dashboard/api'
 import type { AssetEditorSubmitValues } from '../../features/dashboard/components/AssetEditorModal'
 import { toCreateProjectPayload } from '../../features/dashboard/projectPayload'
+import {
+  useCurrentOrganizationId,
+  useOrganizationProjectActions,
+  useProjectQuery,
+  useProjectSwitcherQuery,
+} from '../../features/dashboard/queries'
 import { useProjectId } from '../../hooks/useProjectId'
 import { errorMessage } from '../../lib/api'
-import { useWorkspaceStore } from '../../store/useWorkspaceStore'
 import { FamilyIcon } from './FamilyIcon'
 import { ProjectColoredIcon } from './YunpuIcons'
 
@@ -49,11 +53,12 @@ const Breadcrumb: React.FC = () => {
   const isWorkspaceShell = !params.projectId
   const activeProjectId = useProjectId()
 
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
-  const projects = useWorkspaceStore((s) => s.projects)
-  const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId)
-  const syncProject = useWorkspaceStore((s) => s.syncProject)
-  const duplicateProject = useWorkspaceStore((s) => s.duplicateProject)
+  const activeOrgId = useCurrentOrganizationId()
+  const projectQuery = useProjectQuery(activeProjectId, {
+    enabled: !isWorkspaceShell && Boolean(activeProjectId),
+  })
+  const { createProject, duplicateProject, primeProjectCache } =
+    useOrganizationProjectActions()
 
   const [isProjMenuOpen, setIsProjMenuOpen] = useState(false)
   const [projSearch, setProjSearch] = useState('')
@@ -87,13 +92,9 @@ const Breadcrumb: React.FC = () => {
     }
   }, [])
 
-  const workspaceProjects = projects.filter(
-    (p) => p.organizationId === activeWorkspaceId
-  )
-  const activeProject =
-    projects.find((p) => p.id === activeProjectId) ||
-    workspaceProjects[0] ||
-    projects[0]
+  const switcherQuery = useProjectSwitcherQuery(activeOrgId, isProjMenuOpen)
+  const workspaceProjects = switcherQuery.data?.items ?? []
+  const activeProject = isWorkspaceShell ? undefined : projectQuery.data
 
   const filteredProjects = workspaceProjects.filter((p) =>
     p.name.toLowerCase().includes(projSearch.toLowerCase())
@@ -148,17 +149,16 @@ const Breadcrumb: React.FC = () => {
   }
 
   const handleCreateProject = async (values: AssetEditorSubmitValues) => {
+    if (!activeOrgId) return
     setCreateError(null)
     setCreatingProject(true)
     try {
       const payload = toCreateProjectPayload(values)
-      const result = await createProjectRequest(activeWorkspaceId, payload)
-      syncProject(result.project)
-      setActiveProjectId(result.project.id)
+      const created = await createProject(activeOrgId, payload)
       setIsCreateProjectOpen(false)
       void navigate({
         to: '/projects/$projectId',
-        params: { projectId: result.project.id },
+        params: { projectId: created.id },
       })
     } catch (error) {
       setCreateError(errorMessage(error))
@@ -287,7 +287,7 @@ const Breadcrumb: React.FC = () => {
                       type='button'
                       onClick={() => {
                         setIsProjMenuOpen(false)
-                        setActiveProjectId(proj.id)
+                        primeProjectCache(proj)
                         void navigate({
                           to: '/projects/$projectId',
                           params: { projectId: proj.id },
@@ -307,10 +307,16 @@ const Breadcrumb: React.FC = () => {
                     </button>
                   )
                 })}
-                {filteredProjects.length === 0 && (
+                {switcherQuery.isPending && filteredProjects.length === 0 ? (
                   <div className='px-2 py-3 text-center text-[12px] text-muted-foreground'>
-                    未找到匹配家族
+                    加载家族列表...
                   </div>
+                ) : (
+                  filteredProjects.length === 0 && (
+                    <div className='px-2 py-3 text-center text-[12px] text-muted-foreground'>
+                      未找到匹配家族
+                    </div>
+                  )
                 )}
               </div>
 
@@ -337,7 +343,6 @@ const Breadcrumb: React.FC = () => {
                         setIsProjMenuOpen(false)
                         void duplicateProject(activeProject.id)
                           .then((copy) => {
-                            if (!copy) return
                             void navigate({
                               to: '/projects/$projectId',
                               params: { projectId: copy.id },

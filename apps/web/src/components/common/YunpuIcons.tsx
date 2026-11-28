@@ -1,6 +1,6 @@
 import React from 'react';
 import { type AssetColorTheme } from '../../types';
-import { ASSET_COLOR_PALETTES } from '../../store/useWorkspaceStore';
+import { ASSET_COLOR_PALETTES } from '../../features/dashboard/projectView';
 
 export const WorkspaceLogoIcon: React.FC<{ className?: string }> = ({
   className = 'w-7 h-7',

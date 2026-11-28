@@ -194,17 +194,7 @@ test('setUserName updates active user name and clearError resets error', () => {
 
 test('signOut and markUnauthorized reset tenant workspace state to prevent cross-account leaks', async () => {
   useWorkspaceStore.setState({
-    workspaces: [
-      {
-        id: 'org-1',
-        name: '甲家族',
-        kind: 'team',
-        color: '#057091',
-        plan: '组织',
-        createdAt: '2026-01-01',
-      },
-    ],
-    activeWorkspaceId: 'org-1',
+    activeOrganizationId: 'org-1',
     activeProjectId: 'proj-1',
     zibeiByProject: { 'proj-1': ['仁', '义'] },
   });
@@ -221,23 +211,12 @@ test('signOut and markUnauthorized reset tenant workspace state to prevent cross
 
   await useAuthStore.getState().signOut();
   let ws = useWorkspaceStore.getState();
-  assert.deepEqual(ws.workspaces, []);
-  assert.equal(ws.activeWorkspaceId, '');
+  assert.equal(ws.activeOrganizationId, '');
   assert.equal(ws.activeProjectId, '');
   assert.deepEqual(ws.zibeiByProject, {});
 
   useWorkspaceStore.setState({
-    workspaces: [
-      {
-        id: 'org-2',
-        name: '乙家族',
-        kind: 'team',
-        color: '#057091',
-        plan: '组织',
-        createdAt: '2026-01-01',
-      },
-    ],
-    activeWorkspaceId: 'org-2',
+    activeOrganizationId: 'org-2',
     activeProjectId: 'proj-2',
   });
   useAuthStore.setState({
@@ -250,7 +229,6 @@ test('signOut and markUnauthorized reset tenant workspace state to prevent cross
 
   useAuthStore.getState().markUnauthorized();
   ws = useWorkspaceStore.getState();
-  assert.deepEqual(ws.workspaces, []);
-  assert.equal(ws.activeWorkspaceId, '');
+  assert.equal(ws.activeOrganizationId, '');
   assert.equal(ws.activeProjectId, '');
 });

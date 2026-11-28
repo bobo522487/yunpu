@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useRef, useState } from 'react';
 import { RotateCcw, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -10,13 +9,10 @@ import {
   parsePlaceText,
 } from '../../place-input';
 import { useProjectId } from '../../../hooks/useProjectId';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import {
-  deleteProjectRequest,
-  fetchProject,
-  updateProjectRequest,
-} from '../../dashboard/api';
-import { dashboardKeys, useProjectQuery } from '../../dashboard/queries';
+  useOrganizationProjectActions,
+  useProjectQuery,
+} from '../../dashboard/queries';
 import { uploadProjectMediaRequest } from '../../lineage/api';
 import { errorMessage } from '../../../lib/api';
 import {
@@ -40,29 +36,15 @@ type SettingsDraft = FamilyProfileFormValues & {
 
 const ProjectSettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const activeProjectId = useProjectId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { updateProject, deleteProject } = useOrganizationProjectActions();
 
-  const projects = useWorkspaceStore((s) => s.projects);
-  const syncProject = useWorkspaceStore((s) => s.syncProject);
-  const dropProject = useWorkspaceStore((s) => s.dropProject);
-
-  const cachedProject =
-    projects.find((p) => p.id === activeProjectId) || projects[0];
-  const targetProjectId = cachedProject?.id || activeProjectId;
-
-  // 本地种子或离线项目未能命中服务端时，保留本地 store 数据展示。
+  const targetProjectId = activeProjectId;
   const projectQuery = useProjectQuery(targetProjectId, { retry: false });
 
-  useEffect(() => {
-    if (projectQuery.data) {
-      syncProject(projectQuery.data);
-    }
-  }, [projectQuery.data, syncProject]);
-
-  const activeProject = projectQuery.data ?? cachedProject;
-  const expectedVersion = projectQuery.data?.version ?? null;
+  const activeProject = projectQuery.data;
+  const expectedVersion = projectQuery.data?.version;
 
   const baseValues = useMemo<SettingsDraft>(
     () => ({
@@ -160,13 +142,7 @@ const ProjectSettingsPage: React.FC = () => {
     const trimmedDesc = values.description.trim();
 
     try {
-      let versionStamp = expectedVersion;
-      if (versionStamp == null) {
-        const latest = await fetchProject(targetProjectId);
-        versionStamp = latest.project.version;
-      }
-
-      const { project } = await updateProjectRequest(targetProjectId, {
+      await updateProject(targetProjectId, {
         name: trimmedName,
         surname: trimmedSurname || null,
         ancestor: trimmedAncestor || null,
@@ -174,12 +150,9 @@ const ProjectSettingsPage: React.FC = () => {
         originText: formattedRegion || null,
         description: trimmedDesc || null,
         iconKey: values.iconKey,
-        version: versionStamp,
+        version: expectedVersion,
       });
 
-      syncProject(project);
-      queryClient.setQueryData(dashboardKeys.project(targetProjectId), project);
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       setDraft(null);
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 2000);
@@ -195,9 +168,7 @@ const ProjectSettingsPage: React.FC = () => {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await deleteProjectRequest(targetProjectId);
-      dropProject(targetProjectId);
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      await deleteProject(targetProjectId);
       void navigate({ to: '/' });
     } catch (err) {
       setDeleteError(errorMessage(err));

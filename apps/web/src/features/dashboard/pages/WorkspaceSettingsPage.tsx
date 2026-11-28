@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { errorMessage } from '../../../lib/api';
 import { useAuthStore } from '../../auth/useAuthStore';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import {
   changePasswordRequest,
   updateAccountRequest,
-  updateOrganizationRequest,
 } from '../api';
 import {
   dashboardKeys,
   useAccountQuery,
+  useCurrentOrganizationId,
+  useOrganizationProjectActions,
   useOrganizationQuery,
 } from '../queries';
 import PageSkeleton from '../components/PageSkeleton';
@@ -25,7 +25,9 @@ import ConfirmDialog from '../components/ConfirmDialog';
 const WorkspaceSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const activeWorkspaceId = useCurrentOrganizationId();
+  const { renameOrganization, archiveOrganization } =
+    useOrganizationProjectActions();
 
   const orgQuery = useOrganizationQuery(activeWorkspaceId);
   const accountQuery = useAccountQuery();
@@ -64,14 +66,7 @@ const WorkspaceSettingsPage: React.FC = () => {
     setOrgSaving(true);
     setOrgMessage(null);
     try {
-      await updateOrganizationRequest(activeWorkspaceId, {
-        name: orgName.trim(),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: dashboardKeys.organization(activeWorkspaceId),
-      });
-      // 刷新侧栏切换器里的组织名，避免与设置页不一致。
-      await useWorkspaceStore.getState().hydrateFromApi().catch(() => {});
+      await renameOrganization(activeWorkspaceId, orgName);
       setOrgNameDraft(null);
       setOrgMessage('组织名称已保存');
     } catch (error) {
@@ -86,17 +81,12 @@ const WorkspaceSettingsPage: React.FC = () => {
     setArchiveOpen(false);
     setOrgMessage(null);
     try {
-      await updateOrganizationRequest(activeWorkspaceId, { status: 'archived' });
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-      // 归档后去向（FR-013）：自动进入下一个可用组织；没有则引导状态。
-      const store = useWorkspaceStore.getState();
-      await store.hydrateFromApi();
-      const after = useWorkspaceStore.getState();
-      if (after.workspaces.length === 0) {
+      const { nextOrganization } = await archiveOrganization(activeWorkspaceId);
+      // 归档后去向（FR-013）：自动进入下一个可用组织；没有则进入引导状态。
+      if (!nextOrganization) {
         void navigate({ to: '/onboarding', replace: true });
         return;
       }
-      await after.setCurrentOrganization(after.activeWorkspaceId);
       void navigate({ to: '/home', replace: true });
     } catch (error) {
       setOrgMessage(errorMessage(error));

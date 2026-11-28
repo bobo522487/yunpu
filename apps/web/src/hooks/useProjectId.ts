@@ -8,6 +8,5 @@ import { useWorkspaceStore } from '../store/useWorkspaceStore';
 export function useProjectId(): string {
   const params = useParams({ strict: false }) as { projectId?: string };
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
-  const firstProjectId = useWorkspaceStore((s) => s.projects[0]?.id ?? '');
-  return params.projectId || activeProjectId || firstProjectId;
+  return params.projectId || activeProjectId;
 }

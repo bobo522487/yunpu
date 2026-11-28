@@ -1,5 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { lazy, Suspense, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
@@ -19,14 +18,12 @@ const AssetEditorModal = lazy(() =>
     default: m.AssetEditorModal,
   }))
 );
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import { useArticlesDirectoryQuery } from '../../articles/queries';
 import { useBooksQuery } from '../../books/queries';
 import {
-  fetchProject,
-  updateProjectRequest,
-} from '../../dashboard/api';
-import { dashboardKeys, useProjectQuery } from '../../dashboard/queries';
+  useOrganizationProjectActions,
+  useProjectQuery,
+} from '../../dashboard/queries';
 import { toCreateProjectPayload } from '../../dashboard/projectPayload';
 import { errorMessage } from '../../../lib/api';
 import {
@@ -40,37 +37,22 @@ import {
 
 const ProjectHomePage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const activeProjectId = useProjectId();
-
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const projects = useWorkspaceStore((s) => s.projects);
-  const syncProject = useWorkspaceStore((s) => s.syncProject);
+  const { updateProject } = useOrganizationProjectActions();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  const cachedProject =
-    projects.find((p) => p.id === activeProjectId) ||
-    projects.find((p) => p.organizationId === activeWorkspaceId) ||
-    projects[0];
-  const targetProjectId = cachedProject?.id || activeProjectId;
+  const targetProjectId = activeProjectId;
 
-  // 本地种子或离线项目未能命中服务端时保留本地展示。
   const projectQuery = useProjectQuery(targetProjectId, { retry: false });
   const articlesDirQuery = useArticlesDirectoryQuery(targetProjectId);
   const booksQuery = useBooksQuery(targetProjectId);
   const projectBooks = booksQuery.data;
 
-  useEffect(() => {
-    if (projectQuery.data) {
-      syncProject(projectQuery.data);
-    }
-  }, [projectQuery.data, syncProject]);
-
-  const activeProject = projectQuery.data ?? cachedProject;
-  const expectedVersion = projectQuery.data?.version ?? null;
+  const activeProject = projectQuery.data;
+  const expectedVersion = projectQuery.data?.version;
   const projectStatus = projectQuery.data?.status ?? null;
 
   const articleCount = articlesDirQuery.data
@@ -120,14 +102,9 @@ const ProjectHomePage: React.FC = () => {
     setSaving(true);
     setEditError(null);
     try {
-      let versionStamp = expectedVersion;
-      if (versionStamp == null) {
-        const latest = await fetchProject(targetProjectId);
-        versionStamp = latest.project.version;
-      }
       const payload = toCreateProjectPayload(values);
       const { status: _formStatus, ...payloadWithoutStatus } = payload;
-      const { project } = await updateProjectRequest(targetProjectId, {
+      await updateProject(targetProjectId, {
         ...payloadWithoutStatus,
         ...(projectStatus !== null ? { status: projectStatus } : {}),
         surname: payload.surname ?? null,
@@ -135,14 +112,8 @@ const ProjectHomePage: React.FC = () => {
         hallName: payload.hallName ?? null,
         originText: payload.originText ?? null,
         description: payload.description ?? null,
-        version: versionStamp,
+        version: expectedVersion,
       });
-      syncProject(project);
-      queryClient.setQueryData(
-        dashboardKeys.project(targetProjectId),
-        project,
-      );
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       setIsEditOpen(false);
     } catch (err) {
       setEditError(errorMessage(err));

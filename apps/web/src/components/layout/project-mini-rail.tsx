@@ -8,7 +8,7 @@ import {
   Settings2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useWorkspaceStore } from '@/store/useWorkspaceStore'
+import { useProjectQuery } from '@/features/dashboard/queries'
 import { FamilyIcon } from '@/components/common/FamilyIcon'
 import {
   Tooltip,
@@ -60,8 +60,7 @@ type ProjectMiniRailProps = {
 
 export function ProjectMiniRail({ projectId }: ProjectMiniRailProps) {
   const pathname = useLocation({ select: (location) => location.pathname })
-  const projects = useWorkspaceStore((s) => s.projects)
-  const activeProject = projects.find((p) => p.id === projectId)
+  const { data: activeProject } = useProjectQuery(projectId)
 
   const basePath = `/projects/${projectId}`
   const section = pathname.startsWith(`${basePath}/`)

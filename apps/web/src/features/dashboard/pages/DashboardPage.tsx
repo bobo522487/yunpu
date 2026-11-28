@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { FolderPlus, X } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,10 @@ import { errorMessage } from '../../../lib/api';
 import { directoryToTreeItems, graphToPersonRecords } from '../../lineage/adapter';
 import { fetchLineageDirectory, fetchLineageGraph } from '../../lineage/api';
 import { lineageKeys } from '../../lineage/queries';
+import { type ProjectRecord } from '../api';
 import {
-  createProjectRequest,
-  deleteProjectRequest,
-  updateProjectRequest,
-  type ProjectRecord,
-} from '../api';
-import {
-  dashboardKeys,
+  useCurrentOrganizationId,
+  useOrganizationProjectActions,
   useOrganizationQuery,
   useProjectsInfiniteQuery,
 } from '../queries';
@@ -40,20 +36,15 @@ const EMPTY_ZIBEI_BY_PROJECT: Record<string, string[]> = {};
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const user = useCurrentUserProfile();
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const activeWorkspaceId = useCurrentOrganizationId();
   const activeProjectId = useWorkspaceStore((s) => s.activeProjectId);
   const zibeiByProject = useWorkspaceStore(
     (s) => s.zibeiByProject ?? EMPTY_ZIBEI_BY_PROJECT,
   );
   const setProjectZibei = useWorkspaceStore((s) => s.setProjectZibei);
-  const syncProject = useWorkspaceStore((s) => s.syncProject);
-  const syncWorkspaceProjects = useWorkspaceStore(
-    (s) => s.syncWorkspaceProjects,
-  );
-  const dropProject = useWorkspaceStore((s) => s.dropProject);
-  const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
+  const { createProject, updateProject, deleteProject, primeProjectCache } =
+    useOrganizationProjectActions();
 
   const [formDialog, setFormDialog] = useState<{
     mode: 'create' | 'edit';
@@ -117,11 +108,6 @@ const DashboardPage: React.FC = () => {
     .join('|');
   const bookCounts = booksQueries.map((q) => q.data?.length ?? 0);
 
-  useEffect(() => {
-    if (activeWorkspaceId && projectsQuery.data) {
-      syncWorkspaceProjects(activeWorkspaceId, projects);
-    }
-  }, [activeWorkspaceId, projectsQuery.data, projects, syncWorkspaceProjects]);
 
   useEffect(() => {
     if (!actionNotice) return;
@@ -168,8 +154,7 @@ const DashboardPage: React.FC = () => {
     project: ProjectRecord,
     subPath: '' | '/lineage' | '/articles' | '/books' = ''
   ) => {
-    syncProject(project);
-    setActiveProjectId(project.id);
+    primeProjectCache(project);
     const routeMap = {
       '': '/projects/$projectId',
       '/lineage': '/projects/$projectId/lineage',
@@ -247,14 +232,12 @@ const DashboardPage: React.FC = () => {
     try {
       const payload = toCreateProjectPayload(values);
       if (formDialog.mode === 'create') {
-        const created = await createProjectRequest(activeWorkspaceId, payload);
-        syncProject(created.project);
-        await queryClient.invalidateQueries({
-          queryKey: lineageKeys.directory(created.project.id),
+        await createProject(activeWorkspaceId, payload, {
+          selectProject: false,
         });
       } else if (formDialog.project) {
         const original = formDialog.project;
-        const updated = await updateProjectRequest(original.id, {
+        await updateProject(original.id, {
           ...payload,
           surname: payload.surname ?? null,
           ancestor: payload.ancestor ?? null,
@@ -264,9 +247,7 @@ const DashboardPage: React.FC = () => {
           projectLevel: values.projectLevel ?? original.projectLevel,
           version: original.version,
         });
-        syncProject(updated.project);
       }
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       setFormDialog(null);
     } catch (err) {
       setFormError(errorMessage(err));
@@ -279,9 +260,7 @@ const DashboardPage: React.FC = () => {
     if (!deleteTarget) return;
     setActionError(null);
     try {
-      await deleteProjectRequest(deleteTarget.id);
-      dropProject(deleteTarget.id);
-      await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+      await deleteProject(deleteTarget.id);
       setDeleteTarget(null);
     } catch (error) {
       setActionError(errorMessage(error));

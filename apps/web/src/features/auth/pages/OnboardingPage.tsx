@@ -7,13 +7,14 @@ import { Label } from '@/components/ui/label';
 import { errorMessage } from '../../../lib/api';
 import { acceptInviteRequest, createOrganizationRequest } from '../api';
 import { useAuthStore } from '../useAuthStore';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
+import { useOrganizationProjectActions } from '../../dashboard/queries';
 
 const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const status = useAuthStore((s) => s.status);
   const defaultOrganization = useAuthStore((s) => s.defaultOrganization);
   const refreshSession = useAuthStore((s) => s.refreshSession);
+  const { switchOrganization } = useOrganizationProjectActions();
 
   const [name, setName] = useState('');
   const [token, setToken] = useState('');
@@ -41,12 +42,9 @@ const OnboardingPage: React.FC = () => {
     try {
       const result = await action();
       await refreshSession();
-      // 接受邀请 / 创建组织后把当前组织上下文切到该组织：
-      // 否则 hydrate 会沿用本地持久化的旧组织，落点不随默认组织切换（spec 002 US4 场景 2）。
+      // 接受邀请 / 创建组织后通过深模块切换并同步当前会话组织（spec 002 US4 场景 2）。
       if (result?.organization?.id) {
-        await useWorkspaceStore
-          .getState()
-          .setCurrentOrganization(result.organization.id);
+        await switchOrganization(result.organization.id);
       }
       void navigate({ to: '/home', replace: true });
     } catch (caught) {

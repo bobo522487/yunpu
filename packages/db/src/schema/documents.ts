@@ -2,10 +2,15 @@ import {
   ARTICLE_DOC_TYPES,
   ARTICLE_PRIVACIES,
   ARTICLE_STATUSES,
+  type ArticleCitationInput,
+  type ArticleContentJson,
   BOOK_BINDING_STYLES,
   BOOK_EDITION_PRINT_STATUSES,
   BOOK_LINEAGE_STYLES,
   BOOK_PAPER_SIZES,
+  type BookLayoutConfigInput,
+  type BookSectionsInput,
+  type CompiledPage,
 } from "@yunpu/shared";
 import { sql } from "drizzle-orm";
 import {
@@ -51,16 +56,22 @@ export const article = pgTable(
       .notNull()
       .default("clan"),
     contentJson: jsonb("content_json")
+      .$type<ArticleContentJson>()
       .notNull()
       .default(sql`'{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb`),
     contentHtml: text("content_html").notNull().default("<p></p>"),
     linkedPersonIds: jsonb("linked_person_ids")
+      .$type<string[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
     linkedChartIds: jsonb("linked_chart_ids")
+      .$type<string[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
-    citations: jsonb("citations").notNull().default(sql`'[]'::jsonb`),
+    citations: jsonb("citations")
+      .$type<ArticleCitationInput[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     wordCount: integer("word_count").notNull().default(0),
     version: integer("version").notNull().default(1),
     updatedBy: uuid("updated_by"),
@@ -126,7 +137,7 @@ export const articleRevision = pgTable(
     version: integer("version").notNull(),
     title: text("title").notNull(),
     status: text("status", { enum: ARTICLE_STATUSES }).notNull(),
-    contentJson: jsonb("content_json").notNull(),
+    contentJson: jsonb("content_json").$type<ArticleContentJson>().notNull(),
     contentHtml: text("content_html").notNull(),
     wordCount: integer("word_count").notNull().default(0),
     summary: text("summary").notNull().default(""),
@@ -191,8 +202,8 @@ export const book = pgTable(
     volumeNo: text("volume_no").notNull().default("卷一"),
     editor: text("editor").notNull().default(""),
     compilationDate: text("compilation_date").notNull().default(""),
-    sections: jsonb("sections").notNull(),
-    layoutConfig: jsonb("layout_config").notNull(),
+    sections: jsonb("sections").$type<BookSectionsInput>().notNull(),
+    layoutConfig: jsonb("layout_config").$type<BookLayoutConfigInput>().notNull(),
     seq: integer("seq").notNull().default(0),
     version: integer("version").notNull().default(1),
     createdAt,
@@ -246,8 +257,10 @@ export const bookEdition = pgTable(
     printStatus: text("print_status", { enum: BOOK_EDITION_PRINT_STATUSES })
       .notNull()
       .default("none"),
-    layoutSnapshot: jsonb("layout_snapshot").notNull(),
-    pages: jsonb("pages").notNull(),
+    layoutSnapshot: jsonb("layout_snapshot")
+      .$type<BookLayoutConfigInput>()
+      .notNull(),
+    pages: jsonb("pages").$type<CompiledPage[]>().notNull(),
     createdAt,
   },
   (table) => [

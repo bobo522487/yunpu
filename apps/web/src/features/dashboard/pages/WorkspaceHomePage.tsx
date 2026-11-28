@@ -1,14 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import { ArrowRight, FolderPlus, UserPlus } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useCurrentUserProfile } from '../../../hooks/useCurrentUserProfile';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
-import { lineageKeys } from '../../lineage/queries';
 import { errorMessage } from '../../../lib/api';
-import { createProjectRequest } from '../api';
 import {
-  dashboardKeys,
+  useCurrentOrganizationId,
+  useOrganizationProjectActions,
   useOrganizationQuery,
   useProjectsQuery,
 } from '../queries';
@@ -22,14 +19,9 @@ import { toCreateProjectPayload } from '../projectPayload';
 
 const WorkspaceHomePage: React.FC = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const user = useCurrentUserProfile();
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
-  const syncProject = useWorkspaceStore((s) => s.syncProject);
-  const syncWorkspaceProjects = useWorkspaceStore(
-    (s) => s.syncWorkspaceProjects,
-  );
-  const setActiveProjectId = useWorkspaceStore((s) => s.setActiveProjectId);
+  const activeWorkspaceId = useCurrentOrganizationId();
+  const { createProject, primeProjectCache } = useOrganizationProjectActions();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -41,31 +33,17 @@ const WorkspaceHomePage: React.FC = () => {
     sort: 'recent',
   });
 
-  useEffect(() => {
-    if (activeWorkspaceId && projectsQuery.data) {
-      syncWorkspaceProjects(activeWorkspaceId, projectsQuery.data.items);
-    }
-  }, [activeWorkspaceId, projectsQuery.data, syncWorkspaceProjects]);
-
   const handleCreateProject = async (values: AssetEditorSubmitValues) => {
     if (!activeWorkspaceId) return;
     setCreateError(null);
     setCreating(true);
     try {
       const payload = toCreateProjectPayload(values);
-      const created = await createProjectRequest(activeWorkspaceId, payload);
-      syncProject(created.project);
-      setActiveProjectId(created.project.id);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
-        queryClient.invalidateQueries({
-          queryKey: lineageKeys.directory(created.project.id),
-        }),
-      ]);
+      const created = await createProject(activeWorkspaceId, payload);
       setCreateOpen(false);
       void navigate({
         to: '/projects/$projectId',
-        params: { projectId: created.project.id },
+        params: { projectId: created.id },
       });
     } catch (error) {
       setCreateError(errorMessage(error));
@@ -240,8 +218,7 @@ const WorkspaceHomePage: React.FC = () => {
                     key={project.id}
                     type="button"
                     onClick={() => {
-                      syncProject(project);
-                      setActiveProjectId(project.id);
+                      primeProjectCache(project);
                       void navigate({
                         to: '/projects/$projectId',
                         params: { projectId: project.id },

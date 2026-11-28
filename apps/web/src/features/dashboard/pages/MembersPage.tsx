@@ -12,7 +12,6 @@ import {
   ModalShell,
 } from '@/components/ui/modal';
 import { errorMessage } from '../../../lib/api';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
 import {
   createInviteRequest,
   removeMemberRequest,
@@ -24,6 +23,7 @@ import {
 } from '../api';
 import {
   dashboardKeys,
+  useCurrentOrganizationId,
   useInvitesQuery,
   useMembersInfiniteQuery,
   useOrganizationQuery,
@@ -134,7 +134,7 @@ const MembersPage: React.FC = () => {
   const [transferTarget, setTransferTarget] = useState<MemberRecord | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<InviteRecord | null>(null);
 
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const activeWorkspaceId = useCurrentOrganizationId();
 
   const orgQuery = useOrganizationQuery(activeWorkspaceId);
   const membersQuery = useMembersInfiniteQuery(activeWorkspaceId, { limit: 50 });

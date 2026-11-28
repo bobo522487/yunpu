@@ -73,6 +73,24 @@ export type AcceptInviteInput = z.infer<typeof AcceptInviteSchema>;
 export const OrganizationIdParamsSchema = z.object({
   organizationId: z.uuid(),
 });
+export type OrganizationIdParams = z.infer<typeof OrganizationIdParamsSchema>;
+
+export const MemberParamsSchema = z.object({
+  organizationId: z.uuid(),
+  userId: z.uuid(),
+});
+export type MemberParams = z.infer<typeof MemberParamsSchema>;
+
+export const InviteParamsSchema = z.object({
+  organizationId: z.uuid(),
+  inviteId: z.uuid(),
+});
+export type InviteParams = z.infer<typeof InviteParamsSchema>;
+
+export const MediaPathParamsSchema = z.object({
+  path: z.string(),
+});
+export type MediaPathParams = z.infer<typeof MediaPathParamsSchema>;
 
 export const RoleSchema = z.enum(MEMBER_ROLES);
 export const InviteStatusSchema = z.enum(INVITE_STATUSES);
@@ -693,6 +711,7 @@ export const ArticleContentJsonSchema = z
     type: z.string().min(1),
   })
   .passthrough();
+export type ArticleContentJson = z.infer<typeof ArticleContentJsonSchema>;
 
 export const CreateArticleSchema = z.object({
   folderId: z.uuid().nullable().optional(),
@@ -769,6 +788,7 @@ export const LineageSubTableConfigSchema = z.object({
   inToc: z.boolean(),
   tocTitle: z.string().max(120),
 });
+export type LineageSubTableConfig = z.infer<typeof LineageSubTableConfigSchema>;
 
 export const CatalogArticleNodeSchema = z.object({
   id: z.string().min(1).max(120),
@@ -777,6 +797,7 @@ export const CatalogArticleNodeSchema = z.object({
   sourceTitle: z.string().max(300),
   displayTitle: z.string().max(300),
 });
+export type CatalogArticleNode = z.infer<typeof CatalogArticleNodeSchema>;
 
 export const CatalogLineageNodeSchema = z.object({
   id: z.string().min(1).max(120),
@@ -795,11 +816,14 @@ export const CatalogLineageNodeSchema = z.object({
   diaoxianConfig: LineageSubTableConfigSchema,
   shixiConfig: LineageSubTableConfigSchema,
 });
+export type CatalogLineageNode = z.infer<typeof CatalogLineageNodeSchema>;
+export type DescendantScope = CatalogLineageNode["descendantScope"];
 
 export const CatalogLeafNodeSchema = z.discriminatedUnion("nodeType", [
   CatalogArticleNodeSchema,
   CatalogLineageNodeSchema,
 ]);
+export type CatalogLeafNode = z.infer<typeof CatalogLeafNodeSchema>;
 
 export const CatalogChapterNodeSchema = z.object({
   id: z.string().min(1).max(120),
@@ -808,12 +832,14 @@ export const CatalogChapterNodeSchema = z.object({
   collapsed: z.boolean().optional(),
   children: z.array(CatalogLeafNodeSchema),
 });
+export type CatalogChapterNode = z.infer<typeof CatalogChapterNodeSchema>;
 
 export const CatalogNodeSchema = z.discriminatedUnion("nodeType", [
   CatalogChapterNodeSchema,
   CatalogArticleNodeSchema,
   CatalogLineageNodeSchema,
 ]);
+export type CatalogNode = z.infer<typeof CatalogNodeSchema>;
 
 export const CatalogSectionStateSchema = z.object({
   code: z.enum(["preface", "body", "lineage", "appendix"]),
@@ -822,6 +848,8 @@ export const CatalogSectionStateSchema = z.object({
   collapsed: z.boolean(),
   items: z.array(CatalogNodeSchema),
 });
+export type CatalogSectionState = z.infer<typeof CatalogSectionStateSchema>;
+export type CatalogSectionCode = CatalogSectionState["code"];
 
 export const BookSectionsSchema = z.object({
   preface: CatalogSectionStateSchema,
@@ -907,6 +935,7 @@ export const CompiledPageSchema = z
     hallName: z.string(),
   })
   .passthrough();
+export type CompiledPage = z.infer<typeof CompiledPageSchema>;
 
 export const CreateBookEditionSchema = z.object({
   bindingStyle: z.enum(BOOK_BINDING_STYLES),

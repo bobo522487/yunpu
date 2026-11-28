@@ -8,7 +8,7 @@ import {
   makeChartStorageKey,
   useLineageStore,
 } from '../../../store/useLineageStore';
-import { useWorkspaceStore } from '../../../store/useWorkspaceStore';
+import { useProjectQuery } from '../../dashboard/queries';
 import { useProjectLineageSnapshot } from '../queries';
 import {
   computeLineageStats,
@@ -32,17 +32,11 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
   const [scope, setScope] = useState<StatsScope>('chart');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const projects = useWorkspaceStore((s) => s.projects);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const { data: activeProject } = useProjectQuery(projectId);
   const { lineageTree, personsByChart } = useProjectLineageSnapshot(projectId);
   const selectedNodeIdByProject = useLineageStore(
     (s) => s.selectedNodeIdByProject
   );
-
-  const activeProject =
-    projects.find((p) => p.id === projectId) ||
-    projects.find((p) => p.organizationId === activeWorkspaceId) ||
-    projects[0];
 
   const allCharts = useMemo(
     () => flattenChartsInTree(lineageTree),

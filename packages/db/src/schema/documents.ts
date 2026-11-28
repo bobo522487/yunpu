@@ -203,7 +203,9 @@ export const book = pgTable(
     editor: text("editor").notNull().default(""),
     compilationDate: text("compilation_date").notNull().default(""),
     sections: jsonb("sections").$type<BookSectionsInput>().notNull(),
-    layoutConfig: jsonb("layout_config").$type<BookLayoutConfigInput>().notNull(),
+    layoutConfig: jsonb("layout_config")
+      .$type<BookLayoutConfigInput>()
+      .notNull(),
     seq: integer("seq").notNull().default(0),
     version: integer("version").notNull().default(1),
     createdAt,

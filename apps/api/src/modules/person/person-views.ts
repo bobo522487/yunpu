@@ -1,102 +1,22 @@
 import { person, personEvent, personName, personRelation } from "@yunpu/db";
 import type {
-  ApiRelationKind,
-  GenealogyDateInput,
-  GenealogyPlaceInput,
-  PersonBirthInfoInput,
-  PersonDeathInfoInput,
-  PersonEventType,
-  PersonNameKind,
-  PersonSex,
+  PersonDto,
+  PersonEventDto,
+  PersonNameDto,
+  ProjectionDto,
+  RelationDto,
+  SubgraphPayload,
 } from "@yunpu/shared";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
-export type PersonNameView = {
-  id: string;
-  projectId: string;
-  personId: string;
-  kind: PersonNameKind;
-  value: string;
-  surname: string | null;
-  romanizedSurname: string | null;
-  romanizedName: string | null;
-  label: string | null;
-  isPrimary: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type PersonEventView = {
-  id: string;
-  projectId: string;
-  personId: string;
-  type: PersonEventType;
-  structuredDate: GenealogyDateInput | null;
-  structuredPlace: GenealogyPlaceInput | null;
-  description: string | null;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type PersonView = {
-  id: string;
-  projectId: string;
-  lineageId: string;
-  displayName: string;
-  sex: PersonSex;
-  surname: string | null;
-  givenName: string | null;
-  romanizedSurname: string | null;
-  romanizedName: string | null;
-  romanizedSuffix: string | null;
-  birthYear: number | null;
-  deathYear: number | null;
-  isLiving: boolean;
-  birthInfo: PersonBirthInfoInput | null;
-  deathInfo: PersonDeathInfoInput | null;
-  generationWord: string | null;
-  relationTitle: string | null;
-  siblingOrder: number | null;
-  biography: string | null;
-  notes: string | null;
-  avatarKey: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-  names?: PersonNameView[];
-  events?: PersonEventView[];
-};
-
-export type RelationView = {
-  id: string;
-  projectId: string;
-  fromPersonId: string;
-  toPersonId: string;
-  kind: ApiRelationKind | string;
-  fromRoleLabel: string | null;
-  toRoleLabel: string | null;
-  sortOrder: number | null;
-  note: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ProjectionView = {
-  personId: string;
-  primaryPath: string;
-  generation: number;
-};
-
-export type SubgraphResult = {
-  rootPersonId: string;
-  persons: PersonView[];
-  relations: RelationView[];
-  hasMoreAncestors: boolean;
-  hasMoreDescendants: boolean;
-};
+export type PersonNameView = PersonNameDto;
+export type PersonEventView = PersonEventDto;
+export type PersonView = PersonDto;
+export type RelationView = RelationDto;
+export type ProjectionView = ProjectionDto;
+export type SubgraphResult = SubgraphPayload;
 
 export const personBaseColumns = {
   id: person.id,
@@ -166,56 +86,19 @@ export const relationColumns = {
   updatedAt: timestamp(personRelation.updatedAt),
 };
 
-export function mapPersonRow(row: {
-  id: string;
-  projectId: string;
-  lineageId: string;
-  displayName: string;
-  sex: PersonSex;
-  surname: string | null;
-  givenName: string | null;
-  romanizedSurname: string | null;
-  romanizedName: string | null;
-  romanizedSuffix: string | null;
-  birthYear: number | null;
-  deathYear: number | null;
-  isLiving: boolean;
-  birthInfo: unknown;
-  deathInfo: unknown;
-  generationWord: string | null;
-  relationTitle: string | null;
-  siblingOrder: number | null;
-  biography: string | null;
-  notes: string | null;
-  avatarKey: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-}): PersonView {
+export function mapPersonRow(row: PersonView): PersonView {
   return {
     ...row,
-    birthInfo: (row.birthInfo as PersonBirthInfoInput | null) ?? null,
-    deathInfo: (row.deathInfo as PersonDeathInfoInput | null) ?? null,
+    birthInfo: row.birthInfo ?? null,
+    deathInfo: row.deathInfo ?? null,
   };
 }
 
-export function mapEventRow(row: {
-  id: string;
-  projectId: string;
-  personId: string;
-  type: PersonEventType;
-  structuredDate: unknown;
-  structuredPlace: unknown;
-  description: string | null;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}): PersonEventView {
+export function mapEventRow(row: PersonEventView): PersonEventView {
   return {
     ...row,
-    structuredDate: (row.structuredDate as GenealogyDateInput | null) ?? null,
-    structuredPlace:
-      (row.structuredPlace as GenealogyPlaceInput | null) ?? null,
+    structuredDate: row.structuredDate ?? null,
+    structuredPlace: row.structuredPlace ?? null,
   };
 }
 

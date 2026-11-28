@@ -1,9 +1,11 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { type Context, Hono } from "hono";
 import { config } from "./config";
+import { createContractBinder } from "./lib/contract";
 import { getObject, putObject } from "./storage";
 
 const media = new Hono();
+const route = createContractBinder(media, "apps/api/src/media.ts");
 
 // 1 MB body limit. It serves this feature's proof only, not product media rules.
 const maxBodyBytes = 1024 * 1024;
@@ -46,7 +48,7 @@ function randomKey(): string {
   return `media/${now}/${hex}`;
 }
 
-media.post("/api/media", async (c) => {
+route.public("post", "/api/media", async (c) => {
   if (!authorized(c.req.raw)) {
     return unauthorized(c);
   }
@@ -102,29 +104,34 @@ media.post("/api/media", async (c) => {
 
 // Keys contain slashes (media/<stamp>/<hex>), so the read route must match
 // the rest of the path, not a single segment.
-media.get("/api/media/*", async (c) => {
-  if (!authorized(c.req.raw)) {
-    return unauthorized(c);
-  }
+route.public(
+  "get",
+  "/api/media/*",
+  async (c) => {
+    if (!authorized(c.req.raw)) {
+      return unauthorized(c);
+    }
 
-  const prefix = "/api/media/";
-  const path = c.req.path;
-  if (!path.startsWith(prefix) || path.length <= prefix.length) {
-    return c.json({ ok: false, reason: "object not found" }, 404);
-  }
-  const key = path.slice(prefix.length);
-  if (!isAllowedMediaKey(key)) {
-    return c.json({ ok: false, reason: "invalid object key" }, 400);
-  }
-  const data = await getObject(key);
-  if (!data) {
-    return c.json({ ok: false, reason: "object not found" }, 404);
-  }
+    const prefix = "/api/media/";
+    const path = c.req.path;
+    if (!path.startsWith(prefix) || path.length <= prefix.length) {
+      return c.json({ ok: false, reason: "object not found" }, 404);
+    }
+    const key = path.slice(prefix.length);
+    if (!isAllowedMediaKey(key)) {
+      return c.json({ ok: false, reason: "invalid object key" }, 400);
+    }
+    const data = await getObject(key);
+    if (!data) {
+      return c.json({ ok: false, reason: "object not found" }, 404);
+    }
 
-  return new Response(new Uint8Array(data), {
-    status: 200,
-    headers: { "content-type": "application/octet-stream" },
-  });
-});
+    return new Response(new Uint8Array(data), {
+      status: 200,
+      headers: { "content-type": "application/octet-stream" },
+    });
+  },
+  { parseParams: false },
+);
 
 export default media;

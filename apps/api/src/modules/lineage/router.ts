@@ -1,11 +1,5 @@
-import {
-  CreateLineageSchema,
-  LineageIdParamsSchema,
-  ProjectIdParamsSchema,
-  UpdateLineageSchema,
-} from "@yunpu/shared";
 import { Hono } from "hono";
-import { parseJson, parseParams, requireUser } from "../../lib/http";
+import { createContractBinder } from "../../lib/contract";
 import type { ApiEnv } from "../../types";
 import {
   createLineageForProject,
@@ -16,51 +10,63 @@ import {
 } from "./service";
 
 export const lineageRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  lineageRouter,
+  "apps/api/src/modules/lineage/router.ts",
+);
 
-lineageRouter.get("/projects/:projectId/lineages", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const directory = await listLineageDirectoryForProject(user.id, projectId);
+route("get", "/projects/:projectId/lineages", async (c, { user, params }) => {
+  const directory = await listLineageDirectoryForProject(
+    user.id,
+    params.projectId,
+  );
   return c.json({ ok: true, data: directory });
 });
 
-lineageRouter.post("/projects/:projectId/lineages", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const input = await parseJson(c, CreateLineageSchema);
-  const created = await createLineageForProject(user.id, projectId, input);
-  return c.json({ ok: true, data: created }, 201);
-});
+route(
+  "post",
+  "/projects/:projectId/lineages",
+  async (c, { user, params, body }) => {
+    const created = await createLineageForProject(
+      user.id,
+      params.projectId,
+      body,
+    );
+    return c.json({ ok: true, data: created }, 201);
+  },
+);
 
-lineageRouter.patch("/projects/:projectId/lineages/:lineageId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, lineageId } = parseParams(c, LineageIdParamsSchema);
-  const input = await parseJson(c, UpdateLineageSchema);
-  const lineage = await updateLineageForProject(
-    user.id,
-    projectId,
-    lineageId,
-    input,
-  );
-  return c.json({ ok: true, data: { lineage } });
-});
+route(
+  "patch",
+  "/projects/:projectId/lineages/:lineageId",
+  async (c, { user, params, body }) => {
+    const lineage = await updateLineageForProject(
+      user.id,
+      params.projectId,
+      params.lineageId,
+      body,
+    );
+    return c.json({ ok: true, data: { lineage } });
+  },
+);
 
-lineageRouter.delete("/projects/:projectId/lineages/:lineageId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, lineageId } = parseParams(c, LineageIdParamsSchema);
-  await deleteLineageForProject(user.id, projectId, lineageId);
-  return c.json({ ok: true, data: { deleted: true } });
-});
+route(
+  "delete",
+  "/projects/:projectId/lineages/:lineageId",
+  async (c, { user, params }) => {
+    await deleteLineageForProject(user.id, params.projectId, params.lineageId);
+    return c.json({ ok: true, data: { deleted: true } });
+  },
+);
 
-lineageRouter.get(
+route(
+  "get",
   "/projects/:projectId/lineages/:lineageId/graph",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, lineageId } = parseParams(c, LineageIdParamsSchema);
+  async (c, { user, params }) => {
     const graph = await getLineageGraphForProject(
       user.id,
-      projectId,
-      lineageId,
+      params.projectId,
+      params.lineageId,
     );
     return c.json({ ok: true, data: graph });
   },

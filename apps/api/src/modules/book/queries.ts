@@ -1,10 +1,9 @@
 import { book, bookEdition } from "@yunpu/db";
 import type {
-  BookBindingStyle,
+  BookDto,
+  BookEditionDto,
   BookEditionPrintStatus,
   BookLayoutConfigInput,
-  BookLineageStyle,
-  BookPaperSize,
   BookSectionsInput,
   CreateBookEditionInput,
   CreateBookInput,
@@ -60,39 +59,8 @@ export function createEmptyBookSections(): BookSectionsInput {
   };
 }
 
-export type BookRecord = {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  bookName: string;
-  headerName: string;
-  hallName: string;
-  volumeNo: string;
-  editor: string;
-  compilationDate: string;
-  sections: BookSectionsInput;
-  layoutConfig: BookLayoutConfigInput;
-  seq: number;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type BookEditionRecord = {
-  id: string;
-  projectId: string;
-  bookId: string;
-  bindingStyle: BookBindingStyle;
-  lineageStyle: BookLineageStyle;
-  paperSize: BookPaperSize;
-  pageCount: number;
-  memberCount: number;
-  wordCount: number;
-  printStatus: BookEditionPrintStatus;
-  layoutSnapshot: BookLayoutConfigInput;
-  pages: Array<Record<string, unknown>>;
-  createdAt: string;
-};
+export type BookRecord = BookDto;
+export type BookEditionRecord = BookEditionDto;
 
 const bookColumns = {
   id: book.id,
@@ -128,68 +96,15 @@ const editionColumns = {
   createdAt: timestamp(bookEdition.createdAt),
 };
 
-function mapBookRow(row: {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  bookName: string;
-  headerName: string;
-  hallName: string;
-  volumeNo: string;
-  editor: string;
-  compilationDate: string;
-  sections: unknown;
-  layoutConfig: unknown;
-  seq: number;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-}): BookRecord {
-  return {
-    ...row,
-    sections:
-      (row.sections as BookSectionsInput | null) ?? createEmptyBookSections(),
-    layoutConfig:
-      (row.layoutConfig as BookLayoutConfigInput | null) ?? DEFAULT_BOOK_LAYOUT,
-  };
-}
-
-function mapEditionRow(row: {
-  id: string;
-  projectId: string;
-  bookId: string;
-  bindingStyle: BookBindingStyle;
-  lineageStyle: BookLineageStyle;
-  paperSize: BookPaperSize;
-  pageCount: number;
-  memberCount: number;
-  wordCount: number;
-  printStatus: BookEditionPrintStatus;
-  layoutSnapshot: unknown;
-  pages: unknown;
-  createdAt: string;
-}): BookEditionRecord {
-  return {
-    ...row,
-    layoutSnapshot:
-      (row.layoutSnapshot as BookLayoutConfigInput | null) ??
-      DEFAULT_BOOK_LAYOUT,
-    pages: Array.isArray(row.pages)
-      ? (row.pages as Array<Record<string, unknown>>)
-      : [],
-  };
-}
-
 export async function listBooks(
   db: TxDatabase,
   projectId: string,
 ): Promise<BookRecord[]> {
-  const rows = await db
+  return db
     .select(bookColumns)
     .from(book)
     .where(eq(book.projectId, projectId))
     .orderBy(asc(book.seq), asc(book.createdAt), asc(book.id));
-  return rows.map(mapBookRow);
 }
 
 export async function getBook(
@@ -202,7 +117,7 @@ export async function getBook(
     .from(book)
     .where(and(eq(book.projectId, projectId), eq(book.id, bookId)))
     .limit(1);
-  return rows[0] ? mapBookRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function insertBook(
@@ -229,7 +144,7 @@ export async function insertBook(
       layoutConfig: values.layoutConfig ?? DEFAULT_BOOK_LAYOUT,
     })
     .returning(bookColumns);
-  return mapBookRow(rows[0]);
+  return rows[0];
 }
 
 export async function casUpdateBook(
@@ -267,7 +182,7 @@ export async function casUpdateBook(
       ),
     )
     .returning(bookColumns);
-  return rows[0] ? mapBookRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function updateBookSeq(
@@ -299,14 +214,13 @@ export async function listBookEditions(
   projectId: string,
   bookId: string,
 ): Promise<BookEditionRecord[]> {
-  const rows = await db
+  return db
     .select(editionColumns)
     .from(bookEdition)
     .where(
       and(eq(bookEdition.projectId, projectId), eq(bookEdition.bookId, bookId)),
     )
     .orderBy(desc(bookEdition.createdAt), desc(bookEdition.id));
-  return rows.map(mapEditionRow);
 }
 
 export async function insertBookEdition(
@@ -333,7 +247,7 @@ export async function insertBookEdition(
       pages: values.pages,
     })
     .returning(editionColumns);
-  return mapEditionRow(rows[0]);
+  return rows[0];
 }
 
 export async function trimBookEditionsToLimit(
@@ -380,7 +294,7 @@ export async function updateBookEditionPrintStatus(
       ),
     )
     .returning(editionColumns);
-  return rows[0] ? mapEditionRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function deleteBookEdition(

@@ -1,34 +1,32 @@
-import { ChangePasswordSchema, UpdateAccountSchema } from "@yunpu/shared";
 import { Hono } from "hono";
-import { parseJson, requireUser } from "../../lib/http";
+import { createContractBinder } from "../../lib/contract";
 import type { ApiEnv } from "../../types";
 import { changePassword, updateAccount } from "./service";
 
 export const accountRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  accountRouter,
+  "apps/api/src/modules/account/router.ts",
+);
 
-accountRouter.get("/account", async (c) => {
-  const user = requireUser(c);
+route("get", "/account", async (c, { user }) => {
   return c.json({
     ok: true,
     data: { id: user.id, email: user.email, name: user.name },
   });
 });
 
-accountRouter.patch("/account", async (c) => {
-  const user = requireUser(c);
-  const parsed = await parseJson(c, UpdateAccountSchema);
-  const account = await updateAccount(user, c.req.raw.headers, parsed.name);
+route("patch", "/account", async (c, { user, body }) => {
+  const account = await updateAccount(user, c.req.raw.headers, body.name);
   return c.json({ ok: true, data: account });
 });
 
-accountRouter.post("/account/password", async (c) => {
-  const user = requireUser(c);
-  const parsed = await parseJson(c, ChangePasswordSchema);
+route("post", "/account/password", async (c, { user, body }) => {
   await changePassword(
     user,
     c.req.raw.headers,
-    parsed.currentPassword,
-    parsed.newPassword,
+    body.currentPassword,
+    body.newPassword,
   );
   return c.json({ ok: true, data: { changed: true } });
 });

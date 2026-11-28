@@ -77,20 +77,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "user": {"$ref":"#/components/schemas/Account"},
-                        "defaultOrganization": {"anyOf":[{"$ref":"#/components/schemas/OrganizationSummary"},{"type":"null"}]},
-                        "invite": {},
-                        "onboarding": {"type":"boolean"}
-                      },
-                      "required": ["user","defaultOrganization"],
-                      "additionalProperties": false
-                    }
-                  },
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/AuthDataSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -99,7 +86,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/auth/router.ts",
@@ -121,20 +108,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "user": {"$ref":"#/components/schemas/Account"},
-                        "defaultOrganization": {"anyOf":[{"$ref":"#/components/schemas/OrganizationSummary"},{"type":"null"}]},
-                        "invite": {},
-                        "onboarding": {"type":"boolean"}
-                      },
-                      "required": ["user","defaultOrganization"],
-                      "additionalProperties": false
-                    }
-                  },
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/AuthDataSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -143,7 +117,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/auth/router.ts",
@@ -182,7 +156,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/auth/router.ts"
@@ -200,19 +174,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "user": {"anyOf":[{"$ref":"#/components/schemas/Account"},{"type":"null"}]},
-                        "defaultOrganization": {"anyOf":[{"$ref":"#/components/schemas/OrganizationSummary"},{"type":"null"}]},
-                        "onboarding": {"type":"boolean"}
-                      },
-                      "required": ["user","defaultOrganization","onboarding"],
-                      "additionalProperties": false
-                    }
-                  },
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/SessionDataSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -235,7 +197,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/Account"}},
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/AccountSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -244,7 +206,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/account/router.ts"
@@ -260,7 +222,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/Account"}},
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/AccountSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -269,7 +231,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/account/router.ts",
@@ -308,7 +270,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/account/router.ts",
@@ -332,15 +294,7 @@
                   "type": "object",
                   "properties": {
                     "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "organizations": {"type":"array","items":{"$ref":"#/components/schemas/OrganizationSummary"}},
-                        "defaultOrganizationId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]}
-                      },
-                      "required": ["organizations","defaultOrganizationId"],
-                      "additionalProperties": false
-                    }
+                    "data": {"$ref":"#/components/schemas/OrganizationsPayloadSchema"}
                   },
                   "required": ["ok","data"],
                   "additionalProperties": false
@@ -350,7 +304,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -370,7 +324,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationSummary"}},
+                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationSummarySchema"}},
                       "required": ["organization"],
                       "additionalProperties": false
                     }
@@ -383,7 +337,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -411,7 +365,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationDetail"}},
+                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationDetailSchema"}},
                       "required": ["organization"],
                       "additionalProperties": false
                     }
@@ -424,7 +378,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -446,7 +400,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationDetail"}},
+                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationDetailSchema"}},
                       "required": ["organization"],
                       "additionalProperties": false
                     }
@@ -459,7 +413,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -500,7 +454,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -537,7 +491,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -565,7 +519,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationSummary"}},
+                      "properties": {"organization":{"$ref":"#/components/schemas/OrganizationSummarySchema"}},
                       "required": ["organization"],
                       "additionalProperties": false
                     }
@@ -578,7 +532,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -601,7 +555,7 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "organization": {"$ref":"#/components/schemas/OrganizationSummary"},
+                        "organization": {"$ref":"#/components/schemas/OrganizationSummarySchema"},
                         "defaultOrganizationChanged": {"type":"boolean","const":true}
                       },
                       "required": ["organization","defaultOrganizationChanged"],
@@ -616,7 +570,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -647,7 +601,7 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "items": {"type":"array","items":{"$ref":"#/components/schemas/Member"}},
+                        "items": {"type":"array","items":{"$ref":"#/components/schemas/MemberSchema"}},
                         "nextCursor": {"type":["string","null"]}
                       },
                       "required": ["items","nextCursor"],
@@ -662,7 +616,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -687,7 +641,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"member":{"$ref":"#/components/schemas/Member"}},
+                      "properties": {"member":{"$ref":"#/components/schemas/MemberSchema"}},
                       "required": ["member"],
                       "additionalProperties": false
                     }
@@ -700,7 +654,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -740,7 +694,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -767,7 +721,7 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "items": {"type":"array","items":{"$ref":"#/components/schemas/Invite"}},
+                        "items": {"type":"array","items":{"$ref":"#/components/schemas/InviteSchema"}},
                         "nextCursor": {"type":["string","null"]}
                       },
                       "required": ["items","nextCursor"],
@@ -782,7 +736,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -804,7 +758,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"invite":{"$ref":"#/components/schemas/Invite"},"inviteUrl":{"type":"string"}},
+                      "properties": {"invite":{"$ref":"#/components/schemas/InviteSchema"},"inviteUrl":{"type":"string"}},
                       "required": ["invite","inviteUrl"],
                       "additionalProperties": false
                     }
@@ -817,7 +771,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts",
@@ -859,7 +813,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/organization/router.ts"
@@ -887,7 +841,7 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "items": {"type":"array","items":{"$ref":"#/components/schemas/Project"}},
+                        "items": {"type":"array","items":{"$ref":"#/components/schemas/ProjectSchema"}},
                         "nextCursor": {"type":["string","null"]}
                       },
                       "required": ["items","nextCursor"],
@@ -902,7 +856,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts"
@@ -924,7 +878,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"project":{"$ref":"#/components/schemas/Project"}},
+                      "properties": {"project":{"$ref":"#/components/schemas/ProjectSchema"}},
                       "required": ["project"],
                       "additionalProperties": false
                     }
@@ -937,7 +891,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts",
@@ -963,7 +917,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"project":{"$ref":"#/components/schemas/Project"}},
+                      "properties": {"project":{"$ref":"#/components/schemas/ProjectSchema"}},
                       "required": ["project"],
                       "additionalProperties": false
                     }
@@ -976,7 +930,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts"
@@ -996,7 +950,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"project":{"$ref":"#/components/schemas/Project"}},
+                      "properties": {"project":{"$ref":"#/components/schemas/ProjectSchema"}},
                       "required": ["project"],
                       "additionalProperties": false
                     }
@@ -1009,7 +963,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts",
@@ -1046,7 +1000,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts"
@@ -1081,7 +1035,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts"
@@ -1104,7 +1058,7 @@
           "200": {"description":"读取项目图片媒体","content":{"application/octet-stream":{"schema":{"type":"string"}}}},
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/project/router.ts"
@@ -1134,7 +1088,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"folders":{"type":"array","items":{"$ref":"#/components/schemas/Folder"}}},
+                      "properties": {"folders":{"type":"array","items":{"$ref":"#/components/schemas/FolderSchema"}}},
                       "required": ["folders"],
                       "additionalProperties": false
                     }
@@ -1147,7 +1101,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/folder/router.ts"
@@ -1167,7 +1121,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"folder":{"$ref":"#/components/schemas/Folder"}},
+                      "properties": {"folder":{"$ref":"#/components/schemas/FolderSchema"}},
                       "required": ["folder"],
                       "additionalProperties": false
                     }
@@ -1180,7 +1134,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/folder/router.ts",
@@ -1209,7 +1163,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"folder":{"$ref":"#/components/schemas/Folder"}},
+                      "properties": {"folder":{"$ref":"#/components/schemas/FolderSchema"}},
                       "required": ["folder"],
                       "additionalProperties": false
                     }
@@ -1222,7 +1176,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/folder/router.ts",
@@ -1262,7 +1216,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/folder/router.ts"
@@ -1282,15 +1236,7 @@
                   "type": "object",
                   "properties": {
                     "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "folders": {"type":"array","items":{"$ref":"#/components/schemas/Folder"}},
-                        "lineages": {"type":"array","items":{"$ref":"#/components/schemas/Lineage"}}
-                      },
-                      "required": ["folders","lineages"],
-                      "additionalProperties": false
-                    }
+                    "data": {"$ref":"#/components/schemas/LineageDirectoryPayloadSchema"}
                   },
                   "required": ["ok","data"],
                   "additionalProperties": false
@@ -1300,7 +1246,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/lineage/router.ts"
@@ -1321,8 +1267,8 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "lineage": {"$ref":"#/components/schemas/Lineage"},
-                        "progenitorPerson": {"anyOf":[{"$ref":"#/components/schemas/Person"},{"type":"null"}]}
+                        "lineage": {"$ref":"#/components/schemas/LineageSchema"},
+                        "progenitorPerson": {"anyOf":[{"$ref":"#/components/schemas/PersonSchema"},{"type":"null"}]}
                       },
                       "required": ["lineage","progenitorPerson"],
                       "additionalProperties": false
@@ -1336,7 +1282,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/lineage/router.ts",
@@ -1365,7 +1311,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"lineage":{"$ref":"#/components/schemas/Lineage"}},
+                      "properties": {"lineage":{"$ref":"#/components/schemas/LineageSchema"}},
                       "required": ["lineage"],
                       "additionalProperties": false
                     }
@@ -1378,7 +1324,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/lineage/router.ts",
@@ -1418,7 +1364,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/lineage/router.ts"
@@ -1441,17 +1387,7 @@
                   "type": "object",
                   "properties": {
                     "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "lineage": {"$ref":"#/components/schemas/Lineage"},
-                        "persons": {"type":"array","items":{"$ref":"#/components/schemas/Person"}},
-                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
-                        "projections": {"type":"array","items":{"$ref":"#/components/schemas/Projection"}}
-                      },
-                      "required": ["lineage","persons","relations","projections"],
-                      "additionalProperties": false
-                    }
+                    "data": {"$ref":"#/components/schemas/LineageGraphPayloadSchema"}
                   },
                   "required": ["ok","data"],
                   "additionalProperties": false
@@ -1461,7 +1397,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/lineage/router.ts"
@@ -1483,7 +1419,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"person":{"$ref":"#/components/schemas/Person"}},
+                      "properties": {"person":{"$ref":"#/components/schemas/PersonSchema"}},
                       "required": ["person"],
                       "additionalProperties": false
                     }
@@ -1496,7 +1432,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1526,7 +1462,7 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "persons": {"type":"array","items":{"$ref":"#/components/schemas/Person"}},
+                        "persons": {"type":"array","items":{"$ref":"#/components/schemas/PersonSchema"}},
                         "nextCursor": {"type":["string","null"]}
                       },
                       "required": ["persons","nextCursor"],
@@ -1541,7 +1477,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -1566,7 +1502,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"person":{"$ref":"#/components/schemas/Person"}},
+                      "properties": {"person":{"$ref":"#/components/schemas/PersonSchema"}},
                       "required": ["person"],
                       "additionalProperties": false
                     }
@@ -1579,7 +1515,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -1602,7 +1538,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"person":{"$ref":"#/components/schemas/Person"}},
+                      "properties": {"person":{"$ref":"#/components/schemas/PersonSchema"}},
                       "required": ["person"],
                       "additionalProperties": false
                     }
@@ -1615,7 +1551,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1634,20 +1570,11 @@
         "responses": {
           "200": {
             "description": "删除人物",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true}},
-                  "required": ["ok"],
-                  "additionalProperties": false
-                }
-              }
-            }
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/okOnlySchema"}}}
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -1673,9 +1600,9 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "person": {"$ref":"#/components/schemas/Person"},
-                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
-                        "projection": {"anyOf":[{"$ref":"#/components/schemas/Projection"},{"type":"null"}]}
+                        "person": {"$ref":"#/components/schemas/PersonSchema"},
+                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/RelationSchema"}},
+                        "projection": {"anyOf":[{"$ref":"#/components/schemas/ProjectionSchema"},{"type":"null"}]}
                       },
                       "required": ["person","relations","projection"],
                       "additionalProperties": false
@@ -1689,7 +1616,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1716,10 +1643,10 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "person": {"$ref":"#/components/schemas/Person"},
-                        "companionPerson": {"anyOf":[{"$ref":"#/components/schemas/Person"},{"type":"null"}]},
-                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
-                        "anchorEvents": {"type":"array","items":{"$ref":"#/components/schemas/PersonEvent"}}
+                        "person": {"$ref":"#/components/schemas/PersonSchema"},
+                        "companionPerson": {"anyOf":[{"$ref":"#/components/schemas/PersonSchema"},{"type":"null"}]},
+                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/RelationSchema"}},
+                        "anchorEvents": {"type":"array","items":{"$ref":"#/components/schemas/PersonEventSchema"}}
                       },
                       "required": ["person","companionPerson","relations","anchorEvents"],
                       "additionalProperties": false
@@ -1733,7 +1660,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1762,7 +1689,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"name":{"$ref":"#/components/schemas/PersonName"}},
+                      "properties": {"name":{"$ref":"#/components/schemas/PersonNameSchema"}},
                       "required": ["name"],
                       "additionalProperties": false
                     }
@@ -1775,7 +1702,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1805,7 +1732,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"name":{"$ref":"#/components/schemas/PersonName"}},
+                      "properties": {"name":{"$ref":"#/components/schemas/PersonNameSchema"}},
                       "required": ["name"],
                       "additionalProperties": false
                     }
@@ -1818,7 +1745,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1838,20 +1765,11 @@
         "responses": {
           "200": {
             "description": "删除人物名号",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true}},
-                  "required": ["ok"],
-                  "additionalProperties": false
-                }
-              }
-            }
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/okOnlySchema"}}}
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -1873,7 +1791,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"relation":{"$ref":"#/components/schemas/Relation"}},
+                      "properties": {"relation":{"$ref":"#/components/schemas/RelationSchema"}},
                       "required": ["relation"],
                       "additionalProperties": false
                     }
@@ -1886,7 +1804,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1915,7 +1833,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"relation":{"$ref":"#/components/schemas/Relation"}},
+                      "properties": {"relation":{"$ref":"#/components/schemas/RelationSchema"}},
                       "required": ["relation"],
                       "additionalProperties": false
                     }
@@ -1928,7 +1846,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -1947,20 +1865,11 @@
         "responses": {
           "200": {
             "description": "删除人物关系",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true}},
-                  "required": ["ok"],
-                  "additionalProperties": false
-                }
-              }
-            }
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/okOnlySchema"}}}
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -1985,7 +1894,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"event":{"$ref":"#/components/schemas/PersonEvent"}},
+                      "properties": {"event":{"$ref":"#/components/schemas/PersonEventSchema"}},
                       "required": ["event"],
                       "additionalProperties": false
                     }
@@ -1998,7 +1907,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -2028,7 +1937,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"event":{"$ref":"#/components/schemas/PersonEvent"}},
+                      "properties": {"event":{"$ref":"#/components/schemas/PersonEventSchema"}},
                       "required": ["event"],
                       "additionalProperties": false
                     }
@@ -2041,7 +1950,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts",
@@ -2061,20 +1970,11 @@
         "responses": {
           "200": {
             "description": "删除人物生平事件",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {"ok":{"type":"boolean","const":true}},
-                  "required": ["ok"],
-                  "additionalProperties": false
-                }
-              }
-            }
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/okOnlySchema"}}}
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -2113,21 +2013,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "rootPersonId": {"$ref":"#/components/schemas/Uuid"},
-                        "persons": {"type":"array","items":{"$ref":"#/components/schemas/Person"}},
-                        "relations": {"type":"array","items":{"$ref":"#/components/schemas/Relation"}},
-                        "hasMoreAncestors": {"type":"boolean"},
-                        "hasMoreDescendants": {"type":"boolean"}
-                      },
-                      "required": ["rootPersonId","persons","relations","hasMoreAncestors","hasMoreDescendants"],
-                      "additionalProperties": false
-                    }
-                  },
+                  "properties": {"ok":{"type":"boolean","const":true},"data":{"$ref":"#/components/schemas/SubgraphPayloadSchema"}},
                   "required": ["ok","data"],
                   "additionalProperties": false
                 }
@@ -2136,7 +2022,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/person/router.ts"
@@ -2156,15 +2042,7 @@
                   "type": "object",
                   "properties": {
                     "ok": {"type":"boolean","const":true},
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "folders": {"type":"array","items":{"$ref":"#/components/schemas/Folder"}},
-                        "articles": {"type":"array","items":{"$ref":"#/components/schemas/Article"}}
-                      },
-                      "required": ["folders","articles"],
-                      "additionalProperties": false
-                    }
+                    "data": {"$ref":"#/components/schemas/ArticlesDirectoryPayloadSchema"}
                   },
                   "required": ["ok","data"],
                   "additionalProperties": false
@@ -2174,7 +2052,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2194,7 +2072,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "properties": {"article":{"$ref":"#/components/schemas/ArticleSchema"}},
                       "required": ["article"],
                       "additionalProperties": false
                     }
@@ -2207,7 +2085,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts",
@@ -2236,7 +2114,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "properties": {"article":{"$ref":"#/components/schemas/ArticleSchema"}},
                       "required": ["article"],
                       "additionalProperties": false
                     }
@@ -2249,7 +2127,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2272,7 +2150,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "properties": {"article":{"$ref":"#/components/schemas/ArticleSchema"}},
                       "required": ["article"],
                       "additionalProperties": false
                     }
@@ -2285,7 +2163,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts",
@@ -2325,7 +2203,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2350,7 +2228,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"article":{"$ref":"#/components/schemas/Article"}},
+                      "properties": {"article":{"$ref":"#/components/schemas/ArticleSchema"}},
                       "required": ["article"],
                       "additionalProperties": false
                     }
@@ -2363,7 +2241,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2388,7 +2266,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"revisions":{"type":"array","items":{"$ref":"#/components/schemas/ArticleRevision"}}},
+                      "properties": {"revisions":{"type":"array","items":{"$ref":"#/components/schemas/ArticleRevisionSchema"}}},
                       "required": ["revisions"],
                       "additionalProperties": false
                     }
@@ -2401,7 +2279,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2424,7 +2302,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"revision":{"$ref":"#/components/schemas/ArticleRevision"}},
+                      "properties": {"revision":{"$ref":"#/components/schemas/ArticleRevisionSchema"}},
                       "required": ["revision"],
                       "additionalProperties": false
                     }
@@ -2437,7 +2315,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts",
@@ -2468,8 +2346,8 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "article": {"$ref":"#/components/schemas/Article"},
-                        "revision": {"$ref":"#/components/schemas/ArticleRevision"}
+                        "article": {"$ref":"#/components/schemas/ArticleSchema"},
+                        "revision": {"$ref":"#/components/schemas/ArticleRevisionSchema"}
                       },
                       "required": ["article","revision"],
                       "additionalProperties": false
@@ -2483,7 +2361,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts",
@@ -2522,7 +2400,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2545,7 +2423,7 @@
           "200": {"description":"读取谱文图片资产","content":{"application/octet-stream":{"schema":{"type":"string"}}}},
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/article/router.ts"
@@ -2567,7 +2445,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/Book"}}},
+                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/BookSchema"}}},
                       "required": ["books"],
                       "additionalProperties": false
                     }
@@ -2580,7 +2458,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -2600,7 +2478,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "properties": {"book":{"$ref":"#/components/schemas/BookSchema"}},
                       "required": ["book"],
                       "additionalProperties": false
                     }
@@ -2613,7 +2491,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts",
@@ -2639,7 +2517,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/Book"}}},
+                      "properties": {"books":{"type":"array","items":{"$ref":"#/components/schemas/BookSchema"}}},
                       "required": ["books"],
                       "additionalProperties": false
                     }
@@ -2652,7 +2530,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts",
@@ -2681,7 +2559,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "properties": {"book":{"$ref":"#/components/schemas/BookSchema"}},
                       "required": ["book"],
                       "additionalProperties": false
                     }
@@ -2694,7 +2572,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -2717,7 +2595,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "properties": {"book":{"$ref":"#/components/schemas/BookSchema"}},
                       "required": ["book"],
                       "additionalProperties": false
                     }
@@ -2730,7 +2608,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts",
@@ -2770,7 +2648,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -2795,7 +2673,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"book":{"$ref":"#/components/schemas/Book"}},
+                      "properties": {"book":{"$ref":"#/components/schemas/BookSchema"}},
                       "required": ["book"],
                       "additionalProperties": false
                     }
@@ -2808,7 +2686,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -2833,7 +2711,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"editions":{"type":"array","items":{"$ref":"#/components/schemas/BookEdition"}}},
+                      "properties": {"editions":{"type":"array","items":{"$ref":"#/components/schemas/BookEditionSchema"}}},
                       "required": ["editions"],
                       "additionalProperties": false
                     }
@@ -2846,7 +2724,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -2869,7 +2747,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"edition":{"$ref":"#/components/schemas/BookEdition"}},
+                      "properties": {"edition":{"$ref":"#/components/schemas/BookEditionSchema"}},
                       "required": ["edition"],
                       "additionalProperties": false
                     }
@@ -2882,7 +2760,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts",
@@ -2912,7 +2790,7 @@
                     "ok": {"type":"boolean","const":true},
                     "data": {
                       "type": "object",
-                      "properties": {"edition":{"$ref":"#/components/schemas/BookEdition"}},
+                      "properties": {"edition":{"$ref":"#/components/schemas/BookEditionSchema"}},
                       "required": ["edition"],
                       "additionalProperties": false
                     }
@@ -2925,7 +2803,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts",
@@ -2966,7 +2844,7 @@
           },
           "400": {
             "description": "校验或业务错误",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponseSchema"}}}
           }
         },
         "x-source": "apps/api/src/modules/book/router.ts"
@@ -3043,6 +2921,16 @@
         "required": ["token"],
         "additionalProperties": false
       },
+      "AccountSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
+          "name": {"type":"string"}
+        },
+        "required": ["id","email","name"],
+        "additionalProperties": false
+      },
       "ArticleCitationSchema": {
         "type": "object",
         "properties": {
@@ -3077,6 +2965,73 @@
         "required": ["projectId","articleId","revisionId"],
         "additionalProperties": false
       },
+      "ArticleRevisionSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "articleId": {"$ref":"#/components/schemas/Uuid"},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "title": {"type":"string"},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string"},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "summary": {"type":"string"},
+          "authorName": {"type":"string"},
+          "createdBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","articleId","version","title","status","contentJson","contentHtml","wordCount","summary","authorName","createdBy","createdAt"],
+        "additionalProperties": false
+      },
+      "ArticleSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "title": {"type":"string"},
+          "subtitle": {"type":"string"},
+          "author": {"type":"string"},
+          "docType": {"type":"string","enum":["preface","rules","origin","motto","biography","inscription","custom"]},
+          "status": {"type":"string","enum":["draft","review","approved"]},
+          "privacy": {"type":"string","enum":["public","clan","editors"]},
+          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
+          "contentHtml": {"type":"string"},
+          "linkedPersonIds": {"type":"array","items":{"type":"string"}},
+          "linkedChartIds": {"type":"array","items":{"type":"string"}},
+          "citations": {"type":"array","items":{"$ref":"#/components/schemas/ArticleCitationSchema"}},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "updatedBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","folderId","seq","title","subtitle","author","docType","status","privacy","contentJson","contentHtml","linkedPersonIds","linkedChartIds","citations","wordCount","version","updatedBy","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
+      "ArticlesDirectoryPayloadSchema": {
+        "type": "object",
+        "properties": {
+          "folders": {"type":"array","items":{"$ref":"#/components/schemas/FolderSchema"}},
+          "articles": {"type":"array","items":{"$ref":"#/components/schemas/ArticleSchema"}}
+        },
+        "required": ["folders","articles"],
+        "additionalProperties": false
+      },
+      "AuthDataSchema": {
+        "type": "object",
+        "properties": {
+          "user": {"$ref":"#/components/schemas/AccountSchema"},
+          "defaultOrganization": {"anyOf":[{"$ref":"#/components/schemas/OrganizationSummarySchema"},{"type":"null"}]},
+          "invite": {},
+          "onboarding": {"type":"boolean"}
+        },
+        "required": ["user","defaultOrganization"],
+        "additionalProperties": false
+      },
       "BookEditionIdParamsSchema": {
         "type": "object",
         "properties": {
@@ -3085,6 +3040,26 @@
           "editionId": {"$ref":"#/components/schemas/Uuid"}
         },
         "required": ["projectId","bookId","editionId"],
+        "additionalProperties": false
+      },
+      "BookEditionSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "bookId": {"$ref":"#/components/schemas/Uuid"},
+          "bindingStyle": {"type":"string","enum":["thread","hardcover"]},
+          "lineageStyle": {"type":"string","enum":["euler","su","modern_double"]},
+          "paperSize": {"type":"string","enum":["thread_185x290","a4_210x297","k16_185x260"]},
+          "pageCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "printStatus": {"type":"string","enum":["none","finalized"]},
+          "layoutSnapshot": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
+          "pages": {"type":"array","items":{"$ref":"#/components/schemas/CompiledPageSchema"}},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","bookId","bindingStyle","lineageStyle","paperSize","pageCount","memberCount","wordCount","printStatus","layoutSnapshot","pages","createdAt"],
         "additionalProperties": false
       },
       "BookIdParamsSchema": {
@@ -3108,6 +3083,28 @@
           "pageNumberStyle": {"type":"string","enum":["chinese","arabic"]}
         },
         "required": ["bindingStyle","lineageStyle","paperSize","borderStyle","fontFamily","density","fishtailStyle","showHallName","showHeaderName","pageNumberStyle"],
+        "additionalProperties": false
+      },
+      "BookSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "bookName": {"type":"string"},
+          "headerName": {"type":"string"},
+          "hallName": {"type":"string"},
+          "volumeNo": {"type":"string"},
+          "editor": {"type":"string"},
+          "compilationDate": {"type":"string"},
+          "sections": {"$ref":"#/components/schemas/BookSectionsSchema"},
+          "layoutConfig": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","folderId","bookName","headerName","hallName","volumeNo","editor","compilationDate","sections","layoutConfig","seq","version","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "BookSectionsSchema": {
@@ -3447,10 +3444,35 @@
         "required": ["anchorPersonId","person","relations"],
         "additionalProperties": false
       },
+      "ErrorResponseSchema": {
+        "type": "object",
+        "properties": {
+          "ok": {"type":"boolean","const":false},
+          "code": {"type":"string"},
+          "message": {"type":"string"},
+          "details": {}
+        },
+        "required": ["ok","code","message"],
+        "additionalProperties": false
+      },
       "FolderIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"folderId":{"$ref":"#/components/schemas/Uuid"}},
         "required": ["projectId","folderId"],
+        "additionalProperties": false
+      },
+      "FolderSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["lineage","article","book"]},
+          "name": {"type":"string"},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","kind","name","seq","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "GenealogyDateSchema": {
@@ -3752,11 +3774,72 @@
         "required": ["schemaVersion","kind"],
         "additionalProperties": false
       },
+      "InviteParamsSchema": {
+        "type": "object",
+        "properties": {
+          "organizationId": {"$ref":"#/components/schemas/Uuid"},
+          "inviteId": {"$ref":"#/components/schemas/Uuid"}
+        },
+        "required": ["organizationId","inviteId"],
+        "additionalProperties": false
+      },
+      "InviteSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
+          "role": {"type":"string","enum":["admin","editor","viewer"]},
+          "status": {"type":"string","enum":["pending","accepted","revoked"]},
+          "expiresAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","email","role","status","expiresAt","createdAt"],
+        "additionalProperties": false
+      },
       "InviteStatusSchema": {"type":"string","enum":["pending","accepted","revoked"]},
+      "LineageDirectoryPayloadSchema": {
+        "type": "object",
+        "properties": {
+          "folders": {"type":"array","items":{"$ref":"#/components/schemas/FolderSchema"}},
+          "lineages": {"type":"array","items":{"$ref":"#/components/schemas/LineageSchema"}}
+        },
+        "required": ["folders","lineages"],
+        "additionalProperties": false
+      },
+      "LineageGraphPayloadSchema": {
+        "type": "object",
+        "properties": {
+          "lineage": {"$ref":"#/components/schemas/LineageSchema"},
+          "persons": {"type":"array","items":{"$ref":"#/components/schemas/PersonSchema"}},
+          "relations": {"type":"array","items":{"$ref":"#/components/schemas/RelationSchema"}},
+          "projections": {"type":"array","items":{"$ref":"#/components/schemas/ProjectionSchema"}}
+        },
+        "required": ["lineage","persons","relations","projections"],
+        "additionalProperties": false
+      },
       "LineageIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"lineageId":{"$ref":"#/components/schemas/Uuid"}},
         "required": ["projectId","lineageId"],
+        "additionalProperties": false
+      },
+      "LineageSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
+          "name": {"type":"string"},
+          "surname": {"type":["string","null"]},
+          "hallName": {"type":["string","null"]},
+          "progenitor": {"type":["string","null"]},
+          "region": {"anyOf":[{"$ref":"#/components/schemas/GenealogyPlaceSchema"},{"type":"null"}]},
+          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","folderId","name","surname","hallName","progenitor","region","seq","version","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "LineageSubTableConfigSchema": {
@@ -3792,10 +3875,86 @@
         },
         "additionalProperties": false
       },
+      "MediaPathParamsSchema": {
+        "type": "object",
+        "properties": {"path":{"type":"string"}},
+        "required": ["path"],
+        "additionalProperties": false
+      },
+      "MemberParamsSchema": {
+        "type": "object",
+        "properties": {
+          "organizationId": {"$ref":"#/components/schemas/Uuid"},
+          "userId": {"$ref":"#/components/schemas/Uuid"}
+        },
+        "required": ["organizationId","userId"],
+        "additionalProperties": false
+      },
+      "MemberSchema": {
+        "type": "object",
+        "properties": {
+          "userId": {"$ref":"#/components/schemas/Uuid"},
+          "name": {"type":"string"},
+          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
+          "role": {"type":"string","enum":["admin","editor","viewer"]},
+          "isOwner": {"type":"boolean"},
+          "joinedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["userId","name","email","role","isOwner","joinedAt"],
+        "additionalProperties": false
+      },
+      "OrganizationDetailSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "name": {"type":"string"},
+          "isOwner": {"type":"boolean"},
+          "status": {"type":"string","enum":["active","archived"]},
+          "ownerUserId": {"$ref":"#/components/schemas/Uuid"},
+          "myRole": {"type":"string","enum":["admin","editor","viewer"]},
+          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "pendingInviteCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "projectCount": {"type":"integer","minimum":0,"maximum":9007199254740991}
+        },
+        "required": ["id","name","isOwner","status","ownerUserId","myRole","memberCount","pendingInviteCount","projectCount"],
+        "additionalProperties": false
+      },
       "OrganizationIdParamsSchema": {
         "type": "object",
         "properties": {"organizationId":{"$ref":"#/components/schemas/Uuid"}},
         "required": ["organizationId"],
+        "additionalProperties": false
+      },
+      "OrganizationListItemSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "name": {"type":"string"},
+          "role": {"type":"string","enum":["admin","editor","viewer"]},
+          "isOwner": {"type":"boolean"},
+          "lastUsedAt": {"anyOf":[{"$ref":"#/components/schemas/IsoDateTime"},{"type":"null"}]}
+        },
+        "required": ["id","name","role","isOwner","lastUsedAt"],
+        "additionalProperties": false
+      },
+      "OrganizationSummarySchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "name": {"type":"string"},
+          "role": {"type":"string","enum":["admin","editor","viewer"]},
+          "isOwner": {"type":"boolean"}
+        },
+        "required": ["id","name","role","isOwner"],
+        "additionalProperties": false
+      },
+      "OrganizationsPayloadSchema": {
+        "type": "object",
+        "properties": {
+          "organizations": {"type":"array","items":{"$ref":"#/components/schemas/OrganizationListItemSchema"}},
+          "defaultOrganizationId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]}
+        },
+        "required": ["organizations","defaultOrganizationId"],
         "additionalProperties": false
       },
       "PageQuerySchema": {
@@ -3876,6 +4035,23 @@
         "required": ["projectId","personId","eventId"],
         "additionalProperties": false
       },
+      "PersonEventSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "personId": {"$ref":"#/components/schemas/Uuid"},
+          "type": {"type":"string","enum":["birth","education","career","marriage","residence","death","other"]},
+          "structuredDate": {"anyOf":[{"$ref":"#/components/schemas/GenealogyDateSchema"},{"type":"null"}]},
+          "structuredPlace": {"anyOf":[{"$ref":"#/components/schemas/GenealogyPlaceSchema"},{"type":"null"}]},
+          "description": {"type":["string","null"]},
+          "sortOrder": {"type":"integer","minimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","personId","type","structuredDate","structuredPlace","description","sortOrder","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
       "PersonIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"personId":{"$ref":"#/components/schemas/Uuid"}},
@@ -3890,6 +4066,25 @@
           "nameId": {"$ref":"#/components/schemas/Uuid"}
         },
         "required": ["projectId","personId","nameId"],
+        "additionalProperties": false
+      },
+      "PersonNameSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "personId": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["formal","courtesy","art","milk","genealogy","posthumous","other"]},
+          "value": {"type":"string"},
+          "surname": {"type":["string","null"]},
+          "romanizedSurname": {"type":["string","null"]},
+          "romanizedName": {"type":["string","null"]},
+          "label": {"type":["string","null"]},
+          "isPrimary": {"type":"boolean"},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","personId","kind","value","surname","romanizedSurname","romanizedName","label","isPrimary","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "PersonScalarPatchSchema": {
@@ -3916,6 +4111,43 @@
         },
         "additionalProperties": false
       },
+      "PersonSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "lineageId": {"$ref":"#/components/schemas/Uuid"},
+          "displayName": {"type":"string"},
+          "sex": {"type":"string","enum":["male","female","unknown","other"]},
+          "surname": {"type":["string","null"]},
+          "givenName": {"type":["string","null"]},
+          "romanizedSurname": {"type":["string","null"]},
+          "romanizedName": {"type":["string","null"]},
+          "romanizedSuffix": {"type":["string","null"]},
+          "birthYear": {
+            "anyOf": [{"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},{"type":"null"}]
+          },
+          "deathYear": {
+            "anyOf": [{"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},{"type":"null"}]
+          },
+          "isLiving": {"type":"boolean"},
+          "birthInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonBirthInfoSchema"},{"type":"null"}]},
+          "deathInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonDeathInfoSchema"},{"type":"null"}]},
+          "generationWord": {"type":["string","null"]},
+          "relationTitle": {"type":["string","null"]},
+          "siblingOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
+          "biography": {"type":["string","null"]},
+          "notes": {"type":["string","null"]},
+          "avatarKey": {"type":["string","null"]},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "names": {"type":"array","items":{"$ref":"#/components/schemas/PersonNameSchema"}},
+          "events": {"type":"array","items":{"$ref":"#/components/schemas/PersonEventSchema"}}
+        },
+        "required": ["id","projectId","lineageId","displayName","sex","surname","givenName","romanizedSurname","romanizedName","romanizedSuffix","birthYear","deathYear","isLiving","birthInfo","deathInfo","generationWord","relationTitle","siblingOrder","biography","notes","avatarKey","version","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
       "ProjectIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"}},
@@ -3931,10 +4163,60 @@
         "required": ["projectId","fileName"],
         "additionalProperties": false
       },
+      "ProjectSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "organizationId": {"$ref":"#/components/schemas/Uuid"},
+          "name": {"type":"string"},
+          "status": {"type":"string","enum":["planning","in_progress","completed"]},
+          "surname": {"type":["string","null"]},
+          "ancestor": {"type":["string","null"]},
+          "hallName": {"type":["string","null"]},
+          "originText": {"type":["string","null"]},
+          "description": {"type":["string","null"]},
+          "colorTheme": {"type":"string","enum":["sky","pink","orange","indigo","emerald","violet"]},
+          "projectLevel": {"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},
+          "iconKey": {"type":["string","null"]},
+          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","organizationId","name","status","surname","ancestor","hallName","originText","description","colorTheme","projectLevel","iconKey","version","createdAt","updatedAt"],
+        "additionalProperties": false
+      },
+      "ProjectionSchema": {
+        "type": "object",
+        "properties": {
+          "personId": {"$ref":"#/components/schemas/Uuid"},
+          "primaryPath": {"type":"string"},
+          "generation": {"type":"integer","minimum":0,"maximum":9007199254740991}
+        },
+        "required": ["personId","primaryPath","generation"],
+        "additionalProperties": false
+      },
       "RelationIdParamsSchema": {
         "type": "object",
         "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"relationId":{"$ref":"#/components/schemas/Uuid"}},
         "required": ["projectId","relationId"],
+        "additionalProperties": false
+      },
+      "RelationSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"$ref":"#/components/schemas/Uuid"},
+          "projectId": {"$ref":"#/components/schemas/Uuid"},
+          "fromPersonId": {"$ref":"#/components/schemas/Uuid"},
+          "toPersonId": {"$ref":"#/components/schemas/Uuid"},
+          "kind": {"type":"string","enum":["biological_parent","adoptive_parent","ritual_heir","step_parent","foster_parent","spouse","partner"]},
+          "fromRoleLabel": {"type":["string","null"]},
+          "toRoleLabel": {"type":["string","null"]},
+          "sortOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
+          "note": {"type":["string","null"]},
+          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
+          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
+        },
+        "required": ["id","projectId","fromPersonId","toPersonId","kind","fromRoleLabel","toRoleLabel","sortOrder","note","createdAt","updatedAt"],
         "additionalProperties": false
       },
       "ReorderBooksSchema": {
@@ -3953,6 +4235,16 @@
         "additionalProperties": false
       },
       "RoleSchema": {"type":"string","enum":["admin","editor","viewer"]},
+      "SessionDataSchema": {
+        "type": "object",
+        "properties": {
+          "user": {"anyOf":[{"$ref":"#/components/schemas/AccountSchema"},{"type":"null"}]},
+          "defaultOrganization": {"anyOf":[{"$ref":"#/components/schemas/OrganizationSummarySchema"},{"type":"null"}]},
+          "onboarding": {"type":"boolean"}
+        },
+        "required": ["user","defaultOrganization","onboarding"],
+        "additionalProperties": false
+      },
       "SignInSchema": {
         "type": "object",
         "properties": {
@@ -3970,6 +4262,18 @@
           "inviteToken": {"type":"string","minLength":1}
         },
         "required": ["email","password"],
+        "additionalProperties": false
+      },
+      "SubgraphPayloadSchema": {
+        "type": "object",
+        "properties": {
+          "rootPersonId": {"$ref":"#/components/schemas/Uuid"},
+          "persons": {"type":"array","items":{"$ref":"#/components/schemas/PersonSchema"}},
+          "relations": {"type":"array","items":{"$ref":"#/components/schemas/RelationSchema"}},
+          "hasMoreAncestors": {"type":"boolean"},
+          "hasMoreDescendants": {"type":"boolean"}
+        },
+        "required": ["rootPersonId","persons","relations","hasMoreAncestors","hasMoreDescendants"],
         "additionalProperties": false
       },
       "SubgraphQuerySchema": {
@@ -4193,368 +4497,32 @@
         },
         "additionalProperties": false
       },
-      "Account": {
+      "okOnlySchema": {
         "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
-          "name": {"type":"string"}
-        },
-        "required": ["id","email","name"],
+        "properties": {"ok":{"type":"boolean","const":true}},
+        "required": ["ok"],
         "additionalProperties": false
       },
-      "OrganizationSummary": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "name": {"type":"string"},
-          "role": {"type":"string","enum":["admin","editor","viewer"]},
-          "isOwner": {"type":"boolean"},
-          "lastUsedAt": {"anyOf":[{"$ref":"#/components/schemas/IsoDateTime"},{"type":"null"}]}
-        },
-        "required": ["id","name","role","isOwner"],
-        "additionalProperties": false
-      },
-      "OrganizationDetail": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "name": {"type":"string"},
-          "isOwner": {"type":"boolean"},
-          "status": {"type":"string","enum":["active","archived"]},
-          "ownerUserId": {"$ref":"#/components/schemas/Uuid"},
-          "myRole": {"type":"string","enum":["admin","editor","viewer"]},
-          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "pendingInviteCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "projectCount": {"type":"integer","minimum":0,"maximum":9007199254740991}
-        },
-        "required": ["id","name","isOwner","status","ownerUserId","myRole","memberCount","pendingInviteCount","projectCount"],
-        "additionalProperties": false
-      },
-      "Member": {
-        "type": "object",
-        "properties": {
-          "userId": {"$ref":"#/components/schemas/Uuid"},
-          "name": {"type":"string"},
-          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
-          "role": {"type":"string","enum":["admin","editor","viewer"]},
-          "isOwner": {"type":"boolean"},
-          "joinedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["userId","name","email","role","isOwner","joinedAt"],
-        "additionalProperties": false
-      },
-      "Invite": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "email": {"type":"string","format":"email","pattern":"^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
-          "role": {"type":"string","enum":["admin","editor","viewer"]},
-          "status": {"type":"string"},
-          "expiresAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","email","role","status","expiresAt","createdAt"],
-        "additionalProperties": false
-      },
-      "Project": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "organizationId": {"$ref":"#/components/schemas/Uuid"},
-          "name": {"type":"string"},
-          "status": {"type":"string","enum":["planning","in_progress","completed"]},
-          "surname": {"type":["string","null"]},
-          "ancestor": {"type":["string","null"]},
-          "hallName": {"type":["string","null"]},
-          "originText": {"type":["string","null"]},
-          "description": {"type":["string","null"]},
-          "colorTheme": {"type":"string","enum":["sky","pink","orange","indigo","emerald","violet"]},
-          "projectLevel": {"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},
-          "iconKey": {"type":["string","null"]},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","organizationId","name","status","surname","ancestor","hallName","originText","description","colorTheme","projectLevel","iconKey","version","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Folder": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "kind": {"type":"string","enum":["lineage","article","book"]},
-          "name": {"type":"string"},
-          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","kind","name","seq","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Lineage": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
-          "name": {"type":"string"},
-          "surname": {"type":["string","null"]},
-          "hallName": {"type":["string","null"]},
-          "progenitor": {"type":["string","null"]},
-          "region": {"anyOf":[{"$ref":"#/components/schemas/GenealogyPlaceSchema"},{"type":"null"}]},
-          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","folderId","name","surname","hallName","progenitor","region","seq","version","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Article": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
-          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "title": {"type":"string"},
-          "subtitle": {"type":"string"},
-          "author": {"type":"string"},
-          "docType": {"type":"string","enum":["preface","rules","origin","motto","biography","inscription","custom"]},
-          "status": {"type":"string","enum":["draft","review","approved"]},
-          "privacy": {"type":"string","enum":["public","clan","editors"]},
-          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
-          "contentHtml": {"type":"string"},
-          "linkedPersonIds": {"type":"array","items":{"type":"string"}},
-          "linkedChartIds": {"type":"array","items":{"type":"string"}},
-          "citations": {"type":"array","items":{"$ref":"#/components/schemas/ArticleCitationSchema"}},
-          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "updatedBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","folderId","seq","title","subtitle","author","docType","status","privacy","contentJson","contentHtml","linkedPersonIds","linkedChartIds","citations","wordCount","version","updatedBy","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "ArticleRevision": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "articleId": {"$ref":"#/components/schemas/Uuid"},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "title": {"type":"string"},
-          "status": {"type":"string","enum":["draft","review","approved"]},
-          "contentJson": {"$ref":"#/components/schemas/ArticleContentJsonSchema"},
-          "contentHtml": {"type":"string"},
-          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "summary": {"type":"string"},
-          "authorName": {"type":"string"},
-          "createdBy": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","articleId","version","title","status","contentJson","contentHtml","wordCount","summary","authorName","createdBy","createdAt"],
-        "additionalProperties": false
-      },
-      "Book": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "folderId": {"anyOf":[{"$ref":"#/components/schemas/Uuid"},{"type":"null"}]},
-          "bookName": {"type":"string"},
-          "headerName": {"type":"string"},
-          "hallName": {"type":"string"},
-          "volumeNo": {"type":"string"},
-          "editor": {"type":"string"},
-          "compilationDate": {"type":"string"},
-          "sections": {"$ref":"#/components/schemas/BookSectionsSchema"},
-          "layoutConfig": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
-          "seq": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","folderId","bookName","headerName","hallName","volumeNo","editor","compilationDate","sections","layoutConfig","seq","version","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "BookEdition": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "bookId": {"$ref":"#/components/schemas/Uuid"},
-          "bindingStyle": {"type":"string","enum":["thread","hardcover"]},
-          "lineageStyle": {"type":"string","enum":["euler","su","modern_double"]},
-          "paperSize": {"type":"string","enum":["thread_185x290","a4_210x297","k16_185x260"]},
-          "pageCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "memberCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "wordCount": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "printStatus": {"type":"string","enum":["none","finalized"]},
-          "layoutSnapshot": {"$ref":"#/components/schemas/BookLayoutConfigSchema"},
-          "pages": {"type":"array","items":{"$ref":"#/components/schemas/CompiledPageSchema"}},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","bookId","bindingStyle","lineageStyle","paperSize","pageCount","memberCount","wordCount","printStatus","layoutSnapshot","pages","createdAt"],
-        "additionalProperties": false
-      },
-      "PersonName": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "personId": {"$ref":"#/components/schemas/Uuid"},
-          "kind": {"type":"string","enum":["formal","courtesy","art","milk","genealogy","posthumous","other"]},
-          "value": {"type":"string"},
-          "surname": {"type":["string","null"]},
-          "romanizedSurname": {"type":["string","null"]},
-          "romanizedName": {"type":["string","null"]},
-          "label": {"type":["string","null"]},
-          "isPrimary": {"type":"boolean"},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","personId","kind","value","surname","romanizedSurname","romanizedName","label","isPrimary","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "PersonEvent": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "personId": {"$ref":"#/components/schemas/Uuid"},
-          "type": {"type":"string","enum":["birth","education","career","marriage","residence","death","other"]},
-          "structuredDate": {"anyOf":[{"$ref":"#/components/schemas/GenealogyDateSchema"},{"type":"null"}]},
-          "structuredPlace": {"anyOf":[{"$ref":"#/components/schemas/GenealogyPlaceSchema"},{"type":"null"}]},
-          "description": {"type":["string","null"]},
-          "sortOrder": {"type":"integer","minimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","personId","type","structuredDate","structuredPlace","description","sortOrder","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Person": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "lineageId": {"$ref":"#/components/schemas/Uuid"},
-          "displayName": {"type":"string"},
-          "sex": {"type":"string","enum":["male","female","unknown","other"]},
-          "surname": {"type":["string","null"]},
-          "givenName": {"type":["string","null"]},
-          "romanizedSurname": {"type":["string","null"]},
-          "romanizedName": {"type":["string","null"]},
-          "romanizedSuffix": {"type":["string","null"]},
-          "birthYear": {
-            "anyOf": [{"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},{"type":"null"}]
-          },
-          "deathYear": {
-            "anyOf": [{"type":"integer","minimum":-9007199254740991,"maximum":9007199254740991},{"type":"null"}]
-          },
-          "isLiving": {"type":"boolean"},
-          "birthInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonBirthInfoSchema"},{"type":"null"}]},
-          "deathInfo": {"anyOf":[{"$ref":"#/components/schemas/PersonDeathInfoSchema"},{"type":"null"}]},
-          "generationWord": {"type":["string","null"]},
-          "relationTitle": {"type":["string","null"]},
-          "siblingOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
-          "biography": {"type":["string","null"]},
-          "notes": {"type":["string","null"]},
-          "avatarKey": {"type":["string","null"]},
-          "version": {"type":"integer","exclusiveMinimum":0,"maximum":9007199254740991},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "names": {"type":"array","items":{"$ref":"#/components/schemas/PersonName"}},
-          "events": {"type":"array","items":{"$ref":"#/components/schemas/PersonEvent"}}
-        },
-        "required": ["id","projectId","lineageId","displayName","sex","surname","givenName","romanizedSurname","romanizedName","romanizedSuffix","birthYear","deathYear","isLiving","birthInfo","deathInfo","generationWord","relationTitle","siblingOrder","biography","notes","avatarKey","version","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Relation": {
-        "type": "object",
-        "properties": {
-          "id": {"$ref":"#/components/schemas/Uuid"},
-          "projectId": {"$ref":"#/components/schemas/Uuid"},
-          "fromPersonId": {"$ref":"#/components/schemas/Uuid"},
-          "toPersonId": {"$ref":"#/components/schemas/Uuid"},
-          "kind": {"type":"string","enum":["biological_parent","adoptive_parent","ritual_heir","step_parent","foster_parent","spouse","partner"]},
-          "fromRoleLabel": {"type":["string","null"]},
-          "toRoleLabel": {"type":["string","null"]},
-          "sortOrder": {"anyOf":[{"type":"integer","minimum":0,"maximum":9007199254740991},{"type":"null"}]},
-          "note": {"type":["string","null"]},
-          "createdAt": {"$ref":"#/components/schemas/IsoDateTime"},
-          "updatedAt": {"$ref":"#/components/schemas/IsoDateTime"}
-        },
-        "required": ["id","projectId","fromPersonId","toPersonId","kind","fromRoleLabel","toRoleLabel","sortOrder","note","createdAt","updatedAt"],
-        "additionalProperties": false
-      },
-      "Projection": {
-        "type": "object",
-        "properties": {
-          "personId": {"$ref":"#/components/schemas/Uuid"},
-          "primaryPath": {"type":"string"},
-          "generation": {"type":"integer","minimum":0,"maximum":9007199254740991}
-        },
-        "required": ["personId","primaryPath","generation"],
-        "additionalProperties": false
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {"type":"boolean","const":false},
-          "code": {"type":"string"},
-          "message": {"type":"string"},
-          "details": {}
-        },
-        "required": ["ok","code","message"],
-        "additionalProperties": false
-      },
-      "OrgParams": {
-        "type": "object",
-        "properties": {"organizationId":{"$ref":"#/components/schemas/Uuid"}},
-        "required": ["organizationId"],
-        "additionalProperties": false
-      },
-      "ProjectParams": {
-        "type": "object",
-        "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"}},
-        "required": ["projectId"],
-        "additionalProperties": false
-      },
-      "PersonParams": {
-        "type": "object",
-        "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"personId":{"$ref":"#/components/schemas/Uuid"}},
-        "required": ["projectId","personId"],
-        "additionalProperties": false
-      },
-      "RelationParams": {
-        "type": "object",
-        "properties": {"projectId":{"$ref":"#/components/schemas/Uuid"},"relationId":{"$ref":"#/components/schemas/Uuid"}},
-        "required": ["projectId","relationId"],
-        "additionalProperties": false
-      },
-      "MemberParams": {
-        "type": "object",
-        "properties": {
-          "organizationId": {"$ref":"#/components/schemas/Uuid"},
-          "userId": {"$ref":"#/components/schemas/Uuid"}
-        },
-        "required": ["organizationId","userId"],
-        "additionalProperties": false
-      },
-      "InviteParams": {
-        "type": "object",
-        "properties": {
-          "organizationId": {"$ref":"#/components/schemas/Uuid"},
-          "inviteId": {"$ref":"#/components/schemas/Uuid"}
-        },
-        "required": ["organizationId","inviteId"],
-        "additionalProperties": false
-      },
+      "Account": {"$ref":"#/components/schemas/AccountSchema"},
+      "OrganizationSummary": {"$ref":"#/components/schemas/OrganizationSummarySchema"},
+      "OrganizationDetail": {"$ref":"#/components/schemas/OrganizationDetailSchema"},
+      "Member": {"$ref":"#/components/schemas/MemberSchema"},
+      "Invite": {"$ref":"#/components/schemas/InviteSchema"},
+      "Project": {"$ref":"#/components/schemas/ProjectSchema"},
+      "Folder": {"$ref":"#/components/schemas/FolderSchema"},
+      "Lineage": {"$ref":"#/components/schemas/LineageSchema"},
+      "Article": {"$ref":"#/components/schemas/ArticleSchema"},
+      "ArticleRevision": {"$ref":"#/components/schemas/ArticleRevisionSchema"},
+      "Book": {"$ref":"#/components/schemas/BookSchema"},
+      "BookEdition": {"$ref":"#/components/schemas/BookEditionSchema"},
+      "PersonName": {"$ref":"#/components/schemas/PersonNameSchema"},
+      "PersonEvent": {"$ref":"#/components/schemas/PersonEventSchema"},
+      "Person": {"$ref":"#/components/schemas/PersonSchema"},
+      "Relation": {"$ref":"#/components/schemas/RelationSchema"},
+      "Projection": {"$ref":"#/components/schemas/ProjectionSchema"},
+      "ErrorResponse": {"$ref":"#/components/schemas/ErrorResponseSchema"},
+      "OrgParams": {"$ref":"#/components/schemas/OrganizationIdParamsSchema"},
+      "ProjectParams": {"$ref":"#/components/schemas/ProjectIdParamsSchema"},
       "FolderParams": {"$ref":"#/components/schemas/FolderIdParamsSchema"},
       "LineageParams": {"$ref":"#/components/schemas/LineageIdParamsSchema"},
       "ProjectMediaParams": {"$ref":"#/components/schemas/ProjectMediaParamsSchema"},
@@ -4562,8 +4530,12 @@
       "ArticleRevisionParams": {"$ref":"#/components/schemas/ArticleRevisionIdParamsSchema"},
       "BookParams": {"$ref":"#/components/schemas/BookIdParamsSchema"},
       "BookEditionParams": {"$ref":"#/components/schemas/BookEditionIdParamsSchema"},
+      "PersonParams": {"$ref":"#/components/schemas/PersonIdParamsSchema"},
       "PersonNameParams": {"$ref":"#/components/schemas/PersonNameIdParamsSchema"},
-      "PersonEventParams": {"$ref":"#/components/schemas/PersonEventIdParamsSchema"}
+      "PersonEventParams": {"$ref":"#/components/schemas/PersonEventIdParamsSchema"},
+      "RelationParams": {"$ref":"#/components/schemas/RelationIdParamsSchema"},
+      "MemberParams": {"$ref":"#/components/schemas/MemberParamsSchema"},
+      "InviteParams": {"$ref":"#/components/schemas/InviteParamsSchema"}
     }
   }
 }

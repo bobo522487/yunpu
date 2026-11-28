@@ -1,16 +1,6 @@
-import {
-  ArticleIdParamsSchema,
-  ArticleRevisionIdParamsSchema,
-  CreateArticleRevisionSchema,
-  CreateArticleSchema,
-  ProjectIdParamsSchema,
-  ProjectMediaParamsSchema,
-  RestoreArticleRevisionSchema,
-  UpdateArticleSchema,
-} from "@yunpu/shared";
 import { Hono } from "hono";
+import { createContractBinder } from "../../lib/contract";
 import { notFound, validationError } from "../../lib/errors";
-import { parseJson, parseParams, requireUser } from "../../lib/http";
 import { getObject, putObject } from "../../storage";
 import type { ApiEnv } from "../../types";
 import {
@@ -84,151 +74,164 @@ async function readBoundedAssetBody(
 }
 
 export const articleRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  articleRouter,
+  "apps/api/src/modules/article/router.ts",
+);
 
-articleRouter.get("/projects/:projectId/articles", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const directory = await listArticleDirectoryForProject(user.id, projectId);
+route("get", "/projects/:projectId/articles", async (c, { user, params }) => {
+  const directory = await listArticleDirectoryForProject(
+    user.id,
+    params.projectId,
+  );
   return c.json({ ok: true, data: directory });
 });
 
-articleRouter.post("/projects/:projectId/articles", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const input = await parseJson(c, CreateArticleSchema);
-  const article = await createArticleForProject(user.id, projectId, input);
-  return c.json({ ok: true, data: { article } }, 201);
-});
-
-articleRouter.get("/projects/:projectId/articles/:articleId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
-  const article = await getArticleForProject(user.id, projectId, articleId);
-  return c.json({ ok: true, data: { article } });
-});
-
-articleRouter.patch("/projects/:projectId/articles/:articleId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
-  const input = await parseJson(c, UpdateArticleSchema);
-  const article = await updateArticleForProject(
-    user.id,
-    projectId,
-    articleId,
-    input,
-  );
-  return c.json({ ok: true, data: { article } });
-});
-
-articleRouter.post(
-  "/projects/:projectId/articles/:articleId/duplicate",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
-    const article = await duplicateArticleForProject(
+route(
+  "post",
+  "/projects/:projectId/articles",
+  async (c, { user, params, body }) => {
+    const article = await createArticleForProject(
       user.id,
-      projectId,
-      articleId,
+      params.projectId,
+      body,
     );
     return c.json({ ok: true, data: { article } }, 201);
   },
 );
 
-articleRouter.delete("/projects/:projectId/articles/:articleId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
-  await deleteArticleForProject(user.id, projectId, articleId);
-  return c.json({ ok: true, data: { deleted: true } });
-});
+route(
+  "get",
+  "/projects/:projectId/articles/:articleId",
+  async (c, { user, params }) => {
+    const article = await getArticleForProject(
+      user.id,
+      params.projectId,
+      params.articleId,
+    );
+    return c.json({ ok: true, data: { article } });
+  },
+);
 
-articleRouter.get(
+route(
+  "patch",
+  "/projects/:projectId/articles/:articleId",
+  async (c, { user, params, body }) => {
+    const article = await updateArticleForProject(
+      user.id,
+      params.projectId,
+      params.articleId,
+      body,
+    );
+    return c.json({ ok: true, data: { article } });
+  },
+);
+
+route(
+  "post",
+  "/projects/:projectId/articles/:articleId/duplicate",
+  async (c, { user, params }) => {
+    const article = await duplicateArticleForProject(
+      user.id,
+      params.projectId,
+      params.articleId,
+    );
+    return c.json({ ok: true, data: { article } }, 201);
+  },
+);
+
+route(
+  "delete",
+  "/projects/:projectId/articles/:articleId",
+  async (c, { user, params }) => {
+    await deleteArticleForProject(user.id, params.projectId, params.articleId);
+    return c.json({ ok: true, data: { deleted: true } });
+  },
+);
+
+route(
+  "get",
   "/projects/:projectId/articles/:articleId/revisions",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
+  async (c, { user, params }) => {
     const revisions = await listArticleRevisionsForProject(
       user.id,
-      projectId,
-      articleId,
+      params.projectId,
+      params.articleId,
     );
     return c.json({ ok: true, data: { revisions } });
   },
 );
 
-articleRouter.post(
+route(
+  "post",
   "/projects/:projectId/articles/:articleId/revisions",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, articleId } = parseParams(c, ArticleIdParamsSchema);
-    const input = await parseJson(c, CreateArticleRevisionSchema);
+  async (c, { user, params, body }) => {
     const revision = await createArticleRevisionForProject(
       user.id,
-      projectId,
-      articleId,
-      input,
+      params.projectId,
+      params.articleId,
+      body,
     );
     return c.json({ ok: true, data: { revision } }, 201);
   },
 );
 
-articleRouter.post(
+route(
+  "post",
   "/projects/:projectId/articles/:articleId/revisions/:revisionId/restore",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, articleId, revisionId } = parseParams(
-      c,
-      ArticleRevisionIdParamsSchema,
-    );
-    const input = await parseJson(c, RestoreArticleRevisionSchema);
+  async (c, { user, params, body }) => {
     const restored = await restoreArticleRevisionForProject(
       user.id,
-      projectId,
-      articleId,
-      revisionId,
-      input,
+      params.projectId,
+      params.articleId,
+      params.revisionId,
+      body,
     );
     return c.json({ ok: true, data: restored });
   },
 );
 
-articleRouter.post("/projects/:projectId/article-assets", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  await assertProjectMediaAccess(user.id, projectId, "write");
+route(
+  "post",
+  "/projects/:projectId/article-assets",
+  async (c, { user, params }) => {
+    const { projectId } = params;
+    await assertProjectMediaAccess(user.id, projectId, "write");
 
-  const { ext, contentType } = resolveDeclaredImageType(
-    c.req.header("content-type"),
-  );
-  const read = await readBoundedAssetBody(c.req.raw);
-  if ("exceeded" in read) {
-    return c.json(
-      { ok: false, code: "VALIDATION", message: "图片大小不能超过 5MB" },
-      413,
+    const { ext, contentType } = resolveDeclaredImageType(
+      c.req.header("content-type"),
     );
-  }
-  assertValidImageMagicBytes(read.body, ext);
+    const read = await readBoundedAssetBody(c.req.raw);
+    if ("exceeded" in read) {
+      return c.json(
+        { ok: false, code: "VALIDATION", message: "图片大小不能超过 5MB" },
+        413,
+      );
+    }
+    assertValidImageMagicBytes(read.body, ext);
 
-  const fileName = `${crypto.randomUUID()}.${ext}`;
-  const objectKey = `article-assets/${projectId}/${fileName}`;
-  await putObject(objectKey, read.body, contentType);
+    const fileName = `${crypto.randomUUID()}.${ext}`;
+    const objectKey = `article-assets/${projectId}/${fileName}`;
+    await putObject(objectKey, read.body, contentType);
 
-  return c.json(
-    {
-      ok: true,
-      data: {
-        key: fileName,
-        url: `/api/v1/projects/${projectId}/article-assets/${fileName}`,
+    return c.json(
+      {
+        ok: true,
+        data: {
+          key: fileName,
+          url: `/api/v1/projects/${projectId}/article-assets/${fileName}`,
+        },
       },
-    },
-    201,
-  );
-});
+      201,
+    );
+  },
+);
 
-articleRouter.get(
+route(
+  "get",
   "/projects/:projectId/article-assets/:fileName",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, fileName } = parseParams(c, ProjectMediaParamsSchema);
+  async (_c, { user, params }) => {
+    const { projectId, fileName } = params;
     await assertProjectMediaAccess(user.id, projectId, "read");
 
     const bytes = await getObject(`article-assets/${projectId}/${fileName}`);

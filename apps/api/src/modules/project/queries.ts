@@ -1,5 +1,9 @@
 import { organization, project } from "@yunpu/db";
-import type { ProjectColorTheme, ProjectStatus } from "@yunpu/shared";
+import type {
+  ProjectColorTheme,
+  ProjectRecord,
+  ProjectStatus,
+} from "@yunpu/shared";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import {
@@ -8,23 +12,7 @@ import {
 } from "../../lib/pagination";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
-export type ProjectRecord = {
-  id: string;
-  organizationId: string;
-  name: string;
-  status: ProjectStatus;
-  surname: string | null;
-  ancestor: string | null;
-  hallName: string | null;
-  originText: string | null;
-  description: string | null;
-  colorTheme: ProjectColorTheme;
-  projectLevel: number;
-  iconKey: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { ProjectRecord };
 
 const projectColumns = {
   id: project.id,

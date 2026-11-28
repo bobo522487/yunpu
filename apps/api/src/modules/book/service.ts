@@ -156,7 +156,7 @@ export async function duplicateBookForProject(
         wordCount: edition.wordCount,
         printStatus: edition.printStatus,
         layoutSnapshot: edition.layoutSnapshot,
-        pages: edition.pages as CreateBookEditionInput["pages"],
+        pages: edition.pages,
       });
     }
 

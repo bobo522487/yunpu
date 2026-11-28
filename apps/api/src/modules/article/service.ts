@@ -151,7 +151,7 @@ export async function duplicateArticleForProject(
       docType: source.docType,
       status: source.status,
       privacy: source.privacy,
-      contentJson: source.contentJson as CreateArticleInput["contentJson"],
+      contentJson: source.contentJson,
       contentHtml: source.contentHtml,
       linkedPersonIds: source.linkedPersonIds,
       linkedChartIds: source.linkedChartIds,
@@ -253,7 +253,7 @@ export async function restoreArticleRevisionForProject(
       {
         title: targetRev.title,
         status: targetRev.status,
-        contentJson: targetRev.contentJson as UpdateArticleInput["contentJson"],
+        contentJson: targetRev.contentJson,
         contentHtml: targetRev.contentHtml,
         wordCount: targetRev.wordCount,
       },

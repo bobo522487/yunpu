@@ -17,6 +17,7 @@ const { z } = require("zod") as typeof import("zod");
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const mounts: { file: string; prefix: string }[] = [
+  { file: "apps/api/src/app.ts", prefix: "" },
   { file: "apps/api/src/modules/auth/router.ts", prefix: "/api/v1/auth" },
   { file: "apps/api/src/modules/account/router.ts", prefix: "/api/v1" },
   { file: "apps/api/src/modules/organization/router.ts", prefix: "/api/v1" },
@@ -29,14 +30,20 @@ const mounts: { file: string; prefix: string }[] = [
   { file: "apps/api/src/media.ts", prefix: "" },
 ];
 
-const routePattern =
-  /(?:Router|media)\.(get|post|patch|put|delete)\(\s*["']([^"']+)["']/g;
+const bareRoutePattern =
+  /\b(?:Router|media|app)\.(get|post|patch|put|delete)\(\s*["']([^"']+)["']/g;
+const boundRoutePattern =
+  /\b(?:rootRoute|route)(?:\.public)?\(\s*["'](get|post|patch|put|delete)["']\s*,\s*["']([^"']+)["']/g;
 
 function declaredRoutes(): Set<string> {
   const found = new Set<string>();
+  const rawOffenders: string[] = [];
   for (const mount of mounts) {
     const text = readFileSync(join(repoRoot, mount.file), "utf8");
-    for (const match of text.matchAll(routePattern)) {
+    for (const bare of text.matchAll(bareRoutePattern)) {
+      rawOffenders.push(`${mount.file}: ${bare[1]} ${bare[2]}`);
+    }
+    for (const match of text.matchAll(boundRoutePattern)) {
       const method = match[1];
       const route = match[2];
       if (!method || !route) continue;
@@ -46,8 +53,11 @@ function declaredRoutes(): Set<string> {
       found.add(`${method}:${full}`);
     }
   }
-  found.add("get:/api/health");
-  found.add("get:/api/ready");
+  if (rawOffenders.length > 0) {
+    throw new Error(
+      `Unbound bare Hono route declarations (use createContractBinder instead): ${rawOffenders.join(", ")}`,
+    );
+  }
   return found;
 }
 
@@ -59,6 +69,32 @@ function fullRoute(operation: (typeof OPENAPI_OPERATIONS)[number]): string {
 }
 
 const declared = declaredRoutes();
+const seenOps = new Set<string>();
+const duplicateOps: string[] = [];
+for (const operation of OPENAPI_OPERATIONS) {
+  const key = `${operation.method}:${fullRoute(operation)}`;
+  if (seenOps.has(key)) duplicateOps.push(key);
+  seenOps.add(key);
+
+  if (!operation.route.includes("*")) {
+    const expectedParams = [...operation.path.matchAll(/\{([^}]+)\}/g)]
+      .map((m) => m[1])
+      .sort();
+    const paramSchema = operation.params
+      ? (z.toJSONSchema(operation.params) as { properties?: Record<string, unknown> })
+      : undefined;
+    const actualParams = Object.keys(paramSchema?.properties ?? {}).sort();
+    if (JSON.stringify(expectedParams) !== JSON.stringify(actualParams)) {
+      throw new Error(
+        `OpenAPI params mismatch on ${operation.method} ${operation.path}: path=${expectedParams.join(",")} vs schema=${actualParams.join(",")}`,
+      );
+    }
+  }
+}
+if (duplicateOps.length > 0) {
+  throw new Error(`Duplicate OpenAPI operations: ${duplicateOps.join(", ")}`);
+}
+
 const documented = new Set(
   OPENAPI_OPERATIONS.map(
     (operation) => `${operation.method}:${fullRoute(operation)}`,

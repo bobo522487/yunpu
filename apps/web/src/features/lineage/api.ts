@@ -1,126 +1,50 @@
 import type {
-  ApiRelationKind,
   CreateFolderInput,
   CreateLineageInput,
   CreatePersonInput,
   CreateRelativeInput,
-  PersonEventType,
-  PersonNameKind,
-  PersonSex,
+  FolderDto,
+  FolderKind,
+  LineageDto,
+  PersonDto as SharedPersonDto,
+  PersonEventDto as SharedPersonEventDto,
+  PersonNameDto,
+  ProjectionDto,
+  RelationDto,
   UpdateFolderInput,
   UpdateLineageInput,
   UpdatePersonAggregateInput,
 } from '@yunpu/shared';
 import type { GenealogyDate } from '../date-input/date.types';
-import type { GenealogyPlace } from '../place-input/place.types';
 import { apiRequest, apiUpload } from '../../lib/api';
 import type { PersonBirthInfo, PersonDeathInfo } from './types';
 
-export interface FolderDto {
-  id: string;
-  projectId: string;
-  name: string;
-  seq: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LineageDto {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  name: string;
-  surname: string | null;
-  hallName: string | null;
-  progenitor: string | null;
-  region: GenealogyPlace | null;
-  seq: number;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-}
+export type {
+  FolderDto,
+  FolderKind,
+  LineageDto,
+  PersonNameDto,
+  ProjectionDto,
+  RelationDto,
+};
 
 export interface LineageDirectoryPayload {
   folders: FolderDto[];
   lineages: LineageDto[];
 }
 
-export interface PersonNameDto {
-  id: string;
-  projectId: string;
-  personId: string;
-  kind: PersonNameKind;
-  value: string;
-  surname: string | null;
-  romanizedSurname: string | null;
-  romanizedName: string | null;
-  label: string | null;
-  isPrimary: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PersonEventDto {
-  id: string;
-  projectId: string;
-  personId: string;
-  type: PersonEventType;
+export type PersonEventDto = Omit<SharedPersonEventDto, 'structuredDate'> & {
   structuredDate: GenealogyDate | null;
-  structuredPlace: GenealogyPlace | null;
-  description: string | null;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
+};
 
-export interface PersonDto {
-  id: string;
-  projectId: string;
-  lineageId: string;
-  displayName: string;
-  sex: PersonSex;
-  surname: string | null;
-  givenName: string | null;
-  romanizedSurname: string | null;
-  romanizedName: string | null;
-  romanizedSuffix: string | null;
-  birthYear: number | null;
-  deathYear: number | null;
-  isLiving: boolean;
+export type PersonDto = Omit<
+  SharedPersonDto,
+  'birthInfo' | 'deathInfo' | 'events'
+> & {
   birthInfo: PersonBirthInfo | null;
   deathInfo: PersonDeathInfo | null;
-  generationWord: string | null;
-  relationTitle: string | null;
-  siblingOrder: number | null;
-  biography: string | null;
-  notes: string | null;
-  avatarKey: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-  names?: PersonNameDto[];
   events?: PersonEventDto[];
-}
-
-export interface RelationDto {
-  id: string;
-  projectId: string;
-  fromPersonId: string;
-  toPersonId: string;
-  kind: ApiRelationKind;
-  fromRoleLabel: string | null;
-  toRoleLabel: string | null;
-  sortOrder: number | null;
-  note: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ProjectionDto {
-  personId: string;
-  primaryPath: string;
-  generation: number;
-}
+};
 
 export interface LineageGraphPayload {
   lineage: LineageDto;

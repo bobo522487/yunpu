@@ -1,27 +1,14 @@
 import { lineage } from "@yunpu/db";
 import type {
   CreateLineageInput,
-  GenealogyPlaceInput,
+  LineageDto,
   UpdateLineageInput,
 } from "@yunpu/shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
-export type LineageRecord = {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  name: string;
-  surname: string | null;
-  hallName: string | null;
-  progenitor: string | null;
-  region: GenealogyPlaceInput | null;
-  seq: number;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-};
+export type LineageRecord = LineageDto;
 
 const lineageColumns = {
   id: lineage.id,
@@ -38,36 +25,15 @@ const lineageColumns = {
   updatedAt: timestamp(lineage.updatedAt),
 };
 
-function mapLineageRow(row: {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  name: string;
-  surname: string | null;
-  hallName: string | null;
-  progenitor: string | null;
-  region: unknown;
-  seq: number;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-}): LineageRecord {
-  return {
-    ...row,
-    region: (row.region as GenealogyPlaceInput | null) ?? null,
-  };
-}
-
 export async function listLineages(
   db: TxDatabase,
   projectId: string,
 ): Promise<LineageRecord[]> {
-  const rows = await db
+  return db
     .select(lineageColumns)
     .from(lineage)
     .where(eq(lineage.projectId, projectId))
     .orderBy(asc(lineage.seq), asc(lineage.createdAt), asc(lineage.id));
-  return rows.map(mapLineageRow);
 }
 
 export async function getLineage(
@@ -80,7 +46,7 @@ export async function getLineage(
     .from(lineage)
     .where(and(eq(lineage.projectId, projectId), eq(lineage.id, lineageId)))
     .limit(1);
-  return rows[0] ? mapLineageRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function insertLineage(
@@ -103,7 +69,7 @@ export async function insertLineage(
       seq: values.seq ?? 0,
     })
     .returning(lineageColumns);
-  return mapLineageRow(rows[0]);
+  return rows[0];
 }
 
 export async function casUpdateLineage(
@@ -136,7 +102,7 @@ export async function casUpdateLineage(
       ),
     )
     .returning(lineageColumns);
-  return rows[0] ? mapLineageRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function deleteLineage(

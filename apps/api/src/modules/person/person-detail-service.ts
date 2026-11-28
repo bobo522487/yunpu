@@ -142,7 +142,7 @@ export async function createRelationInTx(
   let toPersonId = input.toPersonId;
   let fromRoleLabel: string | null | undefined = input.fromRoleLabel;
   let toRoleLabel: string | null | undefined = input.toRoleLabel;
-  const kind = input.kind as ApiRelationKind;
+  const kind = input.kind;
 
   if (isSymmetricRelationKind(kind)) {
     ({ fromPersonId, toPersonId, fromRoleLabel, toRoleLabel } =
@@ -182,7 +182,7 @@ export async function updateRelationInTx(
     throw notFound();
   }
 
-  const nextKind = (input.kind ?? existing.kind) as ApiRelationKind;
+  const nextKind = input.kind ?? existing.kind;
   let fromPersonId = existing.fromPersonId;
   let toPersonId = existing.toPersonId;
   let fromRoleLabel =

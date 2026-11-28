@@ -1,18 +1,10 @@
 import { folder } from "@yunpu/db";
-import type { FolderKind } from "@yunpu/shared";
+import type { FolderDto, FolderKind } from "@yunpu/shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
-export type FolderRecord = {
-  id: string;
-  projectId: string;
-  kind: FolderKind;
-  name: string;
-  seq: number;
-  createdAt: string;
-  updatedAt: string;
-};
+export type FolderRecord = FolderDto;
 
 const folderColumns = {
   id: folder.id,

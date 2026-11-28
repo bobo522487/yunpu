@@ -16,6 +16,7 @@ test('directoryToTreeItems constructs flat 1-level folders and root lineages sor
       {
         id: 'folder-1',
         projectId: 'proj-1',
+        kind: 'lineage',
         name: '总世系与支系',
         seq: 1,
         createdAt: '2026-01-01T00:00:00Z',

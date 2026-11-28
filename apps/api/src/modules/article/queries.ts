@@ -1,8 +1,8 @@
 import { article, articleRevision } from "@yunpu/db";
 import type {
-  ArticleCitationInput,
-  ArticleDocType,
-  ArticlePrivacy,
+  ArticleContentJson,
+  ArticleDto,
+  ArticleRevisionDto,
   ArticleStatus,
   CreateArticleInput,
   UpdateArticleInput,
@@ -11,44 +11,8 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
 import { isoTimestamp as timestamp } from "../../lib/sql";
 
-export type ArticleRecord = {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  seq: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  docType: ArticleDocType;
-  status: ArticleStatus;
-  privacy: ArticlePrivacy;
-  contentJson: Record<string, unknown>;
-  contentHtml: string;
-  linkedPersonIds: string[];
-  linkedChartIds: string[];
-  citations: ArticleCitationInput[];
-  wordCount: number;
-  version: number;
-  updatedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type ArticleRevisionRecord = {
-  id: string;
-  projectId: string;
-  articleId: string;
-  version: number;
-  title: string;
-  status: ArticleStatus;
-  contentJson: Record<string, unknown>;
-  contentHtml: string;
-  wordCount: number;
-  summary: string;
-  authorName: string;
-  createdBy: string | null;
-  createdAt: string;
-};
+export type ArticleRecord = ArticleDto;
+export type ArticleRevisionRecord = ArticleRevisionDto;
 
 const articleColumns = {
   id: article.id,
@@ -89,83 +53,20 @@ const revisionColumns = {
   createdAt: timestamp(articleRevision.createdAt),
 };
 
-const DEFAULT_CONTENT_JSON = {
+const DEFAULT_CONTENT_JSON: ArticleContentJson = {
   type: "doc",
   content: [{ type: "paragraph" }],
 };
-
-function mapArticleRow(row: {
-  id: string;
-  projectId: string;
-  folderId: string | null;
-  seq: number;
-  title: string;
-  subtitle: string;
-  author: string;
-  docType: ArticleDocType;
-  status: ArticleStatus;
-  privacy: ArticlePrivacy;
-  contentJson: unknown;
-  contentHtml: string;
-  linkedPersonIds: unknown;
-  linkedChartIds: unknown;
-  citations: unknown;
-  wordCount: number;
-  version: number;
-  updatedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}): ArticleRecord {
-  return {
-    ...row,
-    contentJson:
-      (row.contentJson as Record<string, unknown> | null) ??
-      DEFAULT_CONTENT_JSON,
-    linkedPersonIds: Array.isArray(row.linkedPersonIds)
-      ? (row.linkedPersonIds as string[])
-      : [],
-    linkedChartIds: Array.isArray(row.linkedChartIds)
-      ? (row.linkedChartIds as string[])
-      : [],
-    citations: Array.isArray(row.citations)
-      ? (row.citations as ArticleCitationInput[])
-      : [],
-  };
-}
-
-function mapRevisionRow(row: {
-  id: string;
-  projectId: string;
-  articleId: string;
-  version: number;
-  title: string;
-  status: ArticleStatus;
-  contentJson: unknown;
-  contentHtml: string;
-  wordCount: number;
-  summary: string;
-  authorName: string;
-  createdBy: string | null;
-  createdAt: string;
-}): ArticleRevisionRecord {
-  return {
-    ...row,
-    contentJson:
-      (row.contentJson as Record<string, unknown> | null) ??
-      DEFAULT_CONTENT_JSON,
-  };
-}
 
 export async function listArticles(
   db: TxDatabase,
   projectId: string,
 ): Promise<ArticleRecord[]> {
-  const rows = await db
+  return db
     .select(articleColumns)
     .from(article)
     .where(eq(article.projectId, projectId))
     .orderBy(asc(article.seq), asc(article.createdAt), asc(article.id));
-  return rows.map(mapArticleRow);
 }
 
 export async function getArticle(
@@ -178,7 +79,7 @@ export async function getArticle(
     .from(article)
     .where(and(eq(article.projectId, projectId), eq(article.id, articleId)))
     .limit(1);
-  return rows[0] ? mapArticleRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function insertArticle(
@@ -210,7 +111,7 @@ export async function insertArticle(
       updatedBy: userId,
     })
     .returning(articleColumns);
-  return mapArticleRow(rows[0]);
+  return rows[0];
 }
 
 export async function casUpdateArticle(
@@ -256,7 +157,7 @@ export async function casUpdateArticle(
       ),
     )
     .returning(articleColumns);
-  return rows[0] ? mapArticleRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function deleteArticle(
@@ -276,7 +177,7 @@ export async function listArticleRevisions(
   projectId: string,
   articleId: string,
 ): Promise<ArticleRevisionRecord[]> {
-  const rows = await db
+  return db
     .select(revisionColumns)
     .from(articleRevision)
     .where(
@@ -286,7 +187,6 @@ export async function listArticleRevisions(
       ),
     )
     .orderBy(asc(articleRevision.createdAt), asc(articleRevision.id));
-  return rows.map(mapRevisionRow);
 }
 
 export async function getArticleRevision(
@@ -306,7 +206,7 @@ export async function getArticleRevision(
       ),
     )
     .limit(1);
-  return rows[0] ? mapRevisionRow(rows[0]) : null;
+  return rows[0] ?? null;
 }
 
 export async function insertArticleRevision(
@@ -319,7 +219,7 @@ export async function insertArticleRevision(
     version: number;
     title: string;
     status: ArticleStatus;
-    contentJson: Record<string, unknown>;
+    contentJson: ArticleContentJson;
     contentHtml: string;
     wordCount: number;
     summary: string;
@@ -343,5 +243,5 @@ export async function insertArticleRevision(
       createdBy: userId,
     })
     .returning(revisionColumns);
-  return mapRevisionRow(rows[0]);
+  return rows[0];
 }

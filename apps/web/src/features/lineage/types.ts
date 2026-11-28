@@ -1,3 +1,8 @@
+import type {
+  PersonBirthInfoInput as SharedPersonBirthInfo,
+  PersonDeathInfoInput as SharedPersonDeathInfo,
+  PersonEventType,
+} from '@yunpu/shared';
 import type { GenealogyDate } from '../date-input/date.types';
 import type { GenealogyPlace } from '../place-input/place.types';
 
@@ -23,23 +28,17 @@ export type RelationKind =
   | '养女'
   | string;
 
-export interface PersonBirthInfo {
+export type PersonBirthInfo = Omit<SharedPersonBirthInfo, 'structuredDate'> & {
   structuredDate?: GenealogyDate | null;
-  structuredPlace?: GenealogyPlace | null;
-  summary?: string;
-}
+};
 
-
-export interface PersonDeathInfo {
+export type PersonDeathInfo = Omit<
+  SharedPersonDeathInfo,
+  'structuredDate' | 'structuredBurialDate'
+> & {
   structuredDate?: GenealogyDate | null;
-  structuredPlace?: GenealogyPlace | null;
   structuredBurialDate?: GenealogyDate | null;
-  structuredBurialPlace?: GenealogyPlace | null;
-  cause?: string;
-  summary?: string;
-  /** Manual lifespan override used only when birth/death dates cannot yield an age */
-  manualAge?: number;
-}
+};
 
 export interface PersonRomanizedName {
   surname?: string;
@@ -78,14 +77,7 @@ export interface PersonPrivateInfo {
   address?: string;
 }
 
-export type PersonEventType =
-  | 'birth'
-  | 'education'
-  | 'career'
-  | 'marriage'
-  | 'residence'
-  | 'death'
-  | 'other';
+export type { PersonEventType };
 
 export interface PersonLifeEvent {
   id: string;

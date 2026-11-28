@@ -9,6 +9,7 @@ import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { config } from "./config";
 import { businessPool } from "./db/with-tenant-transaction";
+import { createContractBinder } from "./lib/contract";
 import { AppError, tryMapDatabaseError } from "./lib/errors";
 import { logEvent } from "./lib/logger";
 import media from "./media";
@@ -145,7 +146,9 @@ app.notFound((c) =>
   c.json({ ok: false, code: "NOT_FOUND", message: "接口不存在" }, 404),
 );
 
-app.get("/api/health", async (c) => {
+const rootRoute = createContractBinder(app, "apps/api/src/app.ts");
+
+rootRoute.public("get", "/api/health", async (c) => {
   const database = await probeDatabase();
   return c.json(
     healthPayload(database.up ? "up" : "down"),
@@ -153,7 +156,7 @@ app.get("/api/health", async (c) => {
   );
 });
 
-app.get("/api/ready", async (c) => {
+rootRoute.public("get", "/api/ready", async (c) => {
   const [database, storage] = await Promise.all([
     probeDatabase(),
     checkStorage(),

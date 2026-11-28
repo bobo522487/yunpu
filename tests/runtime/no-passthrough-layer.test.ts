@@ -34,7 +34,7 @@ describe("request path", () => {
       "apps/api/src/modules/person/router.ts",
       "utf8",
     );
-    expect(router).toContain("CreatePersonSchema");
+    expect(router).toContain("createContractBinder");
     expect(router).toContain("createPersonForProject");
   });
 

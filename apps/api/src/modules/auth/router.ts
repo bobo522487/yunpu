@@ -1,7 +1,7 @@
-import { SignInSchema, SignUpSchema } from "@yunpu/shared";
 import { Hono } from "hono";
+import { createContractBinder } from "../../lib/contract";
 import { AppError } from "../../lib/errors";
-import { appendSetCookie, parseJson } from "../../lib/http";
+import { appendSetCookie } from "../../lib/http";
 import {
   assertLoginAllowed,
   clearLoginRateLimits,
@@ -9,14 +9,16 @@ import {
   sourceAddress,
 } from "../../middleware/login-rate-limit";
 import type { ApiEnv } from "../../types";
-import { unauthorized } from "./errors";
 import { getSessionView, register, signIn, signOut } from "./service";
 
 export const authRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  authRouter,
+  "apps/api/src/modules/auth/router.ts",
+);
 
-authRouter.post("/sign-up", async (c) => {
-  const input = await parseJson(c, SignUpSchema);
-  const result = await register(input, c.get("requestId"));
+route.public("post", "/sign-up", async (c, { body }) => {
+  const result = await register(body, c.get("requestId"));
   appendSetCookie(c, result.headers);
 
   return c.json(
@@ -32,17 +34,16 @@ authRouter.post("/sign-up", async (c) => {
   );
 });
 
-authRouter.post("/sign-in", async (c) => {
-  const input = await parseJson(c, SignInSchema);
+route.public("post", "/sign-in", async (c, { body }) => {
   const address = sourceAddress(c);
-  const limits = loginLimits(input.email, address);
+  const limits = loginLimits(body.email, address);
   for (const { limiter, key } of limits) {
     assertLoginAllowed(limiter, key);
   }
 
   try {
-    const result = await signIn(input, c.get("requestId"));
-    clearLoginRateLimits(input.email, address);
+    const result = await signIn(body, c.get("requestId"));
+    clearLoginRateLimits(body.email, address);
     appendSetCookie(c, result.headers);
     return c.json({
       ok: true,
@@ -62,11 +63,7 @@ authRouter.post("/sign-in", async (c) => {
   }
 });
 
-authRouter.post("/sign-out", async (c) => {
-  const user = c.get("user");
-  if (!user) {
-    throw unauthorized();
-  }
+route("post", "/sign-out", async (c, { user }) => {
   const headers = await signOut(c.req.raw.headers, {
     requestId: c.get("requestId"),
     userId: user.id,
@@ -75,7 +72,7 @@ authRouter.post("/sign-out", async (c) => {
   return c.json({ ok: true, data: { signedOut: true } });
 });
 
-authRouter.get("/session", async (c) => {
+route.public("get", "/session", async (c) => {
   const view = await getSessionView(c.get("user"));
   if (!view) {
     return c.json({

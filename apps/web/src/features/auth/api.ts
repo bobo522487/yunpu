@@ -1,24 +1,14 @@
-import type { MemberRole } from '@yunpu/shared';
+import type {
+  AccountRecord,
+  OrganizationSummary,
+  SessionDataPayload,
+} from '@yunpu/shared';
 import { apiRequest } from '../../lib/api';
 
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-};
+export type AuthUser = AccountRecord;
+export type { OrganizationSummary };
 
-export type OrganizationSummary = {
-  id: string;
-  name: string;
-  role: MemberRole;
-  isOwner: boolean;
-};
-
-export type SessionPayload = {
-  user: AuthUser | null;
-  defaultOrganization: OrganizationSummary | null;
-  onboarding: boolean;
-};
+export type SessionPayload = SessionDataPayload;
 
 export type InviteResult = {
   accepted: boolean;

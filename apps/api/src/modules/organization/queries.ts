@@ -1,8 +1,12 @@
 import { authUser, invite, organization, organizationMember } from "@yunpu/db";
 import type {
-  InviteStatus,
+  InviteRecord,
+  MemberRecord,
   MemberRole,
+  OrganizationDetail,
+  OrganizationListItem,
   OrganizationStatus,
+  OrganizationSummary,
 } from "@yunpu/shared";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { TxDatabase } from "../../db/with-tenant-transaction";
@@ -12,16 +16,7 @@ import {
 } from "../../lib/pagination";
 import { nullableIsoTimestamp, isoTimestamp as timestamp } from "../../lib/sql";
 
-export type OrganizationSummary = {
-  id: string;
-  name: string;
-  role: string;
-  isOwner: boolean;
-};
-
-export type OrganizationListItem = OrganizationSummary & {
-  lastUsedAt: string | null;
-};
+export type { OrganizationDetail, OrganizationListItem, OrganizationSummary };
 
 const summaryColumns = {
   id: organization.id,
@@ -106,18 +101,6 @@ export async function getOrganizationSummary(
 
   return rows[0] ?? null;
 }
-
-export type OrganizationDetail = {
-  id: string;
-  name: string;
-  status: OrganizationStatus;
-  ownerUserId: string;
-  myRole: MemberRole;
-  isOwner: boolean;
-  memberCount: number;
-  pendingInviteCount: number;
-  projectCount: number;
-};
 
 /** 组织详情：非成员返回 null（路由映射为 404「不存在或无权」，不泄漏存在性）。 */
 export async function getOrganizationDetail(
@@ -215,14 +198,7 @@ export async function activateOrganization(
 
 // ---- 控制台：成员 / 邀请 / 所有权 ----
 
-export type MemberListItem = {
-  userId: string;
-  name: string;
-  email: string;
-  role: MemberRole;
-  isOwner: boolean;
-  joinedAt: string;
-};
+export type MemberListItem = MemberRecord;
 
 const memberColumns = {
   userId: organizationMember.userId,
@@ -371,14 +347,7 @@ export async function updateOrganizationRecord(
     .returning({ id: organization.id });
 }
 
-export type InviteListItem = {
-  id: string;
-  email: string;
-  role: MemberRole;
-  status: InviteStatus;
-  expiresAt: string;
-  createdAt: string;
-};
+export type InviteListItem = InviteRecord;
 
 const inviteColumns = {
   id: invite.id,

@@ -1,29 +1,5 @@
-import {
-  CreatePersonEventSchema,
-  CreatePersonNameSchema,
-  CreatePersonSchema,
-  CreateRelationSchema,
-  CreateRelativeSchema,
-  ListPersonsQuerySchema,
-  PersonEventIdParamsSchema,
-  PersonIdParamsSchema,
-  PersonNameIdParamsSchema,
-  ProjectIdParamsSchema,
-  RelationIdParamsSchema,
-  SubgraphQuerySchema,
-  UpdatePersonAggregateSchema,
-  UpdatePersonEventSchema,
-  UpdatePersonNameSchema,
-  UpdatePersonSchema,
-  UpdateRelationSchema,
-} from "@yunpu/shared";
 import { Hono } from "hono";
-import {
-  parseJson,
-  parseParams,
-  parseQuery,
-  requireUser,
-} from "../../lib/http";
+import { createContractBinder } from "../../lib/contract";
 import type { ApiEnv } from "../../types";
 import {
   createPersonEventForProject,
@@ -46,207 +22,233 @@ import {
 } from "./service";
 
 export const personRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  personRouter,
+  "apps/api/src/modules/person/router.ts",
+);
 
-personRouter.post("/projects/:projectId/persons", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const input = await parseJson(c, CreatePersonSchema);
-  const person = await createPersonForProject(user.id, projectId, input);
-  return c.json({ ok: true, data: { person } }, 201);
-});
+route(
+  "post",
+  "/projects/:projectId/persons",
+  async (c, { user, params, body }) => {
+    const person = await createPersonForProject(
+      user.id,
+      params.projectId,
+      body,
+    );
+    return c.json({ ok: true, data: { person } }, 201);
+  },
+);
 
-personRouter.get("/projects/:projectId/persons", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const query = parseQuery(c, ListPersonsQuerySchema);
-  const page = await listPersonsForProject(user.id, projectId, {
-    lineageId: query.lineageId,
-    cursor: query.cursor,
-    limit: query.limit,
-  });
-  return c.json({ ok: true, data: page });
-});
+route(
+  "get",
+  "/projects/:projectId/persons",
+  async (c, { user, params, query }) => {
+    const page = await listPersonsForProject(user.id, params.projectId, {
+      lineageId: query.lineageId,
+      cursor: query.cursor,
+      limit: query.limit,
+    });
+    return c.json({ ok: true, data: page });
+  },
+);
 
-personRouter.get("/projects/:projectId/persons/:personId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-  const person = await getPersonForProject(user.id, projectId, personId);
-  return c.json({ ok: true, data: { person } });
-});
+route(
+  "get",
+  "/projects/:projectId/persons/:personId",
+  async (c, { user, params }) => {
+    const person = await getPersonForProject(
+      user.id,
+      params.projectId,
+      params.personId,
+    );
+    return c.json({ ok: true, data: { person } });
+  },
+);
 
-personRouter.patch("/projects/:projectId/persons/:personId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-  const input = await parseJson(c, UpdatePersonSchema);
-  const person = await updatePersonForProject(
-    user.id,
-    projectId,
-    personId,
-    input,
-  );
-  return c.json({ ok: true, data: { person } });
-});
+route(
+  "patch",
+  "/projects/:projectId/persons/:personId",
+  async (c, { user, params, body }) => {
+    const person = await updatePersonForProject(
+      user.id,
+      params.projectId,
+      params.personId,
+      body,
+    );
+    return c.json({ ok: true, data: { person } });
+  },
+);
 
-personRouter.put(
+route(
+  "put",
   "/projects/:projectId/persons/:personId/aggregate",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-    const input = await parseJson(c, UpdatePersonAggregateSchema);
+  async (c, { user, params, body }) => {
     const data = await updatePersonAggregateForProject(
       user.id,
-      projectId,
-      personId,
-      input,
+      params.projectId,
+      params.personId,
+      body,
     );
     return c.json({ ok: true, data });
   },
 );
 
-personRouter.post("/projects/:projectId/relatives", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const input = await parseJson(c, CreateRelativeSchema);
-  const data = await createRelativeForProject(user.id, projectId, input);
-  return c.json({ ok: true, data }, 201);
-});
-
-personRouter.delete("/projects/:projectId/persons/:personId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-  await deletePersonForProject(user.id, projectId, personId);
-  return c.json({ ok: true });
-});
-
-personRouter.post("/projects/:projectId/persons/:personId/names", async (c) => {
-  const user = requireUser(c);
-  const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-  const input = await parseJson(c, CreatePersonNameSchema);
-  const name = await createPersonNameForProject(
-    user.id,
-    projectId,
-    personId,
-    input,
-  );
-  return c.json({ ok: true, data: { name } }, 201);
-});
-
-personRouter.patch(
-  "/projects/:projectId/persons/:personId/names/:nameId",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId, nameId } = parseParams(
-      c,
-      PersonNameIdParamsSchema,
+route(
+  "post",
+  "/projects/:projectId/relatives",
+  async (c, { user, params, body }) => {
+    const data = await createRelativeForProject(
+      user.id,
+      params.projectId,
+      body,
     );
-    const input = await parseJson(c, UpdatePersonNameSchema);
+    return c.json({ ok: true, data }, 201);
+  },
+);
+
+route(
+  "delete",
+  "/projects/:projectId/persons/:personId",
+  async (c, { user, params }) => {
+    await deletePersonForProject(user.id, params.projectId, params.personId);
+    return c.json({ ok: true });
+  },
+);
+
+route(
+  "post",
+  "/projects/:projectId/persons/:personId/names",
+  async (c, { user, params, body }) => {
+    const name = await createPersonNameForProject(
+      user.id,
+      params.projectId,
+      params.personId,
+      body,
+    );
+    return c.json({ ok: true, data: { name } }, 201);
+  },
+);
+
+route(
+  "patch",
+  "/projects/:projectId/persons/:personId/names/:nameId",
+  async (c, { user, params, body }) => {
     const name = await updatePersonNameForProject(
       user.id,
-      projectId,
-      personId,
-      nameId,
-      input,
+      params.projectId,
+      params.personId,
+      params.nameId,
+      body,
     );
     return c.json({ ok: true, data: { name } });
   },
 );
 
-personRouter.delete(
+route(
+  "delete",
   "/projects/:projectId/persons/:personId/names/:nameId",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId, nameId } = parseParams(
-      c,
-      PersonNameIdParamsSchema,
+  async (c, { user, params }) => {
+    await deletePersonNameForProject(
+      user.id,
+      params.projectId,
+      params.personId,
+      params.nameId,
     );
-    await deletePersonNameForProject(user.id, projectId, personId, nameId);
     return c.json({ ok: true });
   },
 );
 
-personRouter.post("/projects/:projectId/relations", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const input = await parseJson(c, CreateRelationSchema);
-  const relation = await createRelationForProject(user.id, projectId, input);
-  return c.json({ ok: true, data: { relation } }, 201);
-});
+route(
+  "post",
+  "/projects/:projectId/relations",
+  async (c, { user, params, body }) => {
+    const relation = await createRelationForProject(
+      user.id,
+      params.projectId,
+      body,
+    );
+    return c.json({ ok: true, data: { relation } }, 201);
+  },
+);
 
-personRouter.patch("/projects/:projectId/relations/:relationId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, relationId } = parseParams(c, RelationIdParamsSchema);
-  const input = await parseJson(c, UpdateRelationSchema);
-  const relation = await updateRelationForProject(
-    user.id,
-    projectId,
-    relationId,
-    input,
-  );
-  return c.json({ ok: true, data: { relation } });
-});
+route(
+  "patch",
+  "/projects/:projectId/relations/:relationId",
+  async (c, { user, params, body }) => {
+    const relation = await updateRelationForProject(
+      user.id,
+      params.projectId,
+      params.relationId,
+      body,
+    );
+    return c.json({ ok: true, data: { relation } });
+  },
+);
 
-personRouter.delete("/projects/:projectId/relations/:relationId", async (c) => {
-  const user = requireUser(c);
-  const { projectId, relationId } = parseParams(c, RelationIdParamsSchema);
-  await deleteRelationForProject(user.id, projectId, relationId);
-  return c.json({ ok: true });
-});
+route(
+  "delete",
+  "/projects/:projectId/relations/:relationId",
+  async (c, { user, params }) => {
+    await deleteRelationForProject(
+      user.id,
+      params.projectId,
+      params.relationId,
+    );
+    return c.json({ ok: true });
+  },
+);
 
-personRouter.post(
+route(
+  "post",
   "/projects/:projectId/persons/:personId/events",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId } = parseParams(c, PersonIdParamsSchema);
-    const input = await parseJson(c, CreatePersonEventSchema);
+  async (c, { user, params, body }) => {
     const event = await createPersonEventForProject(
       user.id,
-      projectId,
-      personId,
-      input,
+      params.projectId,
+      params.personId,
+      body,
     );
     return c.json({ ok: true, data: { event } }, 201);
   },
 );
 
-personRouter.patch(
+route(
+  "patch",
   "/projects/:projectId/persons/:personId/events/:eventId",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId, eventId } = parseParams(
-      c,
-      PersonEventIdParamsSchema,
-    );
-    const input = await parseJson(c, UpdatePersonEventSchema);
+  async (c, { user, params, body }) => {
     const event = await updatePersonEventForProject(
       user.id,
-      projectId,
-      personId,
-      eventId,
-      input,
+      params.projectId,
+      params.personId,
+      params.eventId,
+      body,
     );
     return c.json({ ok: true, data: { event } });
   },
 );
 
-personRouter.delete(
+route(
+  "delete",
   "/projects/:projectId/persons/:personId/events/:eventId",
-  async (c) => {
-    const user = requireUser(c);
-    const { projectId, personId, eventId } = parseParams(
-      c,
-      PersonEventIdParamsSchema,
+  async (c, { user, params }) => {
+    await deletePersonEventForProject(
+      user.id,
+      params.projectId,
+      params.personId,
+      params.eventId,
     );
-    await deletePersonEventForProject(user.id, projectId, personId, eventId);
     return c.json({ ok: true });
   },
 );
 
-personRouter.get("/projects/:projectId/subgraph", async (c) => {
-  const user = requireUser(c);
-  const { projectId } = parseParams(c, ProjectIdParamsSchema);
-  const query = parseQuery(c, SubgraphQuerySchema);
-  const data = await getSubgraphForProject(user.id, projectId, query);
-  return c.json({ ok: true, data });
-});
+route(
+  "get",
+  "/projects/:projectId/subgraph",
+  async (c, { user, params, query }) => {
+    const data = await getSubgraphForProject(user.id, params.projectId, query);
+    return c.json({ ok: true, data });
+  },
+);
 
 export default personRouter;

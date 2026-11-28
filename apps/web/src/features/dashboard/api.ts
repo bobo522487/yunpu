@@ -1,126 +1,44 @@
 import type {
+  AccountRecord,
+  CreateProjectInput,
+  InviteRecord,
   InviteStatus,
+  MemberRecord,
   MemberRole,
+  OrganizationDetail,
+  OrganizationListItem,
   OrganizationStatus,
+  OrganizationSummary,
+  OrganizationsPayload,
+  Page,
   ProjectColorTheme,
+  ProjectRecord,
   ProjectStatus,
+  UpdateProjectInput,
 } from '@yunpu/shared';
 import { apiRequest } from '../../lib/api';
 
+// 载荷形状权威：packages/shared/src/entities.ts & packages/shared/src/schemas.ts
+
 export type {
+  AccountRecord,
+  InviteRecord,
   InviteStatus,
+  MemberRecord,
   MemberRole,
+  OrganizationListItem,
+  OrganizationsPayload,
   OrganizationStatus,
+  OrganizationSummary,
+  Page,
   ProjectColorTheme,
+  ProjectRecord,
   ProjectStatus,
 };
 
-// 载荷形状权威：packages/shared/src/schemas.ts & apps/api/src/openapi/operations.ts
-
-export type OrganizationListItem = {
-  id: string;
-  name: string;
-  role: MemberRole;
-  isOwner: boolean;
-  lastUsedAt: string | null;
-};
-
-export type OrganizationsPayload = {
-  organizations: OrganizationListItem[];
-  defaultOrganizationId: string | null;
-};
-
-export type OrganizationSummary = {
-  id: string;
-  name: string;
-  role: MemberRole;
-  isOwner: boolean;
-};
-
-export type OrgDetail = {
-  id: string;
-  name: string;
-  status: OrganizationStatus;
-  ownerUserId: string;
-  myRole: MemberRole;
-  isOwner: boolean;
-  memberCount: number;
-  pendingInviteCount: number;
-  projectCount: number;
-};
-
-export type ProjectRecord = {
-  id: string;
-  organizationId: string;
-  name: string;
-  status: ProjectStatus;
-  surname: string | null;
-  ancestor: string | null;
-  hallName: string | null;
-  originText: string | null;
-  description: string | null;
-  colorTheme: ProjectColorTheme;
-  projectLevel: number;
-  iconKey: string | null;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type MemberRecord = {
-  userId: string;
-  name: string;
-  email: string;
-  role: MemberRole;
-  isOwner: boolean;
-  joinedAt: string;
-};
-
-export type InviteRecord = {
-  id: string;
-  email: string;
-  role: MemberRole;
-  status: InviteStatus;
-  expiresAt: string;
-  createdAt: string;
-};
-
-export type AccountRecord = {
-  id: string;
-  email: string;
-  name: string;
-};
-
-export type Page<T> = {
-  items: T[];
-  nextCursor: string | null;
-};
-
-export type CreateProjectPayload = {
-  name: string;
-  status?: ProjectStatus;
-  surname?: string;
-  ancestor?: string;
-  hallName?: string;
-  originText?: string;
-  description?: string;
-  colorTheme?: ProjectColorTheme;
-  projectLevel?: number;
-  iconKey?: string;
-};
-
-export type UpdateProjectPayload = {
-  name?: string;
-  status?: ProjectStatus;
-  surname?: string | null;
-  ancestor?: string | null;
-  hallName?: string | null;
-  originText?: string | null;
-  description?: string | null;
-  colorTheme?: ProjectColorTheme;
-  projectLevel?: number;
-  iconKey?: string | null;
-};
+export type OrgDetail = OrganizationDetail;
+export type CreateProjectPayload = CreateProjectInput;
+export type UpdateProjectPayload = Omit<UpdateProjectInput, 'version'>;
 
 function query(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();

@@ -1,23 +1,17 @@
 import {
   AcceptInviteSchema,
-  API_RELATION_KINDS,
-  ARTICLE_DOC_TYPES,
-  ARTICLE_PRIVACIES,
-  ARTICLE_STATUSES,
-  ArticleCitationSchema,
-  ArticleContentJsonSchema,
+  AccountSchema,
   ArticleIdParamsSchema,
   ArticleRevisionIdParamsSchema,
-  BOOK_BINDING_STYLES,
-  BOOK_EDITION_PRINT_STATUSES,
-  BOOK_LINEAGE_STYLES,
-  BOOK_PAPER_SIZES,
+  ArticleRevisionSchema,
+  ArticleSchema,
+  ArticlesDirectoryPayloadSchema,
+  AuthDataSchema,
   BookEditionIdParamsSchema,
+  BookEditionSchema,
   BookIdParamsSchema,
-  BookLayoutConfigSchema,
-  BookSectionsSchema,
+  BookSchema,
   ChangePasswordSchema,
-  CompiledPageSchema,
   CreateArticleRevisionSchema,
   CreateArticleSchema,
   CreateBookEditionSchema,
@@ -32,31 +26,47 @@ import {
   CreateProjectSchema,
   CreateRelationSchema,
   CreateRelativeSchema,
-  FOLDER_KINDS,
+  createPageSchema,
+  ErrorResponseSchema,
   FolderIdParamsSchema,
-  GenealogyDateSchema,
-  GenealogyPlaceSchema,
+  FolderSchema,
+  InviteParamsSchema,
+  InviteSchema,
+  LineageDirectoryPayloadSchema,
+  LineageGraphPayloadSchema,
   LineageIdParamsSchema,
+  LineageSchema,
   ListFoldersQuerySchema,
   ListPersonsQuerySchema,
   ListProjectsQuerySchema,
-  MEMBER_ROLES,
-  ORGANIZATION_STATUSES,
+  MediaPathParamsSchema,
+  MemberParamsSchema,
+  MemberSchema,
+  OrganizationDetailSchema,
+  OrganizationIdParamsSchema,
+  OrganizationSummarySchema,
+  OrganizationsPayloadSchema,
+  okDataSchema,
+  okOnlySchema,
   PageQuerySchema,
-  PERSON_EVENT_TYPES,
-  PERSON_NAME_KINDS,
-  PERSON_SEXES,
-  PersonBirthInfoSchema,
-  PersonDeathInfoSchema,
   PersonEventIdParamsSchema,
+  PersonEventSchema,
+  PersonIdParamsSchema,
   PersonNameIdParamsSchema,
-  PROJECT_COLOR_THEMES,
-  PROJECT_STATUSES,
+  PersonNameSchema,
+  PersonSchema,
+  ProjectIdParamsSchema,
+  ProjectionSchema,
   ProjectMediaParamsSchema,
+  ProjectSchema,
+  RelationIdParamsSchema,
+  RelationSchema,
   ReorderBooksSchema,
   RestoreArticleRevisionSchema,
+  SessionDataSchema,
   SignInSchema,
   SignUpSchema,
+  SubgraphPayloadSchema,
   SubgraphQuerySchema,
   TransferOwnerSchema,
   UpdateAccountSchema,
@@ -92,304 +102,8 @@ export type OpenApiOperation = {
 };
 
 const id = z.uuid();
-const timestamp = z.iso.datetime();
-const nullableText = z.string().nullable();
 
-export const ErrorResponseSchema = z.object({
-  ok: z.literal(false),
-  code: z.string(),
-  message: z.string(),
-  details: z.unknown().optional(),
-});
-
-const okOnly = z.object({ ok: z.literal(true) });
-const okData = <T extends z.ZodType>(data: T) =>
-  z.object({ ok: z.literal(true), data });
-
-const AccountSchema = z.object({
-  id,
-  email: z.email(),
-  name: z.string(),
-});
-
-const OrganizationSummarySchema = z.object({
-  id,
-  name: z.string(),
-  role: z.enum(MEMBER_ROLES),
-  isOwner: z.boolean(),
-  lastUsedAt: timestamp.nullable().optional(),
-});
-
-const OrganizationDetailSchema = OrganizationSummarySchema.omit({
-  role: true,
-  lastUsedAt: true,
-}).extend({
-  status: z.enum(ORGANIZATION_STATUSES),
-  ownerUserId: id,
-  myRole: z.enum(MEMBER_ROLES),
-  memberCount: z.number().int().nonnegative(),
-  pendingInviteCount: z.number().int().nonnegative(),
-  projectCount: z.number().int().nonnegative(),
-});
-
-const MemberSchema = z.object({
-  userId: id,
-  name: z.string(),
-  email: z.email(),
-  role: z.enum(MEMBER_ROLES),
-  isOwner: z.boolean(),
-  joinedAt: timestamp,
-});
-
-const InviteSchema = z.object({
-  id,
-  email: z.email(),
-  role: z.enum(MEMBER_ROLES),
-  status: z.string(),
-  expiresAt: timestamp,
-  createdAt: timestamp,
-});
-
-const ProjectSchema = z.object({
-  id,
-  organizationId: id,
-  name: z.string(),
-  status: z.enum(PROJECT_STATUSES),
-  surname: nullableText,
-  ancestor: nullableText,
-  hallName: nullableText,
-  originText: nullableText,
-  description: nullableText,
-  colorTheme: z.enum(PROJECT_COLOR_THEMES),
-  projectLevel: z.number().int(),
-  iconKey: nullableText,
-  version: z.number().int().positive(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const FolderSchema = z.object({
-  id,
-  projectId: id,
-  kind: z.enum(FOLDER_KINDS),
-  name: z.string(),
-  seq: z.number().int().nonnegative(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const ArticleSchema = z.object({
-  id,
-  projectId: id,
-  folderId: id.nullable(),
-  seq: z.number().int().nonnegative(),
-  title: z.string(),
-  subtitle: z.string(),
-  author: z.string(),
-  docType: z.enum(ARTICLE_DOC_TYPES),
-  status: z.enum(ARTICLE_STATUSES),
-  privacy: z.enum(ARTICLE_PRIVACIES),
-  contentJson: ArticleContentJsonSchema,
-  contentHtml: z.string(),
-  linkedPersonIds: z.array(z.string()),
-  linkedChartIds: z.array(z.string()),
-  citations: z.array(ArticleCitationSchema),
-  wordCount: z.number().int().nonnegative(),
-  version: z.number().int().positive(),
-  updatedBy: id.nullable(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const ArticleRevisionSchema = z.object({
-  id,
-  projectId: id,
-  articleId: id,
-  version: z.number().int().positive(),
-  title: z.string(),
-  status: z.enum(ARTICLE_STATUSES),
-  contentJson: ArticleContentJsonSchema,
-  contentHtml: z.string(),
-  wordCount: z.number().int().nonnegative(),
-  summary: z.string(),
-  authorName: z.string(),
-  createdBy: id.nullable(),
-  createdAt: timestamp,
-});
-
-const BookSchema = z.object({
-  id,
-  projectId: id,
-  folderId: id.nullable(),
-  bookName: z.string(),
-  headerName: z.string(),
-  hallName: z.string(),
-  volumeNo: z.string(),
-  editor: z.string(),
-  compilationDate: z.string(),
-  sections: BookSectionsSchema,
-  layoutConfig: BookLayoutConfigSchema,
-  seq: z.number().int().nonnegative(),
-  version: z.number().int().positive(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const BookEditionSchema = z.object({
-  id,
-  projectId: id,
-  bookId: id,
-  bindingStyle: z.enum(BOOK_BINDING_STYLES),
-  lineageStyle: z.enum(BOOK_LINEAGE_STYLES),
-  paperSize: z.enum(BOOK_PAPER_SIZES),
-  pageCount: z.number().int().nonnegative(),
-  memberCount: z.number().int().nonnegative(),
-  wordCount: z.number().int().nonnegative(),
-  printStatus: z.enum(BOOK_EDITION_PRINT_STATUSES),
-  layoutSnapshot: BookLayoutConfigSchema,
-  pages: z.array(CompiledPageSchema),
-  createdAt: timestamp,
-});
-
-const LineageSchema = z.object({
-  id,
-  projectId: id,
-  folderId: id.nullable(),
-  name: z.string(),
-  surname: nullableText,
-  hallName: nullableText,
-  progenitor: nullableText,
-  region: GenealogyPlaceSchema.nullable(),
-  seq: z.number().int().nonnegative(),
-  version: z.number().int().positive(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const PersonNameSchema = z.object({
-  id,
-  projectId: id,
-  personId: id,
-  kind: z.enum(PERSON_NAME_KINDS),
-  value: z.string(),
-  surname: nullableText,
-  romanizedSurname: nullableText,
-  romanizedName: nullableText,
-  label: nullableText,
-  isPrimary: z.boolean(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const PersonEventSchema = z.object({
-  id,
-  projectId: id,
-  personId: id,
-  type: z.enum(PERSON_EVENT_TYPES),
-  structuredDate: GenealogyDateSchema.nullable(),
-  structuredPlace: GenealogyPlaceSchema.nullable(),
-  description: nullableText,
-  sortOrder: z.number().int().nonnegative(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const PersonSchema = z.object({
-  id,
-  projectId: id,
-  lineageId: id,
-  displayName: z.string(),
-  sex: z.enum(PERSON_SEXES),
-  surname: nullableText,
-  givenName: nullableText,
-  romanizedSurname: nullableText,
-  romanizedName: nullableText,
-  romanizedSuffix: nullableText,
-  birthYear: z.number().int().nullable(),
-  deathYear: z.number().int().nullable(),
-  isLiving: z.boolean(),
-  birthInfo: PersonBirthInfoSchema.nullable(),
-  deathInfo: PersonDeathInfoSchema.nullable(),
-  generationWord: nullableText,
-  relationTitle: nullableText,
-  siblingOrder: z.number().int().nonnegative().nullable(),
-  biography: nullableText,
-  notes: nullableText,
-  avatarKey: nullableText,
-  version: z.number().int().positive(),
-  createdAt: timestamp,
-  updatedAt: timestamp,
-  names: z.array(PersonNameSchema).optional(),
-  events: z.array(PersonEventSchema).optional(),
-});
-
-const RelationSchema = z.object({
-  id,
-  projectId: id,
-  fromPersonId: id,
-  toPersonId: id,
-  kind: z.enum(API_RELATION_KINDS),
-  fromRoleLabel: nullableText,
-  toRoleLabel: nullableText,
-  sortOrder: z.number().int().nonnegative().nullable(),
-  note: nullableText,
-  createdAt: timestamp,
-  updatedAt: timestamp,
-});
-
-const ProjectionSchema = z.object({
-  personId: id,
-  primaryPath: z.string(),
-  generation: z.number().int().nonnegative(),
-});
-
-const pageOf = <T extends z.ZodType>(item: T, key = "items") =>
-  z.object({
-    [key]: z.array(item),
-    nextCursor: z.string().nullable(),
-  });
-
-const AuthDataSchema = z.object({
-  user: AccountSchema,
-  defaultOrganization: OrganizationSummarySchema.nullable(),
-  invite: z.unknown().optional(),
-  onboarding: z.boolean().optional(),
-});
-
-const SessionDataSchema = z.object({
-  user: AccountSchema.nullable(),
-  defaultOrganization: OrganizationSummarySchema.nullable(),
-  onboarding: z.boolean(),
-});
-
-const OrgParams = z.object({ organizationId: id });
-const ProjectParams = z.object({ projectId: id });
-const FolderParams = FolderIdParamsSchema;
-const LineageParams = LineageIdParamsSchema;
-const ProjectMediaParams = ProjectMediaParamsSchema;
-const ArticleParams = ArticleIdParamsSchema;
-const ArticleRevisionParams = ArticleRevisionIdParamsSchema;
-const BookParams = BookIdParamsSchema;
-const BookEditionParams = BookEditionIdParamsSchema;
-const PersonParams = z.object({
-  projectId: id,
-  personId: id,
-});
-const PersonNameParams = PersonNameIdParamsSchema;
-const PersonEventParams = PersonEventIdParamsSchema;
-const RelationParams = z.object({
-  projectId: id,
-  relationId: id,
-});
-const MemberParams = z.object({
-  organizationId: id,
-  userId: id,
-});
-const InviteParams = z.object({
-  organizationId: id,
-  inviteId: id,
-});
-
+const appSource = "apps/api/src/app.ts";
 const auth = "apps/api/src/modules/auth/router.ts";
 const account = "apps/api/src/modules/account/router.ts";
 const organization = "apps/api/src/modules/organization/router.ts";
@@ -401,12 +115,12 @@ const article = "apps/api/src/modules/article/router.ts";
 const book = "apps/api/src/modules/book/router.ts";
 const media = "apps/api/src/media.ts";
 
-export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
+export const CONTRACT_OPERATIONS = [
   {
     method: "get",
     route: "/api/health",
     path: "/api/health",
-    source: "apps/api/src/app.ts",
+    source: appSource,
     summary: "进程存活探测",
     successStatus: 200,
     success: z.object({
@@ -421,7 +135,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     method: "get",
     route: "/api/ready",
     path: "/api/ready",
-    source: "apps/api/src/app.ts",
+    source: appSource,
     summary: "依赖就绪探测",
     successStatus: 200,
     success: z.object({
@@ -439,7 +153,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "注册账号",
     body: SignUpSchema,
     successStatus: 201,
-    success: okData(AuthDataSchema),
+    success: okDataSchema(AuthDataSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -450,7 +164,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "登录账号",
     body: SignInSchema,
     successStatus: 200,
-    success: okData(AuthDataSchema),
+    success: okDataSchema(AuthDataSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -460,7 +174,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: auth,
     summary: "退出登录",
     successStatus: 200,
-    success: okData(z.object({ signedOut: z.literal(true) })),
+    success: okDataSchema(z.object({ signedOut: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -470,7 +184,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: auth,
     summary: "读取当前会话",
     successStatus: 200,
-    success: okData(SessionDataSchema),
+    success: okDataSchema(SessionDataSchema),
   },
   {
     method: "get",
@@ -479,7 +193,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: account,
     summary: "读取当前账号",
     successStatus: 200,
-    success: okData(AccountSchema),
+    success: okDataSchema(AccountSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -490,7 +204,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "更新当前账号显示名",
     body: UpdateAccountSchema,
     successStatus: 200,
-    success: okData(AccountSchema),
+    success: okDataSchema(AccountSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -501,7 +215,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "修改密码",
     body: ChangePasswordSchema,
     successStatus: 200,
-    success: okData(z.object({ changed: z.literal(true) })),
+    success: okDataSchema(z.object({ changed: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -511,12 +225,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     source: organization,
     summary: "列出可见组织",
     successStatus: 200,
-    success: okData(
-      z.object({
-        organizations: z.array(OrganizationSummarySchema),
-        defaultOrganizationId: id.nullable(),
-      }),
-    ),
+    success: okDataSchema(OrganizationsPayloadSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -527,7 +236,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "创建组织",
     body: CreateOrganizationSchema,
     successStatus: 201,
-    success: okData(z.object({ organization: OrganizationSummarySchema })),
+    success: okDataSchema(
+      z.object({ organization: OrganizationSummarySchema }),
+    ),
     errors: ErrorResponseSchema,
   },
   {
@@ -536,9 +247,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}",
     source: organization,
     summary: "读取组织详情",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ organization: OrganizationDetailSchema })),
+    success: okDataSchema(z.object({ organization: OrganizationDetailSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -547,10 +258,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}",
     source: organization,
     summary: "更新组织",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     body: UpdateOrganizationSchema,
     successStatus: 200,
-    success: okData(z.object({ organization: OrganizationDetailSchema })),
+    success: okDataSchema(z.object({ organization: OrganizationDetailSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -559,9 +270,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/leave",
     source: organization,
     summary: "离开组织",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ left: z.literal(true) })),
+    success: okDataSchema(z.object({ left: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -570,10 +281,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/owner",
     source: organization,
     summary: "转让组织所有权",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     body: TransferOwnerSchema,
     successStatus: 200,
-    success: okData(z.object({ ownerUserId: id })),
+    success: okDataSchema(z.object({ ownerUserId: id })),
     errors: ErrorResponseSchema,
   },
   {
@@ -582,9 +293,11 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/activate",
     source: organization,
     summary: "激活组织",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ organization: OrganizationSummarySchema })),
+    success: okDataSchema(
+      z.object({ organization: OrganizationSummarySchema }),
+    ),
     errors: ErrorResponseSchema,
   },
   {
@@ -595,7 +308,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     summary: "接受邀请",
     body: AcceptInviteSchema,
     successStatus: 200,
-    success: okData(
+    success: okDataSchema(
       z.object({
         organization: OrganizationSummarySchema,
         defaultOrganizationChanged: z.literal(true),
@@ -609,10 +322,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/members",
     source: organization,
     summary: "分页列出成员",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     query: PageQuerySchema,
     successStatus: 200,
-    success: okData(pageOf(MemberSchema)),
+    success: okDataSchema(createPageSchema(MemberSchema)),
     errors: ErrorResponseSchema,
   },
   {
@@ -621,10 +334,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/members/{userId}",
     source: organization,
     summary: "更新成员角色",
-    params: MemberParams,
+    params: MemberParamsSchema,
     body: UpdateMemberRoleSchema,
     successStatus: 200,
-    success: okData(z.object({ member: MemberSchema })),
+    success: okDataSchema(z.object({ member: MemberSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -633,9 +346,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/members/{userId}",
     source: organization,
     summary: "移除成员",
-    params: MemberParams,
+    params: MemberParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ removed: z.literal(true) })),
+    success: okDataSchema(z.object({ removed: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -644,10 +357,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/invites",
     source: organization,
     summary: "分页列出邀请",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     query: PageQuerySchema,
     successStatus: 200,
-    success: okData(pageOf(InviteSchema)),
+    success: okDataSchema(createPageSchema(InviteSchema)),
     errors: ErrorResponseSchema,
   },
   {
@@ -656,10 +369,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/invites",
     source: organization,
     summary: "创建邀请",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     body: CreateInviteSchema,
     successStatus: 201,
-    success: okData(
+    success: okDataSchema(
       z.object({
         invite: InviteSchema,
         inviteUrl: z.string(),
@@ -673,9 +386,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/invites/{inviteId}",
     source: organization,
     summary: "撤销邀请",
-    params: InviteParams,
+    params: InviteParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ revoked: z.literal(true) })),
+    success: okDataSchema(z.object({ revoked: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -684,10 +397,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/projects",
     source: project,
     summary: "分页列出项目",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     query: ListProjectsQuerySchema,
     successStatus: 200,
-    success: okData(pageOf(ProjectSchema)),
+    success: okDataSchema(createPageSchema(ProjectSchema)),
     errors: ErrorResponseSchema,
   },
   {
@@ -696,10 +409,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/organizations/{organizationId}/projects",
     source: project,
     summary: "创建项目",
-    params: OrgParams,
+    params: OrganizationIdParamsSchema,
     body: CreateProjectSchema,
     successStatus: 201,
-    success: okData(z.object({ project: ProjectSchema })),
+    success: okDataSchema(z.object({ project: ProjectSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -708,9 +421,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}",
     source: project,
     summary: "读取项目",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ project: ProjectSchema })),
+    success: okDataSchema(z.object({ project: ProjectSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -719,10 +432,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}",
     source: project,
     summary: "按版本号更新项目",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: UpdateProjectSchema,
     successStatus: 200,
-    success: okData(z.object({ project: ProjectSchema })),
+    success: okDataSchema(z.object({ project: ProjectSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -731,9 +444,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}",
     source: project,
     summary: "删除项目",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -742,9 +455,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/media",
     source: project,
     summary: "上传项目图片媒体",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 201,
-    success: okData(z.object({ key: z.string(), url: z.string() })),
+    success: okDataSchema(z.object({ key: z.string(), url: z.string() })),
     errors: ErrorResponseSchema,
   },
   {
@@ -753,7 +466,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/media/{fileName}",
     source: project,
     summary: "读取项目图片媒体",
-    params: ProjectMediaParams,
+    params: ProjectMediaParamsSchema,
     successStatus: 200,
     successContentType: "application/octet-stream",
     success: z.string().describe("binary image bytes"),
@@ -765,10 +478,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/folders",
     source: folder,
     summary: "列出项目平铺分组",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     query: ListFoldersQuerySchema,
     successStatus: 200,
-    success: okData(z.object({ folders: z.array(FolderSchema) })),
+    success: okDataSchema(z.object({ folders: z.array(FolderSchema) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -777,10 +490,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/folders",
     source: folder,
     summary: "创建项目平铺分组",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateFolderSchema,
     successStatus: 201,
-    success: okData(z.object({ folder: FolderSchema })),
+    success: okDataSchema(z.object({ folder: FolderSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -789,10 +502,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/folders/{folderId}",
     source: folder,
     summary: "更新项目平铺分组",
-    params: FolderParams,
+    params: FolderIdParamsSchema,
     body: UpdateFolderSchema,
     successStatus: 200,
-    success: okData(z.object({ folder: FolderSchema })),
+    success: okDataSchema(z.object({ folder: FolderSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -801,9 +514,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/folders/{folderId}",
     source: folder,
     summary: "删除项目平铺分组",
-    params: FolderParams,
+    params: FolderIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -812,14 +525,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/lineages",
     source: lineage,
     summary: "列出项目谱系目录",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 200,
-    success: okData(
-      z.object({
-        folders: z.array(FolderSchema),
-        lineages: z.array(LineageSchema),
-      }),
-    ),
+    success: okDataSchema(LineageDirectoryPayloadSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -828,10 +536,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/lineages",
     source: lineage,
     summary: "创建谱系图（可选初始化始祖）",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateLineageSchema,
     successStatus: 201,
-    success: okData(
+    success: okDataSchema(
       z.object({
         lineage: LineageSchema,
         progenitorPerson: PersonSchema.nullable(),
@@ -845,10 +553,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/lineages/{lineageId}",
     source: lineage,
     summary: "按版本号更新谱系图",
-    params: LineageParams,
+    params: LineageIdParamsSchema,
     body: UpdateLineageSchema,
     successStatus: 200,
-    success: okData(z.object({ lineage: LineageSchema })),
+    success: okDataSchema(z.object({ lineage: LineageSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -857,9 +565,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/lineages/{lineageId}",
     source: lineage,
     summary: "删除谱系图（级联人物与关系）",
-    params: LineageParams,
+    params: LineageIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -868,16 +576,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/lineages/{lineageId}/graph",
     source: lineage,
     summary: "读取指定谱系图全量节点与关系",
-    params: LineageParams,
+    params: LineageIdParamsSchema,
     successStatus: 200,
-    success: okData(
-      z.object({
-        lineage: LineageSchema,
-        persons: z.array(PersonSchema),
-        relations: z.array(RelationSchema),
-        projections: z.array(ProjectionSchema),
-      }),
-    ),
+    success: okDataSchema(LineageGraphPayloadSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -886,10 +587,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons",
     source: person,
     summary: "创建人物",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreatePersonSchema,
     successStatus: 201,
-    success: okData(z.object({ person: PersonSchema })),
+    success: okDataSchema(z.object({ person: PersonSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -898,10 +599,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons",
     source: person,
     summary: "分页列出人物",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     query: ListPersonsQuerySchema,
     successStatus: 200,
-    success: okData(pageOf(PersonSchema, "persons")),
+    success: okDataSchema(createPageSchema(PersonSchema, "persons")),
     errors: ErrorResponseSchema,
   },
   {
@@ -910,9 +611,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}",
     source: person,
     summary: "读取人物",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ person: PersonSchema })),
+    success: okDataSchema(z.object({ person: PersonSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -921,10 +622,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}",
     source: person,
     summary: "按版本号更新人物",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     body: UpdatePersonSchema,
     successStatus: 200,
-    success: okData(z.object({ person: PersonSchema })),
+    success: okDataSchema(z.object({ person: PersonSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -933,10 +634,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/aggregate",
     source: person,
     summary: "按版本号事务级聚合更新人物、名号、关系与事件",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     body: UpdatePersonAggregateSchema,
     successStatus: 200,
-    success: okData(
+    success: okDataSchema(
       z.object({
         person: PersonSchema,
         relations: z.array(RelationSchema),
@@ -951,10 +652,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/relatives",
     source: person,
     summary: "原子创建亲属人物及与锚点人物的关系",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateRelativeSchema,
     successStatus: 201,
-    success: okData(
+    success: okDataSchema(
       z.object({
         person: PersonSchema,
         companionPerson: PersonSchema.nullable(),
@@ -970,9 +671,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}",
     source: person,
     summary: "删除人物",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     successStatus: 200,
-    success: okOnly,
+    success: okOnlySchema,
     errors: ErrorResponseSchema,
   },
   {
@@ -981,10 +682,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/names",
     source: person,
     summary: "添加人物名号",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     body: CreatePersonNameSchema,
     successStatus: 201,
-    success: okData(z.object({ name: PersonNameSchema })),
+    success: okDataSchema(z.object({ name: PersonNameSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -993,10 +694,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/names/{nameId}",
     source: person,
     summary: "更新人物名号",
-    params: PersonNameParams,
+    params: PersonNameIdParamsSchema,
     body: UpdatePersonNameSchema,
     successStatus: 200,
-    success: okData(z.object({ name: PersonNameSchema })),
+    success: okDataSchema(z.object({ name: PersonNameSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1005,9 +706,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/names/{nameId}",
     source: person,
     summary: "删除人物名号",
-    params: PersonNameParams,
+    params: PersonNameIdParamsSchema,
     successStatus: 200,
-    success: okOnly,
+    success: okOnlySchema,
     errors: ErrorResponseSchema,
   },
   {
@@ -1016,10 +717,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/relations",
     source: person,
     summary: "创建人物关系",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateRelationSchema,
     successStatus: 201,
-    success: okData(z.object({ relation: RelationSchema })),
+    success: okDataSchema(z.object({ relation: RelationSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1028,10 +729,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/relations/{relationId}",
     source: person,
     summary: "更新人物关系",
-    params: RelationParams,
+    params: RelationIdParamsSchema,
     body: UpdateRelationSchema,
     successStatus: 200,
-    success: okData(z.object({ relation: RelationSchema })),
+    success: okDataSchema(z.object({ relation: RelationSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1040,9 +741,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/relations/{relationId}",
     source: person,
     summary: "删除人物关系",
-    params: RelationParams,
+    params: RelationIdParamsSchema,
     successStatus: 200,
-    success: okOnly,
+    success: okOnlySchema,
     errors: ErrorResponseSchema,
   },
   {
@@ -1051,10 +752,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/events",
     source: person,
     summary: "添加人物生平事件",
-    params: PersonParams,
+    params: PersonIdParamsSchema,
     body: CreatePersonEventSchema,
     successStatus: 201,
-    success: okData(z.object({ event: PersonEventSchema })),
+    success: okDataSchema(z.object({ event: PersonEventSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1063,10 +764,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/events/{eventId}",
     source: person,
     summary: "更新人物生平事件",
-    params: PersonEventParams,
+    params: PersonEventIdParamsSchema,
     body: UpdatePersonEventSchema,
     successStatus: 200,
-    success: okData(z.object({ event: PersonEventSchema })),
+    success: okDataSchema(z.object({ event: PersonEventSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1075,9 +776,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/persons/{personId}/events/{eventId}",
     source: person,
     summary: "删除人物生平事件",
-    params: PersonEventParams,
+    params: PersonEventIdParamsSchema,
     successStatus: 200,
-    success: okOnly,
+    success: okOnlySchema,
     errors: ErrorResponseSchema,
   },
   {
@@ -1086,18 +787,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/subgraph",
     source: person,
     summary: "读取人物关系子图",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     query: SubgraphQuerySchema,
     successStatus: 200,
-    success: okData(
-      z.object({
-        rootPersonId: id,
-        persons: z.array(PersonSchema),
-        relations: z.array(RelationSchema),
-        hasMoreAncestors: z.boolean(),
-        hasMoreDescendants: z.boolean(),
-      }),
-    ),
+    success: okDataSchema(SubgraphPayloadSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -1106,14 +799,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles",
     source: article,
     summary: "列出项目谱文目录与正文",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 200,
-    success: okData(
-      z.object({
-        folders: z.array(FolderSchema),
-        articles: z.array(ArticleSchema),
-      }),
-    ),
+    success: okDataSchema(ArticlesDirectoryPayloadSchema),
     errors: ErrorResponseSchema,
   },
   {
@@ -1122,10 +810,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles",
     source: article,
     summary: "创建谱文",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateArticleSchema,
     successStatus: 201,
-    success: okData(z.object({ article: ArticleSchema })),
+    success: okDataSchema(z.object({ article: ArticleSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1134,9 +822,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}",
     source: article,
     summary: "读取单篇谱文",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ article: ArticleSchema })),
+    success: okDataSchema(z.object({ article: ArticleSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1145,10 +833,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}",
     source: article,
     summary: "按版本号 CAS 更新谱文",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     body: UpdateArticleSchema,
     successStatus: 200,
-    success: okData(z.object({ article: ArticleSchema })),
+    success: okDataSchema(z.object({ article: ArticleSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1157,9 +845,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}/duplicate",
     source: article,
     summary: "复制谱文",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     successStatus: 201,
-    success: okData(z.object({ article: ArticleSchema })),
+    success: okDataSchema(z.object({ article: ArticleSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1168,9 +856,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}",
     source: article,
     summary: "删除谱文",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1179,9 +867,11 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}/revisions",
     source: article,
     summary: "列出谱文修订记录",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ revisions: z.array(ArticleRevisionSchema) })),
+    success: okDataSchema(
+      z.object({ revisions: z.array(ArticleRevisionSchema) }),
+    ),
     errors: ErrorResponseSchema,
   },
   {
@@ -1190,10 +880,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}/revisions",
     source: article,
     summary: "记入谱文修订快照",
-    params: ArticleParams,
+    params: ArticleIdParamsSchema,
     body: CreateArticleRevisionSchema,
     successStatus: 201,
-    success: okData(z.object({ revision: ArticleRevisionSchema })),
+    success: okDataSchema(z.object({ revision: ArticleRevisionSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1203,10 +893,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/articles/{articleId}/revisions/{revisionId}/restore",
     source: article,
     summary: "按版本号回滚到指定修订",
-    params: ArticleRevisionParams,
+    params: ArticleRevisionIdParamsSchema,
     body: RestoreArticleRevisionSchema,
     successStatus: 200,
-    success: okData(
+    success: okDataSchema(
       z.object({
         article: ArticleSchema,
         revision: ArticleRevisionSchema,
@@ -1220,9 +910,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/article-assets",
     source: article,
     summary: "上传谱文图片资产",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 201,
-    success: okData(z.object({ key: z.string(), url: z.string() })),
+    success: okDataSchema(z.object({ key: z.string(), url: z.string() })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1231,7 +921,7 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/article-assets/{fileName}",
     source: article,
     summary: "读取谱文图片资产",
-    params: ProjectMediaParams,
+    params: ProjectMediaParamsSchema,
     successStatus: 200,
     successContentType: "application/octet-stream",
     success: z.string().describe("binary image bytes"),
@@ -1243,9 +933,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books",
     source: book,
     summary: "列出项目谱书",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ books: z.array(BookSchema) })),
+    success: okDataSchema(z.object({ books: z.array(BookSchema) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1254,10 +944,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books",
     source: book,
     summary: "创建谱书",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: CreateBookSchema,
     successStatus: 201,
-    success: okData(z.object({ book: BookSchema })),
+    success: okDataSchema(z.object({ book: BookSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1266,10 +956,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/reorder",
     source: book,
     summary: "调整项目内谱书排序",
-    params: ProjectParams,
+    params: ProjectIdParamsSchema,
     body: ReorderBooksSchema,
     successStatus: 200,
-    success: okData(z.object({ books: z.array(BookSchema) })),
+    success: okDataSchema(z.object({ books: z.array(BookSchema) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1278,9 +968,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}",
     source: book,
     summary: "读取单部谱书",
-    params: BookParams,
+    params: BookIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ book: BookSchema })),
+    success: okDataSchema(z.object({ book: BookSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1289,10 +979,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}",
     source: book,
     summary: "按版本号 CAS 更新谱书",
-    params: BookParams,
+    params: BookIdParamsSchema,
     body: UpdateBookSchema,
     successStatus: 200,
-    success: okData(z.object({ book: BookSchema })),
+    success: okDataSchema(z.object({ book: BookSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1301,9 +991,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}/duplicate",
     source: book,
     summary: "复制谱书及谱例快照",
-    params: BookParams,
+    params: BookIdParamsSchema,
     successStatus: 201,
-    success: okData(z.object({ book: BookSchema })),
+    success: okDataSchema(z.object({ book: BookSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1312,9 +1002,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}",
     source: book,
     summary: "删除谱书",
-    params: BookParams,
+    params: BookIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1323,9 +1013,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}/editions",
     source: book,
     summary: "列出谱书谱例快照",
-    params: BookParams,
+    params: BookIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ editions: z.array(BookEditionSchema) })),
+    success: okDataSchema(z.object({ editions: z.array(BookEditionSchema) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1334,10 +1024,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}/editions",
     source: book,
     summary: "生成并保存谱例快照",
-    params: BookParams,
+    params: BookIdParamsSchema,
     body: CreateBookEditionSchema,
     successStatus: 201,
-    success: okData(z.object({ edition: BookEditionSchema })),
+    success: okDataSchema(z.object({ edition: BookEditionSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1346,10 +1036,10 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}/editions/{editionId}",
     source: book,
     summary: "更新谱例打印状态",
-    params: BookEditionParams,
+    params: BookEditionIdParamsSchema,
     body: UpdateBookEditionSchema,
     successStatus: 200,
-    success: okData(z.object({ edition: BookEditionSchema })),
+    success: okDataSchema(z.object({ edition: BookEditionSchema })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1358,9 +1048,9 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/v1/projects/{projectId}/books/{bookId}/editions/{editionId}",
     source: book,
     summary: "删除谱例快照",
-    params: BookEditionParams,
+    params: BookEditionIdParamsSchema,
     successStatus: 200,
-    success: okData(z.object({ deleted: z.literal(true) })),
+    success: okDataSchema(z.object({ deleted: z.literal(true) })),
     errors: ErrorResponseSchema,
   },
   {
@@ -1379,13 +1069,17 @@ export const OPENAPI_OPERATIONS: OpenApiOperation[] = [
     path: "/api/media/{path}",
     source: media,
     summary: "读取媒体对象",
-    params: z.object({ path: z.string() }),
+    params: MediaPathParamsSchema,
     successStatus: 200,
     successContentType: "application/octet-stream",
     success: z.string().describe("binary media bytes"),
     errors: z.object({ ok: z.literal(false), reason: z.string() }),
   },
-];
+] as const satisfies readonly OpenApiOperation[];
+
+export const OPENAPI_OPERATIONS: OpenApiOperation[] = [...CONTRACT_OPERATIONS];
+
+export type ContractOperation = (typeof CONTRACT_OPERATIONS)[number];
 
 export const OPENAPI_SCHEMAS: Record<string, z.ZodType> = {
   Account: AccountSchema,
@@ -1406,19 +1100,19 @@ export const OPENAPI_SCHEMAS: Record<string, z.ZodType> = {
   Relation: RelationSchema,
   Projection: ProjectionSchema,
   ErrorResponse: ErrorResponseSchema,
-  OrgParams,
-  ProjectParams,
-  FolderParams,
-  LineageParams,
-  ProjectMediaParams,
-  ArticleParams,
-  ArticleRevisionParams,
-  BookParams,
-  BookEditionParams,
-  PersonParams,
-  PersonNameParams,
-  PersonEventParams,
-  RelationParams,
-  MemberParams,
-  InviteParams,
+  OrgParams: OrganizationIdParamsSchema,
+  ProjectParams: ProjectIdParamsSchema,
+  FolderParams: FolderIdParamsSchema,
+  LineageParams: LineageIdParamsSchema,
+  ProjectMediaParams: ProjectMediaParamsSchema,
+  ArticleParams: ArticleIdParamsSchema,
+  ArticleRevisionParams: ArticleRevisionIdParamsSchema,
+  BookParams: BookIdParamsSchema,
+  BookEditionParams: BookEditionIdParamsSchema,
+  PersonParams: PersonIdParamsSchema,
+  PersonNameParams: PersonNameIdParamsSchema,
+  PersonEventParams: PersonEventIdParamsSchema,
+  RelationParams: RelationIdParamsSchema,
+  MemberParams: MemberParamsSchema,
+  InviteParams: InviteParamsSchema,
 };

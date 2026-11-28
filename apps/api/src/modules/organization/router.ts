@@ -1,23 +1,7 @@
-import {
-  AcceptInviteSchema,
-  CreateInviteSchema,
-  CreateOrganizationSchema,
-  OrganizationIdParamsSchema,
-  PageQuerySchema,
-  TransferOwnerSchema,
-  UpdateMemberRoleSchema,
-  UpdateOrganizationSchema,
-} from "@yunpu/shared";
 import { Hono } from "hono";
 import { config } from "../../config";
-import {
-  parseJson,
-  parseParams,
-  parseQuery,
-  requireUser,
-} from "../../lib/http";
+import { createContractBinder } from "../../lib/contract";
 import type { ApiEnv } from "../../types";
-import { InviteParamsSchema, MemberParamsSchema } from "./schema";
 import {
   acceptInvite,
   activateOrganizationForUser,
@@ -36,9 +20,12 @@ import {
 } from "./service";
 
 export const organizationRouter = new Hono<ApiEnv>();
+const route = createContractBinder(
+  organizationRouter,
+  "apps/api/src/modules/organization/router.ts",
+);
 
-organizationRouter.get("/organizations", async (c) => {
-  const user = requireUser(c);
+route("get", "/organizations", async (c, { user }) => {
   const organizations = await listMyOrganizations(user.id);
   return c.json({
     ok: true,
@@ -49,56 +36,52 @@ organizationRouter.get("/organizations", async (c) => {
   });
 });
 
-organizationRouter.get("/organizations/:organizationId", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const organization = await getOrganization(user.id, organizationId);
+route("get", "/organizations/:organizationId", async (c, { user, params }) => {
+  const organization = await getOrganization(user.id, params.organizationId);
   return c.json({ ok: true, data: { organization } });
 });
 
-organizationRouter.patch("/organizations/:organizationId", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const patch = await parseJson(c, UpdateOrganizationSchema);
-  const organization = await updateOrganizationForUser(
-    user.id,
-    organizationId,
-    patch,
-  );
-  return c.json({ ok: true, data: { organization } });
-});
-
-organizationRouter.post("/organizations/:organizationId/leave", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  await leaveOrganizationForUser(user.id, organizationId);
-  return c.json({ ok: true, data: { left: true } });
-});
-
-organizationRouter.post("/organizations", async (c) => {
-  const user = requireUser(c);
-  const parsed = await parseJson(c, CreateOrganizationSchema);
-  const organization = await createOrganization(user.id, parsed.name);
-  return c.json({ ok: true, data: { organization } }, 201);
-});
-
-organizationRouter.post(
-  "/organizations/:organizationId/activate",
-  async (c) => {
-    const user = requireUser(c);
-    const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-    const organization = await activateOrganizationForUser(
+route(
+  "patch",
+  "/organizations/:organizationId",
+  async (c, { user, params, body }) => {
+    const organization = await updateOrganizationForUser(
       user.id,
-      organizationId,
+      params.organizationId,
+      body,
     );
     return c.json({ ok: true, data: { organization } });
   },
 );
 
-organizationRouter.post("/invites/accept", async (c) => {
-  const user = requireUser(c);
-  const parsed = await parseJson(c, AcceptInviteSchema);
-  const organization = await acceptInvite(user.id, parsed.token);
+route(
+  "post",
+  "/organizations/:organizationId/leave",
+  async (c, { user, params }) => {
+    await leaveOrganizationForUser(user.id, params.organizationId);
+    return c.json({ ok: true, data: { left: true } });
+  },
+);
+
+route("post", "/organizations", async (c, { user, body }) => {
+  const organization = await createOrganization(user.id, body.name);
+  return c.json({ ok: true, data: { organization } }, 201);
+});
+
+route(
+  "post",
+  "/organizations/:organizationId/activate",
+  async (c, { user, params }) => {
+    const organization = await activateOrganizationForUser(
+      user.id,
+      params.organizationId,
+    );
+    return c.json({ ok: true, data: { organization } });
+  },
+);
+
+route("post", "/invites/accept", async (c, { user, body }) => {
+  const organization = await acceptInvite(user.id, body.token);
   return c.json({
     ok: true,
     data: { organization, defaultOrganizationChanged: true },
@@ -107,35 +90,33 @@ organizationRouter.post("/invites/accept", async (c) => {
 
 // ---- 控制台：成员 ----
 
-organizationRouter.get("/organizations/:organizationId/members", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const query = parseQuery(c, PageQuerySchema);
-  const page = await listMembersForOrg(user.id, organizationId, query);
-  return c.json({ ok: true, data: page });
-});
+route(
+  "get",
+  "/organizations/:organizationId/members",
+  async (c, { user, params, query }) => {
+    const page = await listMembersForOrg(user.id, params.organizationId, query);
+    return c.json({ ok: true, data: page });
+  },
+);
 
-organizationRouter.patch(
+route(
+  "patch",
   "/organizations/:organizationId/members/:userId",
-  async (c) => {
-    const user = requireUser(c);
-    const params = parseParams(c, MemberParamsSchema);
-    const parsed = await parseJson(c, UpdateMemberRoleSchema);
+  async (c, { user, params, body }) => {
     const member = await updateMemberRoleForOrg(
       user.id,
       params.organizationId,
       params.userId,
-      parsed.role,
+      body.role,
     );
     return c.json({ ok: true, data: { member } });
   },
 );
 
-organizationRouter.delete(
+route(
+  "delete",
   "/organizations/:organizationId/members/:userId",
-  async (c) => {
-    const user = requireUser(c);
-    const params = parseParams(c, MemberParamsSchema);
+  async (c, { user, params }) => {
     await removeMemberFromOrg(user.id, params.organizationId, params.userId);
     return c.json({ ok: true, data: { removed: true } });
   },
@@ -143,13 +124,14 @@ organizationRouter.delete(
 
 // ---- 控制台：邀请 ----
 
-organizationRouter.get("/organizations/:organizationId/invites", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const query = parseQuery(c, PageQuerySchema);
-  const page = await listInvitesForOrg(user.id, organizationId, query);
-  return c.json({ ok: true, data: page });
-});
+route(
+  "get",
+  "/organizations/:organizationId/invites",
+  async (c, { user, params, query }) => {
+    const page = await listInvitesForOrg(user.id, params.organizationId, query);
+    return c.json({ ok: true, data: page });
+  },
+);
 
 function trustedInviteOrigin(headerOrigin: string | undefined): string {
   const env = config();
@@ -174,26 +156,26 @@ function trustedInviteOrigin(headerOrigin: string | undefined): string {
   return allowed.has(normalized) ? normalized : fallback;
 }
 
-organizationRouter.post("/organizations/:organizationId/invites", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const parsed = await parseJson(c, CreateInviteSchema);
-  // 邀请链接指向前端；仅信任已配置的 Origin，否则回退 BETTER_AUTH_URL。
-  const origin = trustedInviteOrigin(c.req.header("origin"));
-  const result = await createInviteForOrg(
-    user.id,
-    organizationId,
-    parsed,
-    origin,
-  );
-  return c.json({ ok: true, data: result }, 201);
-});
+route(
+  "post",
+  "/organizations/:organizationId/invites",
+  async (c, { user, params, body }) => {
+    // 邀请链接指向前端；仅信任已配置的 Origin，否则回退 BETTER_AUTH_URL。
+    const origin = trustedInviteOrigin(c.req.header("origin"));
+    const result = await createInviteForOrg(
+      user.id,
+      params.organizationId,
+      body,
+      origin,
+    );
+    return c.json({ ok: true, data: result }, 201);
+  },
+);
 
-organizationRouter.delete(
+route(
+  "delete",
   "/organizations/:organizationId/invites/:inviteId",
-  async (c) => {
-    const user = requireUser(c);
-    const params = parseParams(c, InviteParamsSchema);
+  async (c, { user, params }) => {
     await revokeInviteForOrg(user.id, params.organizationId, params.inviteId);
     return c.json({ ok: true, data: { revoked: true } });
   },
@@ -201,16 +183,17 @@ organizationRouter.delete(
 
 // ---- 控制台：所有权转移 ----
 
-organizationRouter.put("/organizations/:organizationId/owner", async (c) => {
-  const user = requireUser(c);
-  const { organizationId } = parseParams(c, OrganizationIdParamsSchema);
-  const parsed = await parseJson(c, TransferOwnerSchema);
-  const result = await transferOwnerForOrg(
-    user.id,
-    organizationId,
-    parsed.newOwnerUserId,
-  );
-  return c.json({ ok: true, data: result });
-});
+route(
+  "put",
+  "/organizations/:organizationId/owner",
+  async (c, { user, params, body }) => {
+    const result = await transferOwnerForOrg(
+      user.id,
+      params.organizationId,
+      body.newOwnerUserId,
+    );
+    return c.json({ ok: true, data: result });
+  },
+);
 
 export default organizationRouter;

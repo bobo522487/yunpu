@@ -189,6 +189,7 @@ test('articleDirectoryToTreeItems and buildArticlesByKey isolate articles by pro
       {
         id: 'folder-1',
         projectId: 'proj-1',
+        kind: 'article',
         name: '卷一',
         seq: 0,
         createdAt: '2026-11-27T00:00:00Z',

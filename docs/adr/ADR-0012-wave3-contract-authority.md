@@ -15,15 +15,15 @@ ADR-0009 明确把校验错误形状的差异保留为外部契约，并明确�
 - 新增声明式操作注册表 `apps/api/src/openapi/operations.ts`。它只依赖 `@yunpu/shared` 与 zod，无数据库副作用；每条操作声明路由、请求体/路径参数/查询参数/响应 Schema 与状态码。
 - `scripts/export-contract.ts` 从注册表生成完整 OpenAPI 3.1 文档：路径参数、查询参数、requestBody、各状态码响应 Schema、组件 Schema。生成前用源码路由声明校验注册表完整性，漂移即失败。
 - 新增 `pnpm contract:check`（重新导出并要求 `contracts/openapi.json` 无 diff）和 CI 步骤，契约新鲜度成为合并门禁。
-- 不引入 `@hono/zod-openapi` 等新依赖；注册表是与路由分离的单一事实来源，由导出时的漂移校验保证一致。
+- 不引入 `@hono/zod-openapi` 等第三方路由耦合依赖；由 `apps/api/src/lib/contract.ts` 提供进程内同源绑定器 `createContractBinder`，让所有 Hono 路由器在运行期直接消费 `apps/api/src/openapi/operations.ts` 中同一操作对象的路由字符串以及 `params`/`query`/`body` Zod schema，从而彻底消除双写分叉（实体响应与全部路径参数 Schema 同时收敛至 `@yunpu/shared`）。
 
 ## Consequences
 
 - 外部可见的校验错误 `details` 形状发生一次有意变更：person 路由从 `{ issues: ... }` 改为与其他路由一致的裸 `fieldErrors`。下游需按新形状解析；这是本 ADR 明确取代 ADR-0009 的原因。
-- `contracts/openapi.json` 从 27 paths/38 ops 的无 Schema 骨架变为 38 条带完整请求/响应 Schema 的契约；web 仓库可据此生成类型。
-- 新增操作或路由后必须同步更新注册表，否则导出器与 CI 立即报漂移；不再依赖人工记得运行导出。
+- `contracts/openapi.json` 从 27 paths/38 ops 的无 Schema 骨架变为带完整请求/响应 Schema 的契约；web 端与 `@yunpu/db`、`@yunpu/api` 共同以 `@yunpu/shared` 为单一权威来源推导 DTO 与列类型。
+- 新增操作或修改路由/Schema 时只需以 `OPENAPI_OPERATIONS` 为权威声明并通过 `createContractBinder` 绑定；导出校验与运行期绑定测试会在无契约覆盖、裸路由绕过或参数占位符失配时立即报错。
 - ADR-0009 中"不重写导出器、不加契约新鲜度 CI、保留两种校验形状"三条约束由本 ADR 取代；其余决策继续有效。
 
 ## Status
 
-accepted（supersedes ADR-0009 的三条相关约束）
+accepted（supersedes ADR-0009 的三条相关约束，并于 2026-11-28 修订为经 `createContractBinder` 运行期同源绑定）

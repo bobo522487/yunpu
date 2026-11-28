@@ -323,7 +323,7 @@ export async function getPersonLivingState(
   if (!rows[0]) return null;
   return {
     isLiving: rows[0].isLiving,
-    deathInfo: (rows[0].deathInfo as PersonDeathInfoInput | null) ?? null,
+    deathInfo: rows[0].deathInfo ?? null,
   };
 }
 

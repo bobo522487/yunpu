@@ -152,7 +152,10 @@ export const auditLog = pgTable(
     action: text("action").notNull(),
     entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id"),
-    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

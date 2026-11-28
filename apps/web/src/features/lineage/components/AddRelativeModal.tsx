@@ -10,6 +10,10 @@ import {
 import { NativeSelect as Select } from '@/components/ui/native-select';
 import { cn } from '../../../lib/utils';
 import type { PersonRecord, PersonRomanizedName } from '../types';
+import {
+  getGenderAvatarToneClass,
+  getGenderCardSurfaceClass,
+} from '../utils/lineageTheme';
 import { toGivenNamePinyin, toSurnamePinyin } from '../utils/nameUtils';
 import {
   DateInput,
@@ -425,7 +429,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
       closeOnEsc={context.relation !== 'child'}
       ariaLabelledBy={titleId}
       className={cn(
-        'fs-lineage-theme transition-[border-radius,max-width,height] duration-150',
+        'transition-[border-radius,max-width,height] duration-150',
         isMaximized
           ? 'h-[95vh] max-w-none max-h-[95vh]'
           : 'max-w-[900px]'
@@ -774,11 +778,17 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
 
                     <div
                       aria-labelledby={fatherFieldId}
-                      className="flex items-center gap-3 rounded-lg border border-sky-500/25 dark:border-sky-400/25 bg-sky-500/[0.06] dark:bg-sky-400/[0.08] px-3.5 py-2.5 min-h-[70px]"
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg border px-3.5 py-2.5 min-h-[70px]',
+                        getGenderCardSurfaceClass('male')
+                      )}
                     >
                       <div
                         aria-hidden="true"
-                        className="w-10 h-10 rounded-full overflow-hidden border border-sky-500/30 dark:border-sky-400/35 bg-sky-500/12 dark:bg-sky-400/20 text-primary flex items-center justify-center shrink-0 text-[13px] font-semibold"
+                        className={cn(
+                          'w-10 h-10 rounded-full overflow-hidden border flex items-center justify-center shrink-0 text-[13px] font-semibold',
+                          getGenderAvatarToneClass('male')
+                        )}
                       >
                         {context.targetPerson.avatarUrl ? (
                           <img
@@ -869,9 +879,9 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                           }
                           className={cn(
                             'flex items-center gap-3 rounded-lg border px-3.5 py-2.5 min-h-[70px]',
-                            isUnknownSelected
-                              ? 'border-border bg-[var(--surface-subtle)]'
-                              : 'border-rose-500/25 dark:border-rose-400/25 bg-rose-500/[0.06] dark:bg-rose-400/[0.08]'
+                            getGenderCardSurfaceClass(
+                              isUnknownSelected ? 'unknown' : 'female'
+                            )
                           )}
                         >
                           <div
@@ -880,7 +890,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                               'w-10 h-10 rounded-full overflow-hidden border flex items-center justify-center shrink-0 text-[13px] font-semibold',
                               isUnknownSelected
                                 ? 'border-border bg-card text-muted-foreground'
-                                : 'border-rose-500/30 dark:border-rose-400/35 bg-rose-500/12 dark:bg-rose-400/20 text-rose-700 dark:text-rose-300'
+                                : getGenderAvatarToneClass('female')
                             )}
                           >
                             {motherAvatarUrl ? (
@@ -927,7 +937,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                                     '-mx-1.5 px-1.5 pr-7 border-transparent bg-transparent shadow-none text-[14px] font-semibold text-foreground',
                                     isUnknownSelected
                                       ? 'hover:bg-[var(--surface-hover)/0.65]'
-                                      : 'hover:bg-rose-500/[0.09] dark:hover:bg-rose-400/[0.15]'
+                                      : 'hover:bg-lineage-female/[0.09] dark:hover:bg-lineage-female/[0.15]'
                                   )}
                                 >
                                   {motherOptions.map((opt) => (

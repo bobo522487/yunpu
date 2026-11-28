@@ -17,6 +17,7 @@ import { ModalBody, ModalFooter, ModalShell } from '@/components/ui/modal';
 import { errorMessage } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { type PersonRecord } from '../types';
+import { getGenderAvatarToneClass } from '../utils/lineageTheme';
 
 export interface PersonPortraitUpdate {
   avatarKey?: string | null;
@@ -406,12 +407,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
     });
   };
 
-  const avatarToneClass =
-    person.gender === 'female'
-      ? 'bg-rose-500/12 text-rose-700 dark:bg-rose-400/15 dark:text-rose-300 border-rose-500/25 dark:border-rose-400/30'
-      : person.gender === 'male'
-        ? 'bg-sky-500/12 text-primary dark:bg-sky-400/15 dark:text-primary border-sky-500/25 dark:border-sky-400/30'
-        : 'bg-[var(--surface-subtle)] text-muted-foreground border-border';
+  const avatarToneClass = getGenderAvatarToneClass(person.gender);
 
   const effectiveScale = computeCoverScale(naturalSize) * zoom;
   const dispW = naturalSize ? naturalSize.width * effectiveScale : 0;
@@ -428,7 +424,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
       zIndexClass="z-[97]"
       closeOnEsc={view !== 'crop'}
       ariaLabelledBy={titleId}
-      className="fs-lineage-theme max-w-[640px]"
+      className="max-w-[640px]"
     >
       <input
         ref={fileInputRef}
@@ -659,7 +655,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
               onWheel={handleWheelZoom}
               style={{ width: STAGE_SIZE, height: STAGE_SIZE }}
               className={cn(
-                'relative rounded-lg overflow-hidden bg-slate-950 border border-border select-none touch-none shrink-0',
+                'relative rounded-lg overflow-hidden bg-neutral-950 border border-border select-none touch-none shrink-0',
                 naturalSize && !isLoadingImage
                   ? isDragging
                     ? 'cursor-grabbing'
@@ -688,7 +684,7 @@ export const PersonPortraitModal: React.FC<PersonPortraitModalProps> = ({
               <div
                 aria-hidden="true"
                 style={{ width: CROP_DIAMETER, height: CROP_DIAMETER }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90 shadow-[0_0_0_9999px_rgba(15,23,42,0.58)] pointer-events-none"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none"
               >
                 {isDragging && (
                   <>

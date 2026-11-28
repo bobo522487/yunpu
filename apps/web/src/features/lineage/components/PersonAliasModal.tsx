@@ -108,7 +108,6 @@ export const PersonAliasModal: React.FC<PersonAliasModalProps> = ({
       size="lg"
       zIndexClass="z-[96]"
       ariaLabelledBy={titleId}
-      className="fs-lineage-theme"
     >
       <ModalHeader
         titleId={titleId}

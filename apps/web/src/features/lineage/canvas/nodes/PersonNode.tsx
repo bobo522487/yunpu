@@ -8,11 +8,18 @@ import {
   formatPersonGregorianLifespan,
   resolveRomanizedDisplayName,
 } from '../../utils/personTimeline';
+import {
+  getGenderAvatarToneClass,
+  getGenderTopStripeClass,
+} from '../../utils/lineageTheme';
+
+const ADD_MENU_ITEM_CLASS =
+  'w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-popover-foreground hover:bg-[var(--surface-hover)] active:bg-[var(--surface-active)] focus-visible:outline-none focus-visible:bg-[var(--surface-active)] focus-visible:text-primary whitespace-nowrap cursor-pointer transition-colors';
 
 const FirstAncestorBadgeIcon: React.FC = () => (
   <svg
     viewBox="0 0 20 20"
-    className="w-[14px] h-[14px] text-[#202121]"
+    className="w-[14px] h-[14px] text-lineage-progenitor-fg"
     fill="currentColor"
     aria-hidden="true"
   >
@@ -91,11 +98,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
           return given || effectiveSurname || '未命名';
         })();
 
-    const avatarToneClass = isFemale
-      ? 'bg-[#ED5481]/12 text-[#B6335A] dark:bg-[#D16686]/15 dark:text-[#E590AA] border-[#ED5481]/25 dark:border-[#D16686]/30'
-      : isUnknownGender
-        ? 'bg-[#E8EAEA] text-[#56585A] dark:bg-slate-700 dark:text-slate-300 border-[#D8DADA] dark:border-slate-600'
-        : 'bg-[#2097B7]/12 text-[#057091] dark:bg-[#3E9EB8]/15 dark:text-[#6EC2DB] border-[#2097B7]/25 dark:border-[#3E9EB8]/30';
+    const avatarToneClass = getGenderAvatarToneClass(person.gender);
 
     const pinyinName =
       resolveRomanizedDisplayName(person) ||
@@ -105,11 +108,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
     const rawDeathText = getPersonDateDisplay(person, 'death').trim();
     const gregorianLifespan = formatPersonGregorianLifespan(person);
 
-    const topStripeClass = isFemale
-      ? 'border-t-[#ED5481] dark:border-t-[#D16686]'
-      : isUnknownGender
-        ? 'border-t-[#9EA1A3] dark:border-t-[#7A828A]'
-        : 'border-t-[#2097B7] dark:border-t-[#3E9EB8]';
+    const topStripeClass = getGenderTopStripeClass(person.gender);
 
     const genderSrText = isFemale ? '女' : isUnknownGender ? '性别不详' : '男';
 
@@ -142,10 +141,10 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
             onSelect?.(person.id);
           }
         }}
-        className={`group relative w-[123px] h-[220px] rounded-[8px] border-t-[4px] ${topStripeClass} bg-[#FEFEFE] dark:bg-card flex flex-col items-center select-none outline-none transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-[#057091] dark:focus-visible:ring-[#58B1CD] focus-visible:shadow-[0_0_0_5px_rgba(5,112,145,0.18),0_4px_12px_rgba(15,23,42,0.16)] dark:focus-visible:shadow-[0_0_0_5px_rgba(88,177,205,0.22),0_6px_16px_rgba(0,0,0,0.48)] ${
+        className={`group relative w-[123px] h-[220px] rounded-[var(--radius-md)] border-t-[4px] ${topStripeClass} bg-card text-card-foreground flex flex-col items-center select-none outline-none transition-shadow duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[var(--shadow-focus-halo),var(--shadow-card-hover)] ${
           selected || data.isSelected
-            ? 'ring-2 ring-[#057091] dark:ring-[#58B1CD] shadow-[0_0_0_5px_rgba(5,112,145,0.16),0_4px_12px_rgba(15,23,42,0.16)] dark:shadow-[0_0_0_5px_rgba(88,177,205,0.20),0_6px_16px_rgba(0,0,0,0.48)]'
-            : 'shadow-[0_1px_3px_rgba(15,23,42,0.18)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.48)] hover:shadow-[0_4px_12px_rgba(15,23,42,0.16)] dark:hover:shadow-[0_6px_16px_rgba(0,0,0,0.55)]'
+            ? 'ring-2 ring-ring shadow-[var(--shadow-focus-halo),var(--shadow-card-hover)]'
+            : 'ring-1 ring-border/70 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)]'
         }`}
       >
         <span className="sr-only">{genderSrText}</span>
@@ -175,7 +174,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
         {/* Top-Left First Ancestor Badge */}
         {isFirstAncestor && (
           <div
-            className="absolute top-[9px] left-[9px] w-[22.5px] h-[22.5px] rounded-full bg-[#FFC400] dark:bg-[#E0AF22] flex items-center justify-center pointer-events-none z-10"
+            className="absolute top-[9px] left-[9px] w-[22.5px] h-[22.5px] rounded-full bg-lineage-progenitor-bg flex items-center justify-center pointer-events-none z-10"
             title="开基始祖"
           >
             <FirstAncestorBadgeIcon />
@@ -200,10 +199,10 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
               e.stopPropagation();
               onToggleAddMenu?.(isAddMenuOpen ? null : person.id);
             }}
-            className={`w-[35px] h-[35px] rounded-full flex items-center justify-center transition-colors duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#057091] dark:focus-visible:ring-[#58B1CD] focus-visible:shadow-[var(--shadow-focus-halo)] ${
+            className={`w-[35px] h-[35px] rounded-full flex items-center justify-center transition-colors duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[var(--shadow-focus-halo)] ${
               isAddMenuOpen
-                ? 'bg-[#EAF4F7] dark:bg-[#58B1CD]/15 text-[#057091] dark:text-[#58B1CD]'
-                : 'text-[rgba(0,3,5,0.737)] dark:text-foreground/75 hover:bg-[#EAF4F7] dark:hover:bg-[#58B1CD]/15 hover:text-[#057091] dark:hover:text-[#58B1CD]'
+                ? 'bg-[var(--surface-active)] text-primary'
+                : 'text-muted-foreground hover:bg-[var(--surface-active)] hover:text-primary'
             }`}
           >
             <Plus size={19} strokeWidth={2} />
@@ -214,7 +213,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
               role="dialog"
               aria-modal="false"
               aria-label={`为${displayName}加入亲属`}
-              className="absolute top-[38px] right-0 min-w-[112px] rounded-[12px] overflow-hidden bg-white dark:bg-popover border border-black/[0.06] dark:border-border shadow-[0_8px_24px_rgba(0,0,0,0.16),0_3px_8px_rgba(0,0,0,0.10)] z-50"
+              className="absolute top-[38px] right-0 min-w-[112px] rounded-[var(--radius-lg)] overflow-hidden bg-popover border border-border shadow-[var(--shadow-popover)] z-50"
             >
               <ul role="menu" className="py-1.5 m-0 list-none">
                 <li role="none">
@@ -226,7 +225,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
                       onToggleAddMenu?.(null);
                       onAddSpouse?.(person.id);
                     }}
-                    className="w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-[#202121] dark:text-foreground hover:bg-[#F2F3F4] dark:hover:bg-accent active:bg-[#E7E9EA] dark:active:bg-accent/80 focus-visible:outline-none focus-visible:bg-[#EAF4F7] focus-visible:text-[#057091] dark:focus-visible:bg-[#057091]/25 dark:focus-visible:text-[#58B1CD] whitespace-nowrap cursor-pointer transition-colors"
+                    className={ADD_MENU_ITEM_CLASS}
                   >
                     加入配偶
                   </button>
@@ -240,7 +239,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
                       onToggleAddMenu?.(null);
                       onAddChild?.(person.id, 'male');
                     }}
-                    className="w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-[#202121] dark:text-foreground hover:bg-[#F2F3F4] dark:hover:bg-accent active:bg-[#E7E9EA] dark:active:bg-accent/80 focus-visible:outline-none focus-visible:bg-[#EAF4F7] focus-visible:text-[#057091] dark:focus-visible:bg-[#057091]/25 dark:focus-visible:text-[#58B1CD] whitespace-nowrap cursor-pointer transition-colors"
+                    className={ADD_MENU_ITEM_CLASS}
                   >
                     加入儿子
                   </button>
@@ -254,7 +253,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
                       onToggleAddMenu?.(null);
                       onAddChild?.(person.id, 'female');
                     }}
-                    className="w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-[#202121] dark:text-foreground hover:bg-[#F2F3F4] dark:hover:bg-accent active:bg-[#E7E9EA] dark:active:bg-accent/80 focus-visible:outline-none focus-visible:bg-[#EAF4F7] focus-visible:text-[#057091] dark:focus-visible:bg-[#057091]/25 dark:focus-visible:text-[#58B1CD] whitespace-nowrap cursor-pointer transition-colors"
+                    className={ADD_MENU_ITEM_CLASS}
                   >
                     加入女儿
                   </button>
@@ -268,7 +267,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
                       onToggleAddMenu?.(null);
                       onAddSibling?.(person.id, 'male');
                     }}
-                    className="w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-[#202121] dark:text-foreground hover:bg-[#F2F3F4] dark:hover:bg-accent active:bg-[#E7E9EA] dark:active:bg-accent/80 focus-visible:outline-none focus-visible:bg-[#EAF4F7] focus-visible:text-[#057091] dark:focus-visible:bg-[#057091]/25 dark:focus-visible:text-[#58B1CD] whitespace-nowrap cursor-pointer transition-colors"
+                    className={ADD_MENU_ITEM_CLASS}
                   >
                     加入兄弟
                   </button>
@@ -282,7 +281,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
                       onToggleAddMenu?.(null);
                       onAddSibling?.(person.id, 'female');
                     }}
-                    className="w-full px-4 py-2.5 text-left text-[14px] font-medium leading-[1.35] text-[#202121] dark:text-foreground hover:bg-[#F2F3F4] dark:hover:bg-accent active:bg-[#E7E9EA] dark:active:bg-accent/80 focus-visible:outline-none focus-visible:bg-[#EAF4F7] focus-visible:text-[#057091] dark:focus-visible:bg-[#057091]/25 dark:focus-visible:text-[#58B1CD] whitespace-nowrap cursor-pointer transition-colors"
+                    className={ADD_MENU_ITEM_CLASS}
                   >
                     加入姐妹
                   </button>
@@ -298,7 +297,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
             aria-hidden="true"
             className={`w-[72px] h-[72px] rounded-full overflow-hidden border flex items-center justify-center shrink-0 select-none ${
               hasAvatar
-                ? 'border-black/[0.08] dark:border-slate-700 bg-[#F2F3F4] dark:bg-slate-800'
+                ? 'border-border bg-[var(--surface-subtle)]'
                 : `${avatarToneClass} text-[24px] font-bold`
             }`}
           >
@@ -315,7 +314,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
             )}
           </div>
 
-          <div className="mt-[8px] w-full text-[15px] leading-[1.25] font-medium text-[#202121] dark:text-foreground text-center line-clamp-2 break-words">
+          <div className="mt-[8px] w-full text-[15px] leading-[1.25] font-medium text-card-foreground text-center line-clamp-2 break-words">
             {displayName}
           </div>
         </div>
@@ -325,7 +324,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
           {pinyinName ? (
             <div
               lang="zh-Latn"
-              className="w-full text-[12px] leading-[1.3] text-[rgba(0,3,5,0.737)] dark:text-muted-foreground text-center truncate"
+              className="w-full text-[12px] leading-[1.3] text-muted-foreground text-center truncate"
             >
               {pinyinName}
             </div>
@@ -333,7 +332,7 @@ export const PersonNode: React.FC<NodeProps<PersonFlowNode>> = memo(
             <div className="min-h-[15.6px] w-full" aria-hidden="true" />
           )}
 
-          <div className="w-full text-[12px] leading-[1.3] text-[rgba(0,3,5,0.737)] dark:text-muted-foreground tabular-nums text-center truncate">
+          <div className="w-full text-[12px] leading-[1.3] text-muted-foreground tabular-nums text-center truncate">
             {gregorianLifespan}
           </div>
         </div>

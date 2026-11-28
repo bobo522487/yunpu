@@ -525,7 +525,7 @@ const LineagePage: React.FC = () => {
 
   if (!isFolderSelected) {
     return (
-      <div className="fs-lineage-theme flex-1 flex flex-col min-h-0 h-full min-w-0 overflow-hidden bg-background">
+      <div className="flex-1 flex flex-col min-h-0 h-full min-w-0 overflow-hidden bg-background">
         {mutationError && (
           <div
             role="alert"

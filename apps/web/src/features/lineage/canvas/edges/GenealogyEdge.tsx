@@ -75,7 +75,7 @@ export const GenealogyEdge: React.FC<EdgeProps> = ({
         strokeWidth: selected ? 2.5 : 2,
         stroke: selected
           ? 'var(--primary)'
-          : 'var(--fs-edge-stroke, #9EA1A3)',
+          : 'var(--lineage-edge, var(--border-strong))',
         filter: selected
           ? 'drop-shadow(0 0 3px color-mix(in oklab, var(--primary) 32%, transparent))'
           : undefined,

@@ -20,6 +20,10 @@ import {
   extractYearLabel,
   resolvePersonDisplayName,
 } from '../utils/personTimeline';
+import {
+  getGenderAvatarToneClass,
+  getGenderCardSurfaceClass,
+} from '../utils/lineageTheme';
 
 interface ParentChildRelationModalProps {
   childPerson: PersonRecord | null;
@@ -156,7 +160,6 @@ export const ParentChildRelationModal: React.FC<
       size="xl"
       zIndexClass="z-[96]"
       ariaLabelledBy={titleId}
-      className="fs-lineage-theme"
     >
       <ModalHeader
         titleId={titleId}
@@ -176,10 +179,18 @@ export const ParentChildRelationModal: React.FC<
             <div className="min-w-0 flex flex-col gap-4">
               <div>
                 <div className={labelClass}>父亲</div>
-                <div className="flex items-center gap-3 rounded-lg border border-sky-500/25 dark:border-sky-400/25 bg-sky-500/[0.06] dark:bg-sky-400/[0.08] px-3.5 py-2.5 min-h-[68px]">
+                <div
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg border px-3.5 py-2.5 min-h-[68px]',
+                    getGenderCardSurfaceClass('male')
+                  )}
+                >
                   <div
                     aria-hidden="true"
-                    className="w-10 h-10 rounded-full overflow-hidden border border-sky-500/30 dark:border-sky-400/35 bg-sky-500/12 dark:bg-sky-400/20 text-primary flex items-center justify-center shrink-0 text-[13px] font-semibold"
+                    className={cn(
+                      'w-10 h-10 rounded-full overflow-hidden border flex items-center justify-center shrink-0 text-[13px] font-semibold',
+                      getGenderAvatarToneClass('male')
+                    )}
                   >
                     {fatherRecord?.avatarUrl ? (
                       <img
@@ -241,8 +252,8 @@ export const ParentChildRelationModal: React.FC<
                   className={cn(
                     'flex items-center gap-3 rounded-lg border px-3.5 py-2.5 min-h-[68px]',
                     selectedMotherRecord
-                      ? 'border-rose-500/25 dark:border-rose-400/25 bg-rose-500/[0.06] dark:bg-rose-400/[0.08]'
-                      : 'border-border bg-[var(--surface-subtle)]'
+                      ? getGenderCardSurfaceClass('female')
+                      : getGenderCardSurfaceClass('unknown')
                   )}
                 >
                   <div
@@ -250,7 +261,7 @@ export const ParentChildRelationModal: React.FC<
                     className={cn(
                       'w-10 h-10 rounded-full overflow-hidden border flex items-center justify-center shrink-0 text-[13px] font-semibold',
                       selectedMotherRecord
-                        ? 'border-rose-500/30 dark:border-rose-400/35 bg-rose-500/12 dark:bg-rose-400/20 text-rose-700 dark:text-rose-300'
+                        ? getGenderAvatarToneClass('female')
                         : 'border-border bg-card text-muted-foreground'
                     )}
                   >

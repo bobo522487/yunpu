@@ -37,7 +37,7 @@ import {
   ChevronDown,
   X,
 } from 'lucide-react';
-import { usePreferencesStore } from '../../../store/usePreferencesStore';
+import { resolveMiniMapNodeColor } from '../utils/lineageTheme';
 
 const nodeTypes = {
   person: PersonNode,
@@ -107,7 +107,6 @@ const CardTreeCanvasView: React.FC<CardTreeCanvasViewProps> = ({
 }) => {
   const reactFlow = useReactFlow();
   const { zoom } = useViewport();
-  const isDarkMode = usePreferencesStore((state) => state.isDarkMode);
   const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(
     new Set()
   );
@@ -378,17 +377,16 @@ const CardTreeCanvasView: React.FC<CardTreeCanvasViewProps> = ({
         {showMiniMap && (
           <MiniMap
             position="top-right"
-            nodeColor={(node: Node) => {
-              if (node.type === 'clanHeader') return 'transparent';
-              if (node.type === 'union') return isDarkMode ? '#5E6973' : '#9EA1A3';
-              if (node.id === selectedPersonId)
-                return isDarkMode ? '#58B1CD' : '#057091';
-              const gen =
-                (node.data as { person?: { generation?: number } })?.person
-                  ?.generation || 1;
-              if (gen === 1) return isDarkMode ? '#4A98B2' : '#057091';
-              return isDarkMode ? '#64748b' : '#9EA1A3';
-            }}
+            nodeColor={(node: Node) =>
+              resolveMiniMapNodeColor(
+                node as {
+                  id: string;
+                  type?: string;
+                  data?: { person?: { generation?: number } };
+                },
+                selectedPersonId
+              )
+            }
             nodeStrokeWidth={2}
             className="!bg-card/95 !backdrop-blur !border-border !rounded-lg !shadow-[var(--shadow-card-hover)] !w-44 !h-32"
           />
@@ -600,7 +598,7 @@ export const GenealogyCanvas: React.FC<GenealogyCanvasProps> = ({
   );
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-background text-foreground select-none">
+    <div className="w-full h-full relative overflow-hidden bg-lineage-canvas-bg text-foreground select-none">
       <ReactFlowProvider>
         <CardTreeCanvasView
           filteredPersons={filteredPersons}

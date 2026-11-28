@@ -120,7 +120,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
       {/* Modal Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-sky-500/12 text-sky-700 dark:text-sky-300 text-[12px] font-semibold border border-sky-500/25 whitespace-nowrap shrink-0">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--surface-active)] text-primary text-[12px] font-semibold border border-primary/25 whitespace-nowrap shrink-0">
             {scope === 'chart' ? '谱系' : '宗谱'}
           </span>
           <span className="text-[14px] font-semibold text-foreground font-mono tabular-nums whitespace-nowrap shrink-0">
@@ -215,12 +215,12 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           </div>
 
           {/* Card 2: Male Count */}
-          <div className="rounded-xl border border-border border-t-2 border-t-sky-500 bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
+          <div className="rounded-xl border border-border border-t-2 border-t-lineage-male bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-semibold text-foreground truncate">
                 男性人数（人）
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-sky-500/12 text-sky-700 dark:text-sky-300 text-[12px] font-medium font-mono tabular-nums shrink-0">
+              <span className="px-1.5 py-0.5 rounded bg-lineage-male/12 text-lineage-male-fg text-[12px] font-medium font-mono tabular-nums shrink-0">
                 {formatStatPct(stats.allMaleCount, stats.totalPersons, 2)}
               </span>
             </div>
@@ -244,12 +244,12 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           </div>
 
           {/* Card 3: Female Count */}
-          <div className="rounded-xl border border-border border-t-2 border-t-rose-400 bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
+          <div className="rounded-xl border border-border border-t-2 border-t-lineage-female bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-semibold text-foreground truncate">
                 女性人数（人）
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-rose-500/12 text-rose-700 dark:text-rose-300 text-[12px] font-medium font-mono tabular-nums shrink-0">
+              <span className="px-1.5 py-0.5 rounded bg-lineage-female/12 text-lineage-female-fg text-[12px] font-medium font-mono tabular-nums shrink-0">
                 {formatStatPct(stats.allFemaleCount, stats.totalPersons, 2)}
               </span>
             </div>
@@ -273,12 +273,12 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           </div>
 
           {/* Card 4: Living Count */}
-          <div className="rounded-xl border border-border border-t-2 border-t-emerald-500 bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
+          <div className="rounded-xl border border-border border-t-2 border-t-lineage-living bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-semibold text-foreground truncate">
                 健在人数（人）
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 text-[12px] font-medium font-mono tabular-nums shrink-0">
+              <span className="px-1.5 py-0.5 rounded bg-lineage-living/12 text-lineage-living-fg text-[12px] font-medium font-mono tabular-nums shrink-0">
                 {formatStatPct(stats.livingCount, stats.totalPersons, 2)}
               </span>
             </div>
@@ -302,7 +302,7 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           </div>
 
           {/* Card 5: Deceased Count */}
-          <div className="rounded-xl border border-border border-t-2 border-t-slate-400 bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
+          <div className="rounded-xl border border-border border-t-2 border-t-lineage-unknown bg-card p-3.5 flex flex-col justify-between min-h-[124px]">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-semibold text-foreground truncate">
                 已故人数（人）
@@ -336,18 +336,18 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           {/* Male Lineage Analysis */}
           <section className="rounded-xl border border-border bg-card p-4 space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 rounded-full bg-sky-500/80 shrink-0" />
+              <span className="w-1 h-3.5 rounded-full bg-lineage-male shrink-0" />
               <h3 className="text-[14px] font-semibold text-foreground">
                 男丁分析（非配偶节点男性）
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
-              <div className="rounded-lg bg-sky-500/[0.08] dark:bg-sky-400/[0.1] border border-sky-500/20 p-4 flex flex-col justify-between min-h-[132px]">
-                <div className="text-[12px] font-semibold text-sky-900 dark:text-sky-200">
+              <div className="rounded-lg bg-lineage-male/[0.08] dark:bg-lineage-male/[0.12] border border-lineage-male/22 p-4 flex flex-col justify-between min-h-[132px]">
+                <div className="text-[12px] font-semibold text-lineage-male-fg">
                   男丁总数（人）
                 </div>
-                <div className="text-[24px] font-bold text-sky-700 dark:text-sky-300 font-mono tabular-nums">
+                <div className="text-[24px] font-bold text-lineage-male-fg font-mono tabular-nums">
                   {stats.maleCount}
                 </div>
               </div>
@@ -388,18 +388,18 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           {/* Female Lineage Analysis */}
           <section className="rounded-xl border border-border bg-card p-4 space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 rounded-full bg-rose-400/85 shrink-0" />
+              <span className="w-1 h-3.5 rounded-full bg-lineage-female shrink-0" />
               <h3 className="text-[14px] font-semibold text-foreground">
                 女丁分析（非配偶节点女性）
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
-              <div className="rounded-lg bg-rose-500/[0.08] dark:bg-rose-400/[0.1] border border-rose-500/20 p-4 flex flex-col justify-between min-h-[132px]">
-                <div className="text-[12px] font-semibold text-rose-900 dark:text-rose-200">
+              <div className="rounded-lg bg-lineage-female/[0.08] dark:bg-lineage-female/[0.12] border border-lineage-female/22 p-4 flex flex-col justify-between min-h-[132px]">
+                <div className="text-[12px] font-semibold text-lineage-female-fg">
                   女丁总数（人）
                 </div>
-                <div className="text-[24px] font-bold text-rose-700 dark:text-rose-300 font-mono tabular-nums">
+                <div className="text-[24px] font-bold text-lineage-female-fg font-mono tabular-nums">
                   {stats.femaleCount}
                 </div>
               </div>
@@ -447,18 +447,18 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           {/* Daughter-in-law Analysis */}
           <section className="rounded-xl border border-border bg-card p-4 space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 rounded-full bg-rose-400/85 shrink-0" />
+              <span className="w-1 h-3.5 rounded-full bg-lineage-female shrink-0" />
               <h3 className="text-[14px] font-semibold text-foreground">
                 儿媳分析（男丁配偶）
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
-              <div className="rounded-lg bg-rose-500/[0.08] dark:bg-rose-400/[0.1] border border-rose-500/20 p-4 flex flex-col justify-between min-h-[132px]">
-                <div className="text-[12px] font-semibold text-rose-900 dark:text-rose-200">
+              <div className="rounded-lg bg-lineage-female/[0.08] dark:bg-lineage-female/[0.12] border border-lineage-female/22 p-4 flex flex-col justify-between min-h-[132px]">
+                <div className="text-[12px] font-semibold text-lineage-female-fg">
                   儿媳总数（人）
                 </div>
-                <div className="text-[24px] font-bold text-rose-700 dark:text-rose-300 font-mono tabular-nums">
+                <div className="text-[24px] font-bold text-lineage-female-fg font-mono tabular-nums">
                   {stats.daughterInLawCount}
                 </div>
               </div>
@@ -489,18 +489,18 @@ export const LineageStatsModal: React.FC<LineageStatsModalProps> = ({
           {/* Son-in-law Analysis */}
           <section className="rounded-xl border border-border bg-card p-4 space-y-3.5">
             <div className="flex items-center gap-2">
-              <span className="w-1 h-3.5 rounded-full bg-sky-500/80 shrink-0" />
+              <span className="w-1 h-3.5 rounded-full bg-lineage-male shrink-0" />
               <h3 className="text-[14px] font-semibold text-foreground">
                 女婿分析（女丁配偶）
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
-              <div className="rounded-lg bg-sky-500/[0.08] dark:bg-sky-400/[0.1] border border-sky-500/20 p-4 flex flex-col justify-between min-h-[132px]">
-                <div className="text-[12px] font-semibold text-sky-900 dark:text-sky-200">
+              <div className="rounded-lg bg-lineage-male/[0.08] dark:bg-lineage-male/[0.12] border border-lineage-male/22 p-4 flex flex-col justify-between min-h-[132px]">
+                <div className="text-[12px] font-semibold text-lineage-male-fg">
                   女婿总数（人）
                 </div>
-                <div className="text-[24px] font-bold text-sky-700 dark:text-sky-300 font-mono tabular-nums">
+                <div className="text-[24px] font-bold text-lineage-male-fg font-mono tabular-nums">
                   {stats.sonInLawCount}
                 </div>
               </div>

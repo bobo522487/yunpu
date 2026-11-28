@@ -74,23 +74,9 @@
   background-color: var(--background) !important;
 }
 
-.fs-lineage-theme {
-  --background: hsl(180 6% 94.5%);
-  --fs-edge-stroke: var(--border-strong);
-}
-
-.dark .fs-lineage-theme {
-  --background: hsl(214 18% 10.5%);
-  --fs-edge-stroke: var(--border-strong);
-}
-
 .fs-card-tree-stage.react-flow,
 .fs-card-tree-stage .react-flow__pane {
-  background-color: var(--background) !important;
-}
-.dark .fs-card-tree-stage.react-flow,
-.dark .fs-card-tree-stage .react-flow__pane {
-  background-color: var(--background) !important;
+  background-color: var(--lineage-canvas-bg) !important;
 }
 
 .react-flow__controls {
@@ -119,13 +105,39 @@
   background-color: var(--card) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-md) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--shadow-card-hover) !important;
 }
 .react-flow__minimap-mask {
-  fill: color-mix(in oklab, var(--background) 0.75%, transparent) !important;
+  fill: color-mix(in oklab, var(--lineage-canvas-bg) 75%, transparent) !important;
 }
 
 @media print {
+  :root,
+  .dark,
+  [data-preset='default'],
+  [data-preset='solar-dusk'],
+  .dark[data-preset='default'],
+  .dark[data-preset='solar-dusk'] {
+    --background: #ffffff !important;
+    --card: #ffffff !important;
+    --foreground: #111827 !important;
+    --card-foreground: #111827 !important;
+    --muted-foreground: #4b5563 !important;
+    --border: #d1d5db !important;
+    --border-strong: #6b7280 !important;
+    --shadow-card: 0 0 0 1px #d1d5db !important;
+    --lineage-canvas-bg: #ffffff !important;
+    --lineage-edge: #6b7280 !important;
+    --lineage-progenitor-bg: #facc15 !important;
+    --lineage-progenitor-fg: #111827 !important;
+    --lineage-male: #0284c7 !important;
+    --lineage-male-fg: #0369a1 !important;
+    --lineage-female: #e11d48 !important;
+    --lineage-female-fg: #be123c !important;
+    --lineage-unknown: #6b7280 !important;
+    --lineage-unknown-fg: #374151 !important;
+  }
+
   aside,
   header,
   [data-no-print='true'] {

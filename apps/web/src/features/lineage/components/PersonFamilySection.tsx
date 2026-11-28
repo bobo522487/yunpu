@@ -15,6 +15,11 @@ import {
   extractYearLabel,
   findCoupleMarriageInfo,
 } from '../utils/personTimeline';
+import {
+  getGenderAvatarToneClass,
+  getGenderBarClass,
+  getGenderFocusBgClass,
+} from '../utils/lineageTheme';
 
 export interface PersonFamilySectionProps {
   person: PersonRecord;
@@ -98,29 +103,12 @@ function buildSecondaryMeta(
   return [lifespan, rankLabel, extraRel].filter(Boolean).join(' · ');
 }
 
-function getGenderBarClass(gender: 'male' | 'female' | 'unknown'): string {
-  if (gender === 'female') return 'bg-[#ED5481] dark:bg-[#D16686]';
-  if (gender === 'male') return 'bg-[#2097B7] dark:bg-[#3E9EB8]';
-  return 'bg-[#9EA1A3] dark:bg-slate-500';
-}
-
-function getFocusBgClass(gender: 'male' | 'female' | 'unknown'): string {
-  if (gender === 'female') return 'bg-[#FBEBF0] dark:bg-[#ED5481]/18';
-  if (gender === 'male') return 'bg-[#E7F3F7] dark:bg-[#2097B7]/18';
-  return 'bg-[#F1F3F4] dark:bg-slate-800/70';
-}
-
 const MemberAvatar: React.FC<{
   avatarUrl?: string;
   displayName: string;
   gender: 'male' | 'female' | 'unknown';
 }> = ({ avatarUrl, displayName, gender }) => {
-  const toneClass =
-    gender === 'female'
-      ? 'bg-[#ED5481]/12 dark:bg-[#D16686]/15 text-[#B6335A] dark:text-[#E590AA] border-[#ED5481]/25 dark:border-[#D16686]/30'
-      : gender === 'male'
-        ? 'bg-[#2097B7]/12 dark:bg-[#3E9EB8]/15 text-[#057091] dark:text-[#6EC2DB] border-[#2097B7]/25 dark:border-[#3E9EB8]/30'
-        : 'bg-[#E8EAEA] text-[#56585A] dark:bg-slate-700 dark:text-slate-300 border-[#D8DADA] dark:border-slate-600';
+  const toneClass = getGenderAvatarToneClass(gender);
 
   return (
     <div
@@ -159,7 +147,7 @@ const CoupleSlotPersonRow: React.FC<CoupleSlotPersonRowProps> = ({
 }) => {
   const canNavigate = Boolean(onSelect && !item.isFocus);
   const genderBarClass = getGenderBarClass(item.gender);
-  const focusBgClass = getFocusBgClass(item.gender);
+  const focusBgClass = getGenderFocusBgClass(item.gender);
 
   const innerContent = (
     <div className="flex items-stretch min-w-0 w-full">
@@ -366,7 +354,7 @@ const ChildListRow: React.FC<ChildListRowProps> = ({
 }) => {
   const canNavigate = Boolean(onSelect && !item.isFocus);
   const genderBarClass = getGenderBarClass(item.gender);
-  const focusBgClass = getFocusBgClass(item.gender);
+  const focusBgClass = getGenderFocusBgClass(item.gender);
 
   const personBody = (
     <div

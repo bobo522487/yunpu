@@ -50,6 +50,21 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Lineage domain tokens (ADR-0023) */
+  --lineage-canvas-bg: oklch(0.952 0.008 248);
+  --lineage-edge: oklch(0.705 0.012 248);
+  --lineage-minimap-node: oklch(0.705 0.012 248);
+  --lineage-progenitor-bg: oklch(0.84 0.175 88);
+  --lineage-progenitor-fg: oklch(0.24 0.015 255);
+  --lineage-male: oklch(0.61 0.118 220);
+  --lineage-male-fg: oklch(0.475 0.118 226);
+  --lineage-female: oklch(0.635 0.195 3);
+  --lineage-female-fg: oklch(0.495 0.165 3);
+  --lineage-unknown: oklch(0.705 0.012 248);
+  --lineage-unknown-fg: oklch(0.46 0.014 248);
+  --lineage-living: oklch(0.63 0.155 158);
+  --lineage-living-fg: oklch(0.47 0.13 160);
 }
 
 .dark,
@@ -102,6 +117,21 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Lineage domain tokens (ADR-0023) */
+  --lineage-canvas-bg: oklch(0.105 0.032 258);
+  --lineage-edge: oklch(0.5 0.025 255);
+  --lineage-minimap-node: oklch(0.55 0.035 255);
+  --lineage-progenitor-bg: oklch(0.77 0.155 86);
+  --lineage-progenitor-fg: oklch(0.2 0.02 255);
+  --lineage-male: oklch(0.66 0.1 218);
+  --lineage-male-fg: oklch(0.77 0.095 218);
+  --lineage-female: oklch(0.63 0.13 358);
+  --lineage-female-fg: oklch(0.75 0.115 356);
+  --lineage-unknown: oklch(0.58 0.018 250);
+  --lineage-unknown-fg: oklch(0.8 0.018 255);
+  --lineage-living: oklch(0.68 0.145 158);
+  --lineage-living-fg: oklch(0.79 0.13 158);
 }
 
 [data-preset='solar-dusk'] {
@@ -155,6 +185,21 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Lineage domain tokens (ADR-0023) */
+  --lineage-canvas-bg: oklch(0.946 0.02 76);
+  --lineage-edge: oklch(0.71 0.048 64);
+  --lineage-minimap-node: oklch(0.72 0.045 64);
+  --lineage-progenitor-bg: oklch(0.8 0.145 86);
+  --lineage-progenitor-fg: oklch(0.24 0.04 55);
+  --lineage-male: oklch(0.56 0.115 240);
+  --lineage-male-fg: oklch(0.43 0.11 242);
+  --lineage-female: oklch(0.6 0.155 16);
+  --lineage-female-fg: oklch(0.46 0.135 16);
+  --lineage-unknown: oklch(0.66 0.032 65);
+  --lineage-unknown-fg: oklch(0.46 0.042 58);
+  --lineage-living: oklch(0.6 0.115 142);
+  --lineage-living-fg: oklch(0.44 0.105 144);
 }
 
 .dark[data-preset='solar-dusk'] {
@@ -206,6 +251,21 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Lineage domain tokens (ADR-0023) */
+  --lineage-canvas-bg: oklch(0.162 0.024 54);
+  --lineage-edge: oklch(0.52 0.042 60);
+  --lineage-minimap-node: oklch(0.56 0.045 60);
+  --lineage-progenitor-bg: oklch(0.76 0.14 90);
+  --lineage-progenitor-fg: oklch(0.2 0.04 55);
+  --lineage-male: oklch(0.66 0.105 240);
+  --lineage-male-fg: oklch(0.78 0.09 238);
+  --lineage-female: oklch(0.67 0.14 18);
+  --lineage-female-fg: oklch(0.79 0.115 18);
+  --lineage-unknown: oklch(0.56 0.032 62);
+  --lineage-unknown-fg: oklch(0.78 0.03 68);
+  --lineage-living: oklch(0.69 0.115 145);
+  --lineage-living-fg: oklch(0.8 0.105 145);
 }
 
 @theme inline {
@@ -257,4 +317,17 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-lineage-canvas-bg: var(--lineage-canvas-bg);
+  --color-lineage-edge: var(--lineage-edge);
+  --color-lineage-minimap-node: var(--lineage-minimap-node);
+  --color-lineage-progenitor-bg: var(--lineage-progenitor-bg);
+  --color-lineage-progenitor-fg: var(--lineage-progenitor-fg);
+  --color-lineage-male: var(--lineage-male);
+  --color-lineage-male-fg: var(--lineage-male-fg);
+  --color-lineage-female: var(--lineage-female);
+  --color-lineage-female-fg: var(--lineage-female-fg);
+  --color-lineage-unknown: var(--lineage-unknown);
+  --color-lineage-unknown-fg: var(--lineage-unknown-fg);
+  --color-lineage-living: var(--lineage-living);
+  --color-lineage-living-fg: var(--lineage-living-fg);
 }

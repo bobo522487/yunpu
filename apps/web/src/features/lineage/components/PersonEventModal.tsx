@@ -98,7 +98,6 @@ export const PersonEventModal: React.FC<PersonEventModalProps> = ({
       size="xl"
       zIndexClass="z-[96]"
       ariaLabelledBy={titleId}
-      className="fs-lineage-theme"
     >
       <ModalHeader
         titleId={titleId}

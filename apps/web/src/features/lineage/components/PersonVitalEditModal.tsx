@@ -173,7 +173,6 @@ export const PersonVitalEditModal: React.FC<PersonVitalEditModalProps> = ({
       size="lg"
       zIndexClass="z-[96]"
       ariaLabelledBy={titleId}
-      className="fs-lineage-theme"
     >
       <ModalHeader
         titleId={titleId}

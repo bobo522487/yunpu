@@ -52,7 +52,7 @@ export const UnionNode: React.FC<NodeProps<UnionFlowNode>> = memo(({ data }) => 
           aria-expanded={!isCollapsed}
           aria-label={actionLabel}
           title={`${actionLabel} (${childrenCount}人)`}
-          className="nodrag nopan nowheel pointer-events-auto relative z-10 w-8 h-8 rounded-full bg-white hover:bg-[#F5F6F6] active:bg-[#EAECEC] active:scale-95 dark:bg-[#1E242B] dark:hover:bg-[#272F38] text-[#057091] dark:text-[#58B1CD] border border-[#D8DADA] dark:border-slate-600/80 shadow-[0_2px_4px_rgba(0,0,0,0.16),0_1px_2px_rgba(0,0,0,0.10)] flex items-center justify-center transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#057091] dark:focus-visible:ring-[#58B1CD] focus-visible:shadow-[var(--shadow-focus-halo)]"
+          className="nodrag nopan nowheel pointer-events-auto relative z-10 w-8 h-8 rounded-full bg-card hover:bg-[var(--surface-hover)] active:bg-[var(--surface-active)] active:scale-95 text-primary border border-[var(--border-strong)] shadow-[var(--shadow-card)] flex items-center justify-center transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:shadow-[var(--shadow-focus-halo)]"
         >
           <svg
             aria-hidden="true"
@@ -69,7 +69,7 @@ export const UnionNode: React.FC<NodeProps<UnionFlowNode>> = memo(({ data }) => 
           </svg>
         </button>
       ) : (
-        <span className="w-2 h-2 rounded-full bg-[#9EA1A3] dark:bg-[#5E6973] pointer-events-none" />
+        <span className="w-2 h-2 rounded-full bg-lineage-edge pointer-events-none" />
       )}
 
       <Handle
